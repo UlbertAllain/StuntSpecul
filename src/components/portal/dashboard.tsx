@@ -1,0 +1,108 @@
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { UsersRound, History, Settings, LogOut, Monitor } from "lucide-react";
+import { api, ClientError, errorMessage } from "@/lib/api-client";
+import type { Staff } from "@/lib/portal";
+import { StaffLogin } from "./login";
+import { PortalShell, Message } from "./shell";
+import { ChildrenPanel } from "./children";
+import { ExaminationHistory } from "./history";
+import { SettingsPanel } from "./settings";
+
+export function StaffDashboard() {
+  const [user, setUser] = useState<Staff | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("children");
+  const [error, setError] = useState("");
+  const [facility, setFacility] = useState("Fasilitas StuntSpecula");
+  useEffect(() => {
+    const controller = new AbortController();
+    api<Staff>("/auth/me", { signal: controller.signal })
+      .then(setUser)
+      .catch((e) => {
+        if (
+          !controller.signal.aborted &&
+          (!(e instanceof ClientError) || e.status !== 401)
+        )
+          setError(errorMessage(e));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    api<{ facility: string }>("/config", { signal: controller.signal })
+      .then((c) => setFacility(c.facility))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+  async function logout() {
+    try {
+      await api("/auth/logout", { method: "POST", body: {} });
+      setUser(null);
+      setTab("children");
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  }
+  if (loading)
+    return (
+      <PortalShell heading="Menyiapkan ruang petugas">
+        <Message>Memeriksa sesi…</Message>
+      </PortalShell>
+    );
+  if (!user) return <StaffLogin onLogin={setUser} />;
+  return (
+    <PortalShell
+      heading={facility}
+      subtitle={`Halo, ${user.name}. Mari dampingi tumbuh kembang si kecil.`}
+      actions={
+        <>
+          <Link className="portal-text" href="/">
+            <Monitor size={18} />
+            Mirror
+          </Link>
+          <button className="portal-text" onClick={logout}>
+            <LogOut size={18} />
+            Keluar
+          </button>
+        </>
+      }
+    >
+      <nav className="portal-nav" aria-label="Menu petugas">
+        <button
+          aria-current={tab === "children" ? "page" : undefined}
+          onClick={() => setTab("children")}
+        >
+          <UsersRound />
+          Anak & pemeriksaan
+        </button>
+        <button
+          aria-current={tab === "history" ? "page" : undefined}
+          onClick={() => setTab("history")}
+        >
+          <History />
+          History
+        </button>
+        {user.role === "admin" && (
+          <button
+            aria-current={tab === "settings" ? "page" : undefined}
+            onClick={() => setTab("settings")}
+          >
+            <Settings />
+            Pengaturan
+          </button>
+        )}
+      </nav>
+      {error && <Message error>{error}</Message>}
+      <div className="portal-content" key={tab}>
+        {tab === "children" ? (
+          <ChildrenPanel />
+        ) : tab === "history" ? (
+          <ExaminationHistory />
+        ) : (
+          <SettingsPanel user={user} />
+        )}
+      </div>
+    </PortalShell>
+  );
+}
