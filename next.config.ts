@@ -1,19 +1,30 @@
 import type { NextConfig } from "next";
-const development = process.env.NODE_ENV === "development";
+
 const config: NextConfig = {
-  output: development ? undefined : "export",
   images: { unoptimized: true },
-  ...(development
-    ? {
-        async rewrites() {
-          return [
-            {
-              source: "/api/:path*",
-              destination: "http://localhost:8787/api/:path*",
-            },
-          ];
-        },
-      }
-    : {}),
+  serverExternalPackages: ["@libsql/client"],
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), microphone=(), geolocation=()",
+          },
+        ],
+      },
+      {
+        source: "/api/:path*",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+      {
+        source: "/hasil",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+    ];
+  },
 };
 export default config;

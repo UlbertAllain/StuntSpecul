@@ -16,27 +16,12 @@ import {
 
 export const STAFF_COOKIE = "ss_staff";
 const STAFF_SECONDS = 8 * 60 * 60;
-function isSetupOwner(request: Request, env: Env) {
-  // Only configure these allowlists on a deployment whose dispatcher verifies and replaces identity headers.
-  return (
-    (!!env.SETUP_OWNER_ID &&
-      request.headers.get("oai-authenticated-user-id") ===
-        env.SETUP_OWNER_ID) ||
-    (!!env.SETUP_OWNER_EMAIL &&
-      request.headers.get("oai-authenticated-user-email")?.toLowerCase() ===
-        env.SETUP_OWNER_EMAIL.toLowerCase())
-  );
-}
 function canInitialize(request: Request, env: Env) {
   const loopback = new Set(["localhost", "127.0.0.1", "[::1]"]);
-  const origin = env.APP_ORIGIN && new URL(env.APP_ORIGIN);
   return (
-    isSetupOwner(request, env) ||
-    !!(
-      origin &&
-      loopback.has(origin.hostname) &&
-      loopback.has(new URL(request.url).hostname)
-    )
+    env.ALLOW_LOCAL_SETUP === true &&
+    loopback.has(new URL(env.APP_ORIGIN).hostname) &&
+    loopback.has(new URL(request.url).hostname)
   );
 }
 const staffFields = "s.id,s.name,s.email,s.role,s.active";
@@ -114,7 +99,7 @@ export async function setup(request: Request, env: Env) {
   if (!canInitialize(request, env))
     throw new ApiError(
       403,
-      "Buat pengelola pertama dari localhost atau akses pemilik hosting.",
+      "Buat pengelola pertama melalui localhost yang terhubung ke database fasilitas.",
       "setup_restricted",
     );
   const id = crypto.randomUUID();

@@ -1,11 +1,8 @@
-import type { D1Database } from "@cloudflare/workers-types";
-export type { D1Database } from "@cloudflare/workers-types";
+import type { Database } from "./database";
 export interface Env {
-  DB: D1Database;
-  ASSETS: { fetch(request: Request): Promise<Response> };
-  APP_ORIGIN?: string;
-  SETUP_OWNER_ID?: string;
-  SETUP_OWNER_EMAIL?: string;
+  DB: Database;
+  APP_ORIGIN: string;
+  ALLOW_LOCAL_SETUP?: boolean;
   GEMINI_API_KEY?: string;
   GEMINI_MODEL?: string;
 }

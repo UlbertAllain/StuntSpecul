@@ -105,8 +105,8 @@ export function StaffLogin({ onLogin }: { onLogin: (staff: Staff) => void }) {
         </label>
         {config?.needsSetup && !config.canSetup && (
           <Message error>
-            Buka dari localhost atau akses pemilik hosting untuk membuat
-            pengelola pertama.
+            Fasilitas belum siap. Hubungi pengelola untuk mengaktifkan akun
+            pertama.
           </Message>
         )}
         {error && <Message error>{error}</Message>}

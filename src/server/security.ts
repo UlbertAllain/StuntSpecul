@@ -1,4 +1,4 @@
-import type { D1Database } from "./env";
+import type { Database } from "./database";
 import { compare, hash } from "bcryptjs";
 import { z } from "zod";
 import { ApiError } from "./http";
@@ -42,7 +42,7 @@ export const hashPassword = (password: string) => hash(password, 12);
 export const verifyPassword = (password: string, encoded: string) =>
   compare(password, encoded);
 export async function rateLimit(
-  db: D1Database,
+  db: Database,
   key: string,
   limit: number,
   windowSeconds: number,
@@ -63,5 +63,10 @@ export async function rateLimit(
     );
 }
 export async function requestKey(request: Request) {
-  return digest(request.headers.get("cf-connecting-ip") || "local");
+  // Vercel overwrites this header; never trust a client-supplied Cloudflare identity.
+  const address =
+    process.env.VERCEL === "1"
+      ? request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim()
+      : undefined;
+  return digest(address || "local");
 }

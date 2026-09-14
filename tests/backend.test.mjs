@@ -482,7 +482,7 @@ test("rate limits are enforced atomically", async () => {
   f.db.close();
 });
 
-test("first-admin setup is local or owner-only without a key, is one-time, and login/logout uses real password sessions", async () => {
+test("first-admin setup is development-local-only without a key, is one-time, and login/logout uses real password sessions", async () => {
   const f = await fixture();
   f.db.exec(
     "DELETE FROM sessions; DELETE FROM examinations; DELETE FROM devices; DELETE FROM children; DELETE FROM staff;",
@@ -498,6 +498,7 @@ test("first-admin setup is local or owner-only without a key, is one-time, and l
     (e) => e.status === 403,
   );
   f.env.APP_ORIGIN = "http://localhost:3000";
+  f.env.ALLOW_LOCAL_SETUP = true;
   const setupRequest = () =>
     new Request("http://localhost:8787/api/auth/setup", {
       method: "POST",
