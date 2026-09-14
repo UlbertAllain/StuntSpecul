@@ -77,19 +77,19 @@ Sensor dan analisis WHO/facial tetap memerlukan integrasi hardware/model. Nilai 
 
 Lihat request yang gagal di DevTools → Network serta Vercel → Logs. Catat status HTTP dan field `code`, tanpa menyalin password, cookie, token QR, atau API key.
 
-| Kode | Tindakan |
-| --- | --- |
-| app_origin_invalid | Periksa APP_ORIGIN dan redeploy |
-| database_not_configured | Isi URL dan token database remote |
-| database_url_invalid | Gunakan URL libSQL/HTTPS; file SQLite tidak didukung di produksi |
-| service_unavailable | Periksa koneksi database, token, dan apakah migrasi telah diterapkan |
-| origin_rejected | Samakan APP_ORIGIN dengan domain yang sedang dibuka |
-| setup_restricted | Buat pengelola pertama dari development localhost yang memakai DB remote |
-| ai_not_configured | Isi GEMINI_API_KEY dan GEMINI_MODEL |
-| ai_key_invalid / ai_access_denied | Periksa key dan izin project Gemini |
-| ai_model_unavailable | Periksa ID model yang tersedia pada akun |
-| ai_quota_exceeded | Periksa kuota/batas provider |
-| ai_network_error / ai_timeout | Periksa koneksi provider dan log function |
+| Kode                              | Tindakan                                                                 |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| app_origin_invalid                | Periksa APP_ORIGIN dan redeploy                                          |
+| database_not_configured           | Isi URL dan token database remote                                        |
+| database_url_invalid              | Gunakan URL libSQL/HTTPS; file SQLite tidak didukung di produksi         |
+| service_unavailable               | Periksa koneksi database, token, dan apakah migrasi telah diterapkan     |
+| origin_rejected                   | Samakan APP_ORIGIN dengan domain yang sedang dibuka                      |
+| setup_restricted                  | Buat pengelola pertama dari development localhost yang memakai DB remote |
+| ai_not_configured                 | Isi GEMINI_API_KEY dan GEMINI_MODEL                                      |
+| ai_key_invalid / ai_access_denied | Periksa key dan izin project Gemini                                      |
+| ai_model_unavailable              | Periksa ID model yang tersedia pada akun                                 |
+| ai_quota_exceeded                 | Periksa kuota/batas provider                                             |
+| ai_network_error / ai_timeout     | Periksa koneksi provider dan log function                                |
 
 Untuk menguji Gemini tanpa alur pemeriksaan:
 

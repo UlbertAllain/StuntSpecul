@@ -64,8 +64,9 @@ export async function rateLimit(
 }
 export async function requestKey(request: Request) {
   // Vercel overwrites this header; never trust a client-supplied Cloudflare identity.
-  const address = process.env.VERCEL === "1"
-    ? request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim()
-    : undefined;
+  const address =
+    process.env.VERCEL === "1"
+      ? request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim()
+      : undefined;
   return digest(address || "local");
 }

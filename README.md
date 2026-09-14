@@ -19,13 +19,13 @@ Buka http://localhost:3000/petugas. Buat pengelola pertama sekali, lalu tambahka
 
 Ikuti [panduan langkah demi langkah](docs/VERCEL.md). Untuk akun dan riwayat yang tersimpan, siapkan database **libSQL di Turso**. API dan Gemini berjalan di Next.js Route Handler, tanpa Worker atau Wrangler.
 
-| Environment variable | Fungsi |
-| --- | --- |
-| APP_ORIGIN | Origin website lengkap, misalnya https://stuntspecula.vercel.app |
-| DATABASE_URL | URL database libSQL; file SQLite hanya untuk lokal |
-| DATABASE_AUTH_TOKEN | Token database remote, hanya di server |
-| GEMINI_API_KEY | API key Gemini, opsional |
-| GEMINI_MODEL | ID model yang tersedia pada akun Gemini, opsional |
+| Environment variable | Fungsi                                                           |
+| -------------------- | ---------------------------------------------------------------- |
+| APP_ORIGIN           | Origin website lengkap, misalnya https://stuntspecula.vercel.app |
+| DATABASE_URL         | URL database libSQL; file SQLite hanya untuk lokal               |
+| DATABASE_AUTH_TOKEN  | Token database remote, hanya di server                           |
+| GEMINI_API_KEY       | API key Gemini, opsional                                         |
+| GEMINI_MODEL         | ID model yang tersedia pada akun Gemini, opsional                |
 
 Simpan konfigurasi lokal di `.env.local`, konfigurasi produksi di Vercel Environment Variables. Tidak ada variabel rahasia dengan prefix `NEXT_PUBLIC_`. Setelah mengubah konfigurasi Vercel, redeploy.
 
