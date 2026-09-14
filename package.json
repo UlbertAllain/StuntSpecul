@@ -6,17 +6,18 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "node scripts/dev.mjs",
-    "build": "next build && node scripts/build-worker.mjs",
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint src db tests scripts --max-warnings=0",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
-    "format": "prettier --write src db tests scripts docs *.json *.jsonc *.ts *.mjs *.md",
-    "format:check": "prettier --check src db tests scripts docs *.json *.jsonc *.ts *.mjs *.md",
+    "format": "prettier --write src db tests scripts docs *.json *.ts *.mjs *.md",
+    "format:check": "prettier --check src db tests scripts docs *.json *.ts *.mjs *.md",
     "check": "npm run typecheck && npm run lint && npm test && npm run format:check",
     "db:generate": "drizzle-kit generate",
-    "db:local": "wrangler d1 migrations apply DB --local",
-    "ai:check": "node scripts/check-ai.mjs"
+    "ai:check": "node scripts/check-ai.mjs",
+    "start": "next start",
+    "db:migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
@@ -30,7 +31,8 @@
     "zod": "^3.25.76",
     "bcryptjs": "^3.0.2",
     "qrcode": "^1.5.4",
-    "drizzle-orm": "^0.45.1"
+    "drizzle-orm": "^0.45.1",
+    "@libsql/client": "^0.15.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.2.1",
@@ -44,10 +46,8 @@
     "typescript": "5.9.3",
     "prettier": "3.6.2",
     "@types/qrcode": "^1.5.5",
-    "@cloudflare/workers-types": "5.20260914.1",
     "drizzle-kit": "^0.31.8",
-    "esbuild": "^0.27.3",
-    "wrangler": "^4.67.0"
+    "esbuild": "^0.27.3"
   },
   "type": "module"
 }

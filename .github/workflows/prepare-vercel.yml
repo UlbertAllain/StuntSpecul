@@ -1,0 +1,47 @@
+name: Prepare and verify Vercel migration
+on:
+  push:
+    branches: [codex/fix-vercel-runtime]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/fix-vercel-runtime
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Resolve lockfile
+        run: npm install --package-lock-only
+      - run: npm ci
+      - name: Format changed source
+        env:
+          FORMAT_FILES: '["README.md","docs/ARCHITECTURE.md","docs/CLEANUP.md","docs/VERCEL.md","next.config.ts","package.json","scripts/check-ai.mjs","scripts/migrate.mjs","scripts/server-module.mjs","src/app/api/[...path]/route.ts","src/components/portal/login.tsx","src/server/auth.ts","src/server/database.ts","src/server/env.ts","src/server/runtime-config.ts","src/server/runtime.ts","src/server/security.ts","tests/backend.test.mjs","tests/vercel.test.mjs","vercel.json"]'
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          execFileSync('npx', ['prettier', '--write', ...JSON.parse(process.env.FORMAT_FILES)], { stdio: 'inherit' });
+          NODE
+      - name: Save generated lockfile and formatting on repair branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: resolve dependencies and format Vercel migration [skip ci]"
+            git push origin HEAD:codex/fix-vercel-runtime
+          fi
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Test migration repeatability
+        env:
+          DATABASE_URL: file:./ci-stuntspecula.db
+        run: |
+          npm run db:migrate
+          npm run db:migrate

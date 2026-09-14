@@ -1,45 +1,37 @@
-# StuntSpecula V1 — fasilitas dan portal hasil
+# Arsitektur StuntSpecula
 
-## Objective dan scope
+## Runtime
 
-Satu instalasi melayani satu posyandu/RS. Dua role petugas: `admin` (pengelola) dan `staff` (petugas). Anak dan orang tua tidak membuat akun. Tidak ada public registration. Login petugas memakai email/password milik aplikasi; akses platform hosting merupakan lapisan tambahan yang terpisah.
+Browser → Next.js Route Handler → router → modul bisnis → adapter database → libSQL.
 
-## Business flow
+Frontend dan API di-deploy bersama di Vercel. Tidak ada Worker terpisah, static export, atau proxy localhost produksi. Handler API tipis: membuat environment server, meneruskan request, dan memetakan error. Runtime configuration divalidasi saat request, sehingga build tidak membutuhkan akses database/credential.
 
-Pengelola melakukan setup awal → menambahkan petugas → petugas membuat/memilih profil anak → memulai pemeriksaan → browser yang sama membuka mirror dengan sesi login petugas → hasil disimpan secara idempotent → petugas menerbitkan QR → orang tua menukar QR sekali pakai → membaca satu hasil dan bertanya melalui Gemini.
+## Modul
 
-History petugas terikat ke ID profil anak. QR tidak memberikan akses seluruh history. Profil menyimpan nama panggilan, tanggal lahir, jenis kelamin, nama pendamping, dan kode lokal unik; tidak membutuhkan NIK/foto permanen. Usia dihitung ulang server ketika pemeriksaan dibuat.
+- `auth`: login, sesi, setup pertama, pengelola/petugas.
+- `children`: profil dan pencarian.
+- `screenings`: satu pemeriksaan aktif, claim, complete, cancel, riwayat.
+- `access`: QR satu kali, sesi orang tua, pembacaan satu hasil.
+- `ai`: otorisasi chat, persetujuan, rate limit, penyimpanan percakapan.
+- `gemini`: prompt hasil dan komunikasi provider.
+- `database`: kontrak prepare/bind/first/all/run/batch yang dipakai modul; implementasi SDK libSQL.
+- `runtime-config`: origin aplikasi dan validasi koneksi.
+- `http/security`: validasi request, cookie, hashing, response, rate limit.
 
-## Data dan aturan
+SQL dan business rules lama dipertahankan. Adapter menggunakan SDK resmi agar transport dan transaksi tidak diimplementasikan sendiri. Setiap batch bersifat atomic, termasuk setup admin, klaim QR, serta pasangan pesan chat.
 
-- `staff`: email unik, password hash, role, status aktif.
-- `children`: kode lokal unik, identitas dasar, tanggal lahir, timestamp.
-- `devices`: relasi historis yang dipertahankan; satu record internal otomatis untuk alat tunggal, tanpa endpoint pengelolaan perangkat.
-- `examinations`: profil anak, snapshot usia/jenis kelamin, petugas, perangkat, status, data hasil, timestamp. Maksimal satu sesi aktif per fasilitas, diperiksa atomik saat INSERT.
-- `sessions`: token hash sesi petugas atau orang tua, expiry dan relasi pemilik.
-- `result_links`: token QR hash, satu hasil, expiry, status penukaran/pencabutan.
-- `chat_messages`: percakapan per sesi orang tua, hanya hasil yang diizinkan.
-- `rate_limits`: kuota atomik untuk login, penukaran QR, dan chat.
-- `facility`: satu record konfigurasi nama fasilitas.
+## Penyimpanan
 
-Foreign keys, unique/partial indexes, prepared statements, dan batch transaction menjaga integritas. Migrasi Drizzle mengelola schema; tidak ada DDL saat request.
+Skema SQLite pada `db/schema.ts`; migrasi tersimpan di `drizzle`. Data produksi memakai libSQL remote. SQLite lokal hanya untuk development. `app_migrations` mencatat checksum dan waktu migrasi, di luar entitas bisnis.
 
-## Modul dan file
+Tabel devices dipertahankan untuk foreign key data lama. Record alat internal tetap dibuat otomatis. Tidak ada pengelolaan/pairing perangkat pada UI/API.
 
-- CREATE `db/schema.ts`, `drizzle/`: schema/migrasi SQLite/D1.
-- CREATE `src/server/{http,security,auth,children,screenings,access,ai,gemini,router,worker}.ts`: backend REST dan domain per tanggung jawab.
-- CREATE `src/lib/portal.ts`, `src/lib/api-client.ts`: kontrak dan client API.
-- CREATE `src/components/portal/`: UI petugas, hasil, dan chat.
-- CREATE `src/app/{petugas,hasil}/page.tsx`: halaman aplikasi.
-- UPDATE `src/components/screening/`, `src/hooks/use-screening-session.ts`: menghubungkan sesi mirror ke backend.
-- CREATE `scripts/{dev,build-worker}.mjs`, `wrangler.jsonc`: satu perintah development, Worker backend.
+## Akses
 
-Next.js tetap merender frontend; Worker ESM melayani API dan aset hasil ekspor Next.js pada origin yang sama. Ini menghindari runtime Next.js kedua di hosting dan mempertahankan komponen UI yang sudah disetujui.
+Pengelola menambah petugas. Setup pengelola pertama hanya boleh dari development localhost; runtime produksi tidak mempercayai header pemilik dari platform sebelumnya. Buat akun pertama melalui lokal dengan database remote fasilitas.
 
-## Security dan edge cases
+Staff menggunakan cookie HttpOnly SameSite=Strict; HTTPS menghasilkan Secure. Origin penulisan wajib sesuai APP_ORIGIN. Parent hanya mengakses hasil yang terkait sesi QR miliknya. Hasil/API tidak boleh masuk shared cache. Rahasia tidak dikirim ke browser.
 
-Password di-hash bcrypt; cookie HttpOnly/SameSite/Secure pada HTTPS; CSRF same-origin; body limit; server validation; role dicek pada setiap endpoint. Hash token disimpan, bukan token mentah. QR 10 menit, sekali ditukar secara atomik, sesi orang tua 2 jam; pencabutan memutus akses hasil/chat. Mirror memakai sesi petugas pembuat pemeriksaan; cookie pairing lama tidak berlaku. Tidak ada hasil medis buatan ketika integrasi belum tersedia. Pembatalan/submit ulang tidak menulis sesi anak lain. Chat hanya menerima konteks hasil dari server, tanpa nama, foto, tanggal lahir, atau akses query database; maksimal 20 pesan orang tua per sesi dengan batas harian fasilitas. API key Gemini dan model di environment server, tidak masuk ZIP/client. Prompt injection diperlakukan sebagai input, bukan instruksi untuk mengambil data lain.
+## Batas integrasi
 
-## Batas operasional
-
-Sensor, facial model, dan penilaian WHO tetap titik integrasi terpisah. Chat menggunakan model siap pakai, tidak melatih model. Data/foto tidak otomatis dikirim ke chatbot. Live provider memerlukan konfigurasi key/model. Portal QR anonim membutuhkan hosting yang dapat dijangkau orang tua; proteksi platform private tetap berlaku sampai pemilik membuka audience atau memakai hosting sendiri.
+Gemini menjelaskan satu hasil server, tidak menentukan status pertumbuhan. Sensor, perhitungan WHO, dan model facial belum dihubungkan. Nilai yang tidak tersedia tetap kosong/unavailable.
