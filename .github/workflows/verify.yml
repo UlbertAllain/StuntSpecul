@@ -1,0 +1,33 @@
+name: Verify
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+      - run: node tests/deployment-smoke.mjs
+      - name: Verify repeatable migrations
+        env:
+          DATABASE_URL: file:./ci-stuntspecula.db
+        run: |
+          npm run db:migrate
+          npm run db:migrate
