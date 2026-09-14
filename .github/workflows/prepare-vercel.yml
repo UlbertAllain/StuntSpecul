@@ -20,7 +20,7 @@ jobs:
       - run: npm ci
       - name: Format changed source
         env:
-          FORMAT_FILES: '["README.md","docs/ARCHITECTURE.md","docs/CLEANUP.md","docs/VERCEL.md","next.config.ts","package.json","scripts/check-ai.mjs","scripts/migrate.mjs","scripts/server-module.mjs","src/app/api/[...path]/route.ts","src/components/portal/login.tsx","src/server/auth.ts","src/server/database.ts","src/server/env.ts","src/server/runtime-config.ts","src/server/runtime.ts","src/server/security.ts","tests/backend.test.mjs","tests/vercel.test.mjs","vercel.json"]'
+          FORMAT_FILES: '["README.md","docs/ARCHITECTURE.md","docs/CLEANUP.md","docs/VERCEL.md","next.config.ts","package.json","scripts/check-ai.mjs","scripts/migrate.mjs","scripts/server-module.mjs","src/app/api/[...path]/route.ts","src/components/portal/login.tsx","src/server/auth.ts","src/server/database.ts","src/server/env.ts","src/server/runtime-config.ts","src/server/runtime.ts","src/server/security.ts","tests/backend.test.mjs","tests/vercel.test.mjs","vercel.json","tests/deployment-smoke.mjs"]'
         run: |
           node --input-type=module <<'NODE'
           import { execFileSync } from 'node:child_process';
@@ -39,6 +39,7 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - run: node tests/deployment-smoke.mjs
       - name: Test migration repeatability
         env:
           DATABASE_URL: file:./ci-stuntspecula.db
