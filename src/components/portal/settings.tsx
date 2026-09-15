@@ -46,8 +46,8 @@ export function SettingsPanel({ user }: { user: Staff }) {
         <div>
           <h2>Kelola petugas</h2>
           <p className="portal-note">
-            Petugas dapat memantau data anak dan riwayat pemeriksaan. Pengelola dapat
-            mengatur akun petugas.
+            Petugas dapat memantau data anak dan riwayat pemeriksaan. Pengelola
+            dapat mengatur akun petugas.
           </p>
         </div>
       </div>
