@@ -20,10 +20,10 @@ interface MirrorSessionState {
   assignment: MirrorAssignment | null;
 }
 
-interface CreatedMirrorSession extends MirrorSessionState {
+type CreatedMirrorSession = Omit<MirrorSessionState, "assignment"> & {
   url: string;
   qr: string;
-}
+};
 
 export function MirrorStation() {
   const [session, setSession] = useState<MirrorSessionState | null>(null);
@@ -95,7 +95,7 @@ export function MirrorStation() {
         body: {},
       });
       setPairing(created);
-      setSession(created);
+      setSession({ ...created, assignment: null });
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -110,15 +110,13 @@ export function MirrorStation() {
     try {
       if (session)
         await api("/screening/mirror/cancel", { method: "POST", body: {} });
-      setSession(null);
-      setPairing(null);
-      setActive(null);
       const created = await api<CreatedMirrorSession>("/screening/session", {
         method: "POST",
         body: {},
       });
       setPairing(created);
-      setSession(created);
+      setSession({ ...created, assignment: null });
+      setActive(null);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -154,8 +152,8 @@ export function MirrorStation() {
 
   if (loading)
     return (
-      <main className="mirror-pair-shell">
-        <p className="mirror-pair-status">Menyiapkan StuntSpecula…</p>
+      <main className="grid min-h-svh place-items-center bg-[var(--brand-ice)] p-8 text-[var(--ink)]">
+        <p className="text-lg font-bold">Menyiapkan StuntSpecula…</p>
       </main>
     );
 
@@ -183,90 +181,97 @@ export function MirrorStation() {
 
   if (session)
     return (
-      <main className="mirror-pair-shell">
-        <header className="mirror-pair-brand">
+      <main className="min-h-svh bg-[var(--brand-ice)] p-8 text-[var(--ink)] md:p-12">
+        <header className="mx-auto mb-6 w-52 rounded-3xl bg-white px-5 shadow-sm">
           <Image
             src="/images/stuntspecula-logo.jpeg"
             alt="StuntSpecula"
             width={1536}
             height={1024}
+            className="h-28 w-full object-contain"
             priority
           />
         </header>
-        <section className="mirror-pair-card">
-          <div className="mirror-pair-copy">
-            <span className="mirror-pair-kicker">
+        <section className="mx-auto grid max-w-5xl gap-8 rounded-[2rem] border border-[var(--border)] bg-white p-8 shadow-xl md:grid-cols-[1fr_360px] md:p-12">
+          <div className="flex flex-col justify-center gap-5">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[var(--brand-ice)] px-4 py-2 text-sm font-extrabold text-[var(--blue)]">
               <Smartphone size={20} /> HP Ayah & Bunda
             </span>
-            <h1>
+            <h1 className="text-4xl font-black tracking-tight md:text-5xl">
               {session.status === "parent_connected"
                 ? "Sudah terhubung!"
                 : "Isi data si kecil lewat HP"}
             </h1>
-            <p>
+            <p className="max-w-xl text-lg leading-8 text-[var(--muted-foreground)]">
               {session.status === "parent_connected"
                 ? "Silakan lengkapi data si kecil di HP. Setelah selesai, layar ini akan lanjut otomatis."
                 : "Scan QR atau buka link di samping. Tidak perlu membuat akun atau login."}
             </p>
+            <p className="rounded-2xl bg-[#f6faff] p-4 font-bold" role="status">
+              {error ||
+                (session.status === "parent_connected"
+                  ? "Menunggu Bunda atau Ayah menyelesaikan data si kecil…"
+                  : "Menunggu QR dibuka dari HP…")}
+            </p>
           </div>
 
           {pairing ? (
-            <div className="mirror-pair-qr-area">
+            <div className="flex flex-col items-center justify-center gap-4">
               <div
-                className="mirror-pair-qr"
+                className="w-full max-w-[320px] rounded-3xl border border-[var(--border)] bg-white p-3 [&_svg]:h-auto [&_svg]:w-full"
                 aria-label="QR untuk membuka formulir pemeriksaan"
                 dangerouslySetInnerHTML={{ __html: pairing.qr }}
               />
-              <div className="mirror-pair-link">
-                <Link2 size={18} />
+              <div className="flex w-full items-start gap-2 rounded-xl bg-[#f6faff] p-3 text-xs leading-5 break-all">
+                <Link2 className="mt-0.5 shrink-0" size={17} />
                 <span>{pairing.url}</span>
               </div>
             </div>
           ) : (
-            <div className="mirror-pair-recover">
+            <div className="flex flex-col items-center justify-center gap-4 rounded-3xl bg-[#f6faff] p-8 text-center">
               <QrCode size={52} />
               <p>QR lama tidak tersimpan setelah layar dimuat ulang.</p>
-              <button disabled={busy} onClick={restartSession}>
+              <button
+                className="portal-primary"
+                disabled={busy}
+                onClick={restartSession}
+              >
                 <RefreshCw size={18} /> Buat QR baru
               </button>
             </div>
           )}
-
-          <p className="mirror-pair-status" role="status">
-            {error ||
-              (session.status === "parent_connected"
-                ? "Menunggu Bunda atau Ayah menyelesaikan data si kecil…"
-                : "Menunggu QR dibuka dari HP…")}
-          </p>
         </section>
       </main>
     );
 
   return (
-    <main className="mirror-pair-shell mirror-opening">
-      <header className="mirror-pair-brand">
+    <main className="grid min-h-svh place-items-center bg-[var(--brand-ice)] p-8 text-[var(--ink)]">
+      <section className="w-full max-w-4xl rounded-[2rem] border border-[var(--border)] bg-white p-10 text-center shadow-xl md:p-16">
         <Image
           src="/images/stuntspecula-logo.jpeg"
           alt="StuntSpecula"
           width={1536}
           height={1024}
+          className="mx-auto mb-6 h-32 w-56 object-contain"
           priority
         />
-      </header>
-      <section className="mirror-opening-card">
-        <div>
-          <span className="hello-line">Halo, Ayah & Bunda!</span>
-          <h1>Yuk, cek pertumbuhan si kecil.</h1>
-          <p>
-            Siapkan HP Anda. Data anak diisi sendiri oleh orang tua, lalu Mimo
-            akan menemani si kecil selama pemeriksaan.
-          </p>
-        </div>
-        <button className="primary-button" disabled={busy} onClick={createSession}>
+        <span className="hello-line">Halo, Ayah & Bunda!</span>
+        <h1 className="mx-auto mt-4 max-w-3xl text-5xl font-black tracking-tight md:text-6xl">
+          Yuk, cek pertumbuhan si kecil.
+        </h1>
+        <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-[var(--muted-foreground)]">
+          Siapkan HP Anda. Data anak diisi sendiri oleh orang tua, lalu Mimo
+          akan menemani si kecil selama pemeriksaan.
+        </p>
+        <button
+          className="primary-button mx-auto mt-8"
+          disabled={busy}
+          onClick={createSession}
+        >
           {busy ? "Menyiapkan…" : "Mulai"}
           <ArrowRight />
         </button>
-        {error && <p className="field-error">{error}</p>}
+        {error && <p className="field-error mt-5">{error}</p>}
       </section>
     </main>
   );
