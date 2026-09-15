@@ -43,7 +43,13 @@ export function SettingsPanel({ user }: { user: Staff }) {
   return (
     <>
       <div className="section-heading">
-        <h2>Kelola petugas</h2>
+        <div>
+          <h2>Kelola petugas</h2>
+          <p className="portal-note">
+            Petugas dapat memantau data anak dan riwayat pemeriksaan. Pengelola dapat
+            mengatur akun petugas.
+          </p>
+        </div>
       </div>
       {error && <Message error>{error}</Message>}
       {notice && <Message>{notice}</Message>}
@@ -87,7 +93,7 @@ export function SettingsPanel({ user }: { user: Staff }) {
             <label>
               Akses
               <select name="role" defaultValue="staff">
-                <option value="staff">Petugas pemeriksaan</option>
+                <option value="staff">Petugas monitoring</option>
                 <option value="admin">Pengelola</option>
               </select>
             </label>
@@ -107,7 +113,7 @@ export function SettingsPanel({ user }: { user: Staff }) {
               </strong>
               <small>
                 {person.email} ·{" "}
-                {person.role === "admin" ? "Pengelola" : "Petugas"} ·{" "}
+                {person.role === "admin" ? "Pengelola" : "Petugas monitoring"} ·{" "}
                 {person.active ? "Aktif" : "Nonaktif"}
               </small>
             </div>
