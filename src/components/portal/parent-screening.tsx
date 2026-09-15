@@ -218,6 +218,10 @@ export function ParentScreening() {
         className="portal-card profile-form mx-auto max-w-xl"
         onSubmit={submit}
       >
+        <div className="portal-message">
+          Pemeriksaan berdiri saat ini ditujukan untuk anak usia 24–59 bulan yang
+          sudah dapat berdiri tanpa bantuan.
+        </div>
         <label>
           Nama anak
           <input
@@ -239,7 +243,7 @@ export function ParentScreening() {
             onChange={(event) => setBirthDate(event.target.value)}
           />
           <small>
-            Usia akan dihitung otomatis dalam bulan untuk pemeriksaan.
+            Usia dihitung otomatis dalam bulan untuk menentukan standar pertumbuhan.
           </small>
         </label>
         <label>
