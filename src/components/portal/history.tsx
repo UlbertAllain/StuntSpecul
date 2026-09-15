@@ -76,8 +76,8 @@ export function ExaminationHistory({
             </span>
           </p>
           <p className="portal-note">
-            Data di halaman petugas bersifat monitoring. Hasil dan chatbot orang tua
-            tetap terikat pada sesi pemeriksaan masing-masing.
+            Data di halaman petugas bersifat monitoring. Hasil dan chatbot orang
+            tua tetap terikat pada sesi pemeriksaan masing-masing.
           </p>
         </div>
         {error && <Message error>{error}</Message>}
