@@ -61,9 +61,15 @@ test("WHO height-for-age engine classifies monthly standing height deterministic
 });
 
 test("WHO engine rejects unavailable, out-of-scope and biologically implausible measurements", () => {
-  assert.equal(assessHeightForAge(36, "male", null).growthStatus, "unavailable");
+  assert.equal(
+    assessHeightForAge(36, "male", null).growthStatus,
+    "unavailable",
+  );
   assert.equal(assessHeightForAge(23, "male", 90).growthStatus, "unavailable");
-  assert.equal(assessHeightForAge(60, "female", 110).growthStatus, "unavailable");
+  assert.equal(
+    assessHeightForAge(60, "female", 110).growthStatus,
+    "unavailable",
+  );
   assert.equal(assessHeightForAge(36, "male", 200).growthStatus, "unavailable");
 });
 

@@ -38,7 +38,8 @@ async function providerError(response: Response): Promise<ApiError> {
       ? payload.error.message.toLowerCase()
       : "";
   let code = "ai_provider_error";
-  const message = "Asisten sedang tidak tersedia. Silakan coba beberapa saat lagi.";
+  const message =
+    "Asisten sedang tidak tersedia. Silakan coba beberapa saat lagi.";
   let status = 503;
   if (reason.includes("api key") || reason.includes("api_key")) {
     code = "ai_key_invalid";

@@ -165,9 +165,9 @@ export function Results({
               </div>
             </dl>
             <p>
-              Status stunting dihitung dari tinggi menurut umur berdasarkan standar
-              WHO untuk anak usia 24–59 bulan. Foto wajah tidak dipakai untuk
-              menentukan kategori stunting.
+              Status stunting dihitung dari tinggi menurut umur berdasarkan
+              standar WHO untuk anak usia 24–59 bulan. Foto wajah tidak dipakai
+              untuk menentukan kategori stunting.
             </p>
             <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
               Referensi WHO: panjang/tinggi menurut umur ↗

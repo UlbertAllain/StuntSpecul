@@ -64,13 +64,14 @@ export function ResultSummary({
           <h3>{growthStatusLabel(result.growthStatus)}</h3>
           {result.heightForAgeZ === null ? (
             <p>
-              Tinggi menurut umur belum dapat dihitung. Pastikan pembacaan tinggi
-              badan tersedia dan valid.
+              Tinggi menurut umur belum dapat dihitung. Pastikan pembacaan
+              tinggi badan tersedia dan valid.
             </p>
           ) : (
             <p>
-              TB/U Z-score WHO: <strong>{result.heightForAgeZ}</strong>. Skrining
-              stunting: <strong>{stuntingScreeningLabel(stuntingScreening)}</strong>.
+              TB/U Z-score WHO: <strong>{result.heightForAgeZ}</strong>.
+              Skrining stunting:{" "}
+              <strong>{stuntingScreeningLabel(stuntingScreening)}</strong>.
             </p>
           )}
         </div>
@@ -108,7 +109,8 @@ export function ResultSummary({
           </div>
         </dl>
         <p className="portal-note">
-          Indikator wajah ditampilkan terpisah dan tidak menentukan status stunting.
+          Indikator wajah ditampilkan terpisah dan tidak menentukan status
+          stunting.
         </p>
       </div>
     </>

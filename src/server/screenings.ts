@@ -15,7 +15,11 @@ type StoredExamination = Omit<Examination, "heightForAgeZ" | "growthStatus"> & {
 };
 
 function withGrowthAssessment(exam: StoredExamination): Examination {
-  const assessment = assessHeightForAge(exam.ageMonths, exam.sex, exam.heightCm);
+  const assessment = assessHeightForAge(
+    exam.ageMonths,
+    exam.sex,
+    exam.heightCm,
+  );
   return {
     ...exam,
     heightForAgeZ: assessment.heightForAgeZ,
