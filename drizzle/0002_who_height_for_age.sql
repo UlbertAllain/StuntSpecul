@@ -1,0 +1,1 @@
+ALTER TABLE `examinations` ADD `height_for_age_z` real;
