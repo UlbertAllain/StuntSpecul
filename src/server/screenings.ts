@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assessHeightForAge } from "../lib/growth";
 import { ageInMonths, type Examination } from "../lib/portal";
 import type { Env } from "./env";
 import { requireStaff } from "./auth";
@@ -9,6 +10,23 @@ import { findChild } from "./children";
 // Keep historical device foreign keys intact; the single station needs no user setup.
 const STATION_ID = "single-station";
 const EXAM_SELECT = `SELECT e.id,e.child_id AS childId,c.name AS childName,c.code AS childCode,e.age_months AS ageMonths,e.sex,e.device_id AS deviceId,d.name AS deviceName,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.bmi,e.capture_status AS captureStatus,e.growth_status AS growthStatus,e.created_at AS createdAt,e.completed_at AS completedAt FROM examinations e JOIN children c ON c.id=e.child_id JOIN devices d ON d.id=e.device_id`;
+type StoredExamination = Omit<Examination, "heightForAgeZ" | "growthStatus"> & {
+  growthStatus: string;
+};
+
+function withGrowthAssessment(exam: StoredExamination): Examination {
+  const assessment = assessHeightForAge(
+    exam.ageMonths,
+    exam.sex,
+    exam.heightCm,
+  );
+  return {
+    ...exam,
+    heightForAgeZ: assessment.heightForAgeZ,
+    growthStatus: assessment.growthStatus,
+  };
+}
+
 export async function listExaminations(request: Request, env: Env) {
   await requireStaff(request, env);
   const childId = new URL(request.url).searchParams.get("childId");
@@ -24,18 +42,21 @@ export async function listExaminations(request: Request, env: Env) {
     : env.DB.prepare(
         `${EXAM_SELECT} ORDER BY e.created_at DESC,e.id DESC LIMIT 50 OFFSET ?`,
       ).bind(page * 50);
-  return ok((await statement.all()).results);
+  const rows = (await statement.all<StoredExamination>()).results;
+  return ok(rows.map(withGrowthAssessment));
 }
+
 export async function getExamination(
   env: Env,
   id: string,
 ): Promise<Examination> {
   const exam = await env.DB.prepare(`${EXAM_SELECT} WHERE e.id=?`)
     .bind(id)
-    .first<Examination>();
+    .first<StoredExamination>();
   if (!exam) throw new ApiError(404, "Pemeriksaan tidak ditemukan.");
-  return exam;
+  return withGrowthAssessment(exam);
 }
+
 export async function startExamination(request: Request, env: Env) {
   const actor = await requireStaff(request, env);
   const input = await body(
@@ -53,10 +74,10 @@ export async function startExamination(request: Request, env: Env) {
   const child = await findChild(env, input.childId);
   if (!child) throw new ApiError(422, "Pilih profil anak yang tersedia.");
   const age = ageInMonths(child.birthDate);
-  if (age < 0 || age > 59)
+  if (age < 24 || age > 59)
     throw new ApiError(
       422,
-      "Usia anak di luar rentang pemeriksaan 0–59 bulan.",
+      "Pemeriksaan berdiri ini untuk anak usia 24–59 bulan.",
     );
   const id = crypto.randomUUID();
   await env.DB.prepare(
@@ -86,6 +107,7 @@ export async function startExamination(request: Request, env: Env) {
     );
   return ok({ id }, 201);
 }
+
 export async function cancelExamination(
   request: Request,
   env: Env,
@@ -100,6 +122,7 @@ export async function cancelExamination(
   if (!changed) throw new ApiError(409, "Sesi sudah selesai atau dibatalkan.");
   return ok(changed);
 }
+
 export async function mirrorAssignment(request: Request, env: Env) {
   const actor = await requireStaff(request, env);
   const assignment = await env.DB.prepare(
@@ -109,6 +132,7 @@ export async function mirrorAssignment(request: Request, env: Env) {
     .first();
   return ok({ assignment });
 }
+
 export async function claimExamination(request: Request, env: Env, id: string) {
   const actor = await requireStaff(request, env);
   const exam = await env.DB.prepare(
@@ -119,6 +143,7 @@ export async function claimExamination(request: Request, env: Env, id: string) {
   if (!exam) throw new ApiError(409, "Sesi tidak aktif. Hubungi petugas.");
   return ok(exam);
 }
+
 const completionSchema = z
   .object({
     heightCm: z.number().finite().min(30).max(200).nullable(),
@@ -126,6 +151,7 @@ const completionSchema = z
     captureStatus: z.enum(["captured", "skipped", "failed"]),
   })
   .strict();
+
 export async function completeExamination(
   request: Request,
   env: Env,

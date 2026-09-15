@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { GrowthStatus } from "./growth";
 
 export const childProfileSchema = z.object({
   code: z
@@ -40,8 +41,9 @@ export type Examination = {
   heightCm: number | null;
   weightKg: number | null;
   bmi: number | null;
+  heightForAgeZ: number | null;
   captureStatus: "captured" | "skipped" | "failed" | null;
-  growthStatus: "unavailable";
+  growthStatus: GrowthStatus;
   createdAt: number;
   completedAt: number | null;
 };
@@ -66,6 +68,40 @@ export type MirrorAssignment = {
   sex: "male" | "female";
   status: "queued" | "running";
   cameraEnabled: boolean;
+};
+
+export type MonitoringSession = {
+  id: string;
+  status: "waiting_parent" | "parent_connected" | "ready" | "running";
+  childName: string | null;
+  ageMonths: number | null;
+  examStatus: "queued" | "running" | null;
+  createdAt: number;
+  connectedAt: number | null;
+  startedAt: number | null;
+};
+
+export type MonitoringRecentExam = {
+  id: string;
+  childName: string;
+  ageMonths: number;
+  sex: "male" | "female";
+  status: "queued" | "running" | "completed" | "cancelled";
+  heightCm: number | null;
+  weightKg: number | null;
+  createdAt: number;
+  completedAt: number | null;
+};
+
+export type MonitoringOverview = {
+  stats: {
+    totalChildren: number;
+    todayExaminations: number;
+    todayCompleted: number;
+    activeSessions: number;
+  };
+  active: MonitoringSession[];
+  recent: MonitoringRecentExam[];
 };
 
 export function ageInMonths(birthDate: string, at = new Date()): number {

@@ -10,8 +10,14 @@ import {
   Ruler,
   Scale,
   ScanFace,
+  Stethoscope,
 } from "lucide-react";
 import { downloadReport, WHO_REFERENCE_URL } from "@/lib/report";
+import {
+  followUpForGrowthStatus,
+  growthStatusLabel,
+  stuntingScreeningLabel,
+} from "@/lib/growth";
 import {
   formatAge,
   formatReading,
@@ -36,6 +42,7 @@ export function Results({
   const [detail, setDetail] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const followUp = followUpForGrowthStatus(report.growthStatus);
 
   function save() {
     try {
@@ -97,16 +104,22 @@ export function Results({
           </strong>
         </div>
       </div>
-      <div className="growth-result unavailable-result">
+      <div
+        className={`growth-result ${report.growthStatus === "unavailable" ? "unavailable-result" : ""}`}
+      >
         <div>
           <span>Status pertumbuhan</span>
-          <strong>Belum tersedia</strong>
+          <strong>{growthStatusLabel(report.growthStatus)}</strong>
         </div>
         <div>
-          <span>Risiko stunting</span>
-          <strong>Belum tersedia</strong>
+          <span>Skrining stunting</span>
+          <strong>{stuntingScreeningLabel(report.stuntingScreening)}</strong>
         </div>
-        <p>Menunggu hasil ukur dan penilaian yang valid.</p>
+        <p>
+          {report.heightForAgeZ === null
+            ? "TB/U belum dapat dihitung karena pembacaan tinggi badan belum tersedia atau tidak valid."
+            : `TB/U Z-score WHO: ${report.heightForAgeZ}. Hasil ini adalah skrining, bukan diagnosis.`}
+        </p>
       </div>
       <div className="facial-results">
         <h2>
@@ -119,57 +132,66 @@ export function Results({
             <strong>Belum tersedia</strong>
           </div>
         ))}
-        <p>Indikator visual tambahan, terpisah dari status pertumbuhan.</p>
+        <p>Indikator visual tambahan, terpisah dari status stunting.</p>
       </div>
 
       {detail && (
-        <div className="clinical-detail">
-          <h2>
-            <Eye size={21} />
-            Dasar hasil
-          </h2>
-          <dl>
-            <div>
-              <dt>IMT numerik</dt>
-              <dd>{formatReading(report.bmi)} kg/m²</dd>
-            </div>
-            <div>
-              <dt>Z-score WHO</dt>
-              <dd>Belum dihitung</dd>
-            </div>
-            <div>
-              <dt>Pengukuran tubuh</dt>
-              <dd>Sensor belum terhubung</dd>
-            </div>
-            <div>
-              <dt>Penilaian pertumbuhan</dt>
-              <dd>Belum tersedia</dd>
-            </div>
-            <div>
-              <dt>Analisis wajah</dt>
-              <dd>Belum tersedia</dd>
-            </div>
-            <div>
-              <dt>Pengambilan wajah</dt>
-              <dd>{CAPTURE_LABELS[report.captureStatus]}</dd>
-            </div>
-          </dl>
-          <p>
-            Pemeriksaan belum lengkap. Status pertumbuhan memerlukan pengukuran
-            dan penilaian yang valid. Foto wajah saja tidak menentukan kategori
-            stunting.
-          </p>
-          <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
-            Referensi WHO: panjang/tinggi menurut umur ↗
-          </a>
-        </div>
+        <>
+          <div className="clinical-detail">
+            <h2>
+              <Eye size={21} />
+              Dasar hasil
+            </h2>
+            <dl>
+              <div>
+                <dt>IMT numerik</dt>
+                <dd>{formatReading(report.bmi)} kg/m²</dd>
+              </div>
+              <div>
+                <dt>TB/U Z-score WHO</dt>
+                <dd>{formatReading(report.heightForAgeZ)}</dd>
+              </div>
+              <div>
+                <dt>Penilaian pertumbuhan</dt>
+                <dd>{growthStatusLabel(report.growthStatus)}</dd>
+              </div>
+              <div>
+                <dt>Analisis wajah</dt>
+                <dd>Belum tersedia</dd>
+              </div>
+              <div>
+                <dt>Pengambilan wajah</dt>
+                <dd>{CAPTURE_LABELS[report.captureStatus]}</dd>
+              </div>
+            </dl>
+            <p>
+              Status stunting dihitung dari tinggi menurut umur berdasarkan
+              standar WHO untuk anak usia 24–59 bulan. Foto wajah tidak dipakai
+              untuk menentukan kategori stunting.
+            </p>
+            <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
+              Referensi WHO: panjang/tinggi menurut umur ↗
+            </a>
+          </div>
+          <div className="clinical-detail">
+            <h2>
+              <Stethoscope size={21} />
+              Langkah selanjutnya
+            </h2>
+            <ol>
+              {followUp.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ol>
+          </div>
+        </>
       )}
       {!detail && (
         <button
           className="text-button detail-link"
           onClick={() => setDetail(true)}
         >
-          Lihat dasar hasil
+          Lihat dasar hasil & tindak lanjut
           <ArrowRight size={18} />
         </button>
       )}
@@ -190,7 +212,7 @@ export function Results({
       <p className="parent-caption" role="status">
         {saved
           ? "Laporan sudah diunduh (.txt)."
-          : "Hasil tersimpan. Minta QR akses hasil kepada petugas."}
+          : "Hasil juga tersedia di HP orang tua yang terhubung."}
       </p>
     </section>
   );

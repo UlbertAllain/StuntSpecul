@@ -7,7 +7,8 @@ import { digest, rateLimit, requestKey, token, tokenSchema } from "./security";
 import { getExamination } from "./screenings";
 import type { ChatMessage } from "../lib/portal";
 
-const PARENT_SECONDS = 2 * 60 * 60;
+export const PARENT_COOKIE = "ss_parent";
+export const PARENT_SECONDS = 2 * 60 * 60;
 export async function createResultLink(request: Request, env: Env, id: string) {
   const actor = await requireStaff(request, env);
   const exam = await getExamination(env, id);
@@ -58,7 +59,6 @@ export async function exchangeResultLink(request: Request, env: Env) {
   const hash = await digest(raw);
   const codeHash = await digest(code);
   const now = Date.now();
-  // INSERT claims the unique link first; the following UPDATE in the same batch burns it.
   const results = await env.DB.batch([
     env.DB.prepare(
       "INSERT INTO sessions (token_hash,kind,link_id,expires_at,created_at) SELECT ?,'parent',l.id,?,? FROM result_links l JOIN examinations e ON e.id=l.exam_id WHERE l.token_hash=? AND l.expires_at>? AND l.used_at IS NULL AND l.revoked_at IS NULL AND e.status='completed' RETURNING token_hash",
@@ -74,11 +74,17 @@ export async function exchangeResultLink(request: Request, env: Env) {
       "link_expired",
     );
   return ok({ expiresAt: now + PARENT_SECONDS * 1000 }, 200, {
-    "Set-Cookie": sessionCookie(request, "ss_parent", raw, PARENT_SECONDS, env),
+    "Set-Cookie": sessionCookie(
+      request,
+      PARENT_COOKIE,
+      raw,
+      PARENT_SECONDS,
+      env,
+    ),
   });
 }
 export async function requireParent(request: Request, env: Env) {
-  const raw = cookie(request, "ss_parent");
+  const raw = cookie(request, PARENT_COOKIE);
   if (!/^[a-f0-9]{64}$/.test(raw))
     throw new ApiError(
       401,
@@ -120,6 +126,7 @@ export async function parentResult(request: Request, env: Env) {
     heightCm,
     weightKg,
     bmi,
+    heightForAgeZ,
     captureStatus,
     growthStatus,
     createdAt,
@@ -135,6 +142,7 @@ export async function parentResult(request: Request, env: Env) {
       heightCm,
       weightKg,
       bmi,
+      heightForAgeZ,
       captureStatus,
       growthStatus,
       createdAt,
@@ -149,9 +157,9 @@ export async function parentLogout(request: Request, env: Env) {
   await env.DB.prepare(
     "DELETE FROM sessions WHERE token_hash=? AND kind='parent'",
   )
-    .bind(await digest(cookie(request, "ss_parent")))
+    .bind(await digest(cookie(request, PARENT_COOKIE)))
     .run();
   return ok(null, 200, {
-    "Set-Cookie": sessionCookie(request, "ss_parent", "", 0, env),
+    "Set-Cookie": sessionCookie(request, PARENT_COOKIE, "", 0, env),
   });
 }
