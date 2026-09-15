@@ -15,6 +15,7 @@ import {
 } from "./security";
 
 export const STAFF_COOKIE = "ss_staff";
+export const SYSTEM_SCREENING_STAFF_ID = "guest-screening-system";
 const STAFF_SECONDS = 8 * 60 * 60;
 function canInitialize(request: Request, env: Env) {
   const loopback = new Set(["localhost", "127.0.0.1", "[::1]"]);
@@ -74,7 +75,11 @@ export async function authConfig(request: Request, env: Env) {
       "DELETE FROM rate_limits WHERE key IN (SELECT key FROM rate_limits WHERE expires_at<? LIMIT 100)",
     ).bind(Date.now()),
   ]);
-  const existing = await env.DB.prepare("SELECT id FROM staff LIMIT 1").first();
+  const existing = await env.DB.prepare(
+    "SELECT id FROM staff WHERE id<>? LIMIT 1",
+  )
+    .bind(SYSTEM_SCREENING_STAFF_ID)
+    .first();
   const facility = await env.DB.prepare(
     "SELECT name FROM facility WHERE id=1",
   ).first<{ name: string }>();
@@ -107,8 +112,8 @@ export async function setup(request: Request, env: Env) {
   const password = await hashPassword(input.password);
   const results = await env.DB.batch([
     env.DB.prepare(
-      "INSERT INTO staff (id,name,email,password_hash,role,active,created_at) SELECT ?,?,?,?,'admin',1,? WHERE NOT EXISTS (SELECT 1 FROM staff) RETURNING id",
-    ).bind(id, input.name, input.email, password, now),
+      "INSERT INTO staff (id,name,email,password_hash,role,active,created_at) SELECT ?,?,?,?,'admin',1,? WHERE NOT EXISTS (SELECT 1 FROM staff WHERE id<>?) RETURNING id",
+    ).bind(id, input.name, input.email, password, now, SYSTEM_SCREENING_STAFF_ID),
     env.DB.prepare(
       "INSERT INTO facility (id,name) SELECT 1,? WHERE EXISTS (SELECT 1 FROM staff WHERE id=?) ON CONFLICT(id) DO NOTHING",
     ).bind(input.facility, id),
@@ -135,7 +140,6 @@ export async function login(request: Request, env: Env) {
   )
     .bind(input.email)
     .first<Staff & { passwordHash: string }>();
-  // A valid dummy hash prevents an unknown address from skipping password work.
   const valid = await verifyPassword(
     input.password,
     user?.passwordHash ||
@@ -166,8 +170,10 @@ export async function listStaff(request: Request, env: Env) {
   return ok(
     (
       await env.DB.prepare(
-        `SELECT ${staffFields} FROM staff s ORDER BY s.created_at DESC LIMIT 100`,
-      ).all()
+        `SELECT ${staffFields} FROM staff s WHERE s.id<>? ORDER BY s.created_at DESC LIMIT 100`,
+      )
+        .bind(SYSTEM_SCREENING_STAFF_ID)
+        .all()
     ).results,
   );
 }
@@ -212,6 +218,8 @@ export async function setStaffActive(request: Request, env: Env, id: string) {
   const { active } = await body(request, z.object({ active: z.boolean() }));
   if (id === actor.id)
     throw new ApiError(409, "Akun sendiri tidak dapat dinonaktifkan.");
+  if (id === SYSTEM_SCREENING_STAFF_ID)
+    throw new ApiError(404, "Petugas tidak ditemukan.");
   const user = await env.DB.prepare(
     "UPDATE staff SET active=? WHERE id=? RETURNING id",
   )
