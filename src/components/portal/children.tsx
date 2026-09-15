@@ -39,7 +39,8 @@ export function ChildrenPanel() {
         <div>
           <h2>Data anak</h2>
           <p className="portal-note">
-            Data dibuat dari formulir yang diisi orang tua saat memulai pemeriksaan.
+            Data dibuat dari formulir yang diisi orang tua saat memulai
+            pemeriksaan.
           </p>
         </div>
       </div>
@@ -69,7 +70,8 @@ export function ChildrenPanel() {
           <UserRound />
           <h3>{query ? "Data anak tidak ditemukan" : "Belum ada data anak"}</h3>
           <p>
-            Data akan muncul otomatis setelah orang tua mengisi formulir pemeriksaan.
+            Data akan muncul otomatis setelah orang tua mengisi formulir
+            pemeriksaan.
           </p>
         </div>
       ) : (
