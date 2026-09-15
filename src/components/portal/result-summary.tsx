@@ -1,4 +1,9 @@
-import { Ruler, Scale, ScanFace, Info } from "lucide-react";
+import { Ruler, Scale, ScanFace, Info, Stethoscope } from "lucide-react";
+import {
+  followUpForGrowthStatus,
+  growthStatusLabel,
+  stuntingScreeningLabel,
+} from "@/lib/growth";
 import { formatAge, formatReading } from "@/lib/screening";
 import type { Examination, ParentView } from "@/lib/portal";
 
@@ -7,6 +12,18 @@ export function ResultSummary({
 }: {
   result: Examination | ParentView["result"];
 }) {
+  const followUp = followUpForGrowthStatus(result.growthStatus);
+  const stuntingScreening =
+    result.growthStatus === "severely_stunted"
+      ? "severe"
+      : result.growthStatus === "stunted"
+        ? "indicated"
+        : result.growthStatus === "monitor"
+          ? "monitor"
+          : result.growthStatus === "within_range"
+            ? "not_indicated"
+            : null;
+
   return (
     <>
       <div className="result-person">
@@ -44,12 +61,33 @@ export function ResultSummary({
       <div className="portal-card result-status">
         <Info />
         <div>
-          <h3>Status pertumbuhan belum tersedia</h3>
-          <p>
-            Penilaian menunggu hasil ukur dan layanan yang valid. Data yang
-            kosong belum dapat disimpulkan sebagai hasil normal.
-          </p>
+          <h3>{growthStatusLabel(result.growthStatus)}</h3>
+          {result.heightForAgeZ === null ? (
+            <p>
+              Tinggi menurut umur belum dapat dihitung. Pastikan pembacaan tinggi
+              badan tersedia dan valid.
+            </p>
+          ) : (
+            <p>
+              TB/U Z-score WHO: <strong>{result.heightForAgeZ}</strong>. Skrining
+              stunting: <strong>{stuntingScreeningLabel(stuntingScreening)}</strong>.
+            </p>
+          )}
         </div>
+      </div>
+      <div className="portal-card">
+        <h3>
+          <Stethoscope /> Langkah selanjutnya
+        </h3>
+        <ol className="portal-follow-up">
+          {followUp.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ol>
+        <p className="portal-note">
+          Ini hasil skrining, bukan diagnosis. Konfirmasi hasil yang terindikasi
+          stunting kepada tenaga kesehatan.
+        </p>
       </div>
       <div className="portal-card">
         <h3>
@@ -70,7 +108,7 @@ export function ResultSummary({
           </div>
         </dl>
         <p className="portal-note">
-          Indikator wajah ditampilkan terpisah dari penilaian pertumbuhan.
+          Indikator wajah ditampilkan terpisah dan tidak menentukan status stunting.
         </p>
       </div>
     </>
