@@ -1,13 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Activity,
-  Baby,
-  CheckCircle2,
-  Clock3,
-  RefreshCw,
-} from "lucide-react";
+import { Activity, Baby, CheckCircle2, Clock3, RefreshCw } from "lucide-react";
 import { api, errorMessage } from "@/lib/api-client";
 import type { MonitoringOverview } from "@/lib/portal";
 import { formatAge, formatReading } from "@/lib/screening";
@@ -70,8 +64,7 @@ export function MonitoringPanel() {
     };
   }, [since]);
 
-  if (!overview && !error)
-    return <Message>Memuat data monitoring…</Message>;
+  if (!overview && !error) return <Message>Memuat data monitoring…</Message>;
 
   return (
     <>
@@ -141,14 +134,18 @@ export function MonitoringPanel() {
                 {overview.active.map((item) => (
                   <div className="examination-row" key={item.id}>
                     <span>
-                      <strong>{item.childName || "Data anak belum diisi"}</strong>
+                      <strong>
+                        {item.childName || "Data anak belum diisi"}
+                      </strong>
                       <small>
                         {item.ageMonths === null
                           ? "Menunggu data dari HP orang tua"
                           : formatAge(item.ageMonths)}
                       </small>
                     </span>
-                    <span className={`status-label status-${item.examStatus || "queued"}`}>
+                    <span
+                      className={`status-label status-${item.examStatus || "queued"}`}
+                    >
                       {SESSION_LABEL[item.status]}
                     </span>
                     <span className="row-readings">
