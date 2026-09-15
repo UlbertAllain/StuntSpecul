@@ -71,7 +71,9 @@ export const examinations = sqliteTable(
     childId: text("child_id")
       .notNull()
       .references(() => children.id),
-    staffId: text("staff_id").references(() => staff.id),
+    staffId: text("staff_id")
+      .notNull()
+      .references(() => staff.id),
     deviceId: text("device_id")
       .notNull()
       .references(() => devices.id),
@@ -157,7 +159,6 @@ export const sessions = sqliteTable(
     kind: text("kind").notNull(),
     staffId: text("staff_id").references(() => staff.id),
     linkId: text("link_id").references(() => resultLinks.id),
-    examId: text("exam_id").references(() => examinations.id),
     expiresAt: integer("expires_at").notNull(),
     createdAt: integer("created_at").notNull(),
     chatCount: integer("chat_count").notNull().default(0),
@@ -165,11 +166,10 @@ export const sessions = sqliteTable(
   },
   (t) => [
     uniqueIndex("sessions_parent_link").on(t.linkId),
-    uniqueIndex("sessions_parent_exam").on(t.examId),
     index("sessions_expiry").on(t.expiresAt),
     check(
       "session_owner",
-      sql`(${t.kind}='staff' AND ${t.staffId} IS NOT NULL AND ${t.linkId} IS NULL AND ${t.examId} IS NULL) OR (${t.kind}='parent' AND ${t.staffId} IS NULL AND ((${t.linkId} IS NOT NULL AND ${t.examId} IS NULL) OR (${t.linkId} IS NULL AND ${t.examId} IS NOT NULL)))`,
+      sql`(${t.kind}='staff' AND ${t.staffId} IS NOT NULL AND ${t.linkId} IS NULL) OR (${t.kind}='parent' AND ${t.linkId} IS NOT NULL AND ${t.staffId} IS NULL)`,
     ),
   ],
 );
