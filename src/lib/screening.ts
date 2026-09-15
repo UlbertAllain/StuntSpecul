@@ -1,10 +1,14 @@
 import { z } from "zod";
+import type {
+  GrowthStatus,
+  StuntingScreening,
+} from "./growth";
 
 export const childSchema = z.object({
   ageMonths: z
     .number({ invalid_type_error: "Isi usia dalam bulan penuh." })
     .int("Usia harus dalam bulan penuh.")
-    .min(0, "Usia tidak boleh negatif.")
+    .min(24, "Pemeriksaan berdiri ini untuk anak mulai usia 24 bulan.")
     .max(59, "Pengukuran ini untuk anak di bawah 5 tahun."),
   sex: z.enum(["male", "female"]),
   canStand: z.literal(true, {
@@ -28,9 +32,10 @@ export type ScreeningReport = {
   readings: Readings;
   completedAt: string;
   bmi: number | null;
+  heightForAgeZ: number | null;
   captureStatus: Capture["status"];
-  growthStatus: "unavailable";
-  stuntingRisk: null;
+  growthStatus: GrowthStatus;
+  stuntingScreening: StuntingScreening;
   facialStatus: "unavailable";
 };
 
@@ -66,10 +71,10 @@ export function createScreeningReport(
     readings: validatedReadings,
     completedAt,
     bmi,
+    heightForAgeZ: null,
     captureStatus: capture.status,
-    // Anthropometry and facial findings require their own validated integrations.
     growthStatus: "unavailable",
-    stuntingRisk: null,
+    stuntingScreening: null,
     facialStatus: "unavailable",
   };
 }
