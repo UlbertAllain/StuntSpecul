@@ -1,7 +1,8 @@
 import { z } from "zod";
-import type {
-  GrowthStatus,
-  StuntingScreening,
+import {
+  assessHeightForAge,
+  type GrowthStatus,
+  type StuntingScreening,
 } from "./growth";
 
 export const childSchema = z.object({
@@ -66,15 +67,21 @@ export function createScreeningReport(
     throw new Error("Data pengukuran tidak valid.");
   }
 
+  const growth = assessHeightForAge(
+    validatedChild.ageMonths,
+    validatedChild.sex,
+    heightCm,
+  );
+
   return {
     child: validatedChild,
     readings: validatedReadings,
     completedAt,
     bmi,
-    heightForAgeZ: null,
+    heightForAgeZ: growth.heightForAgeZ,
     captureStatus: capture.status,
-    growthStatus: "unavailable",
-    stuntingScreening: null,
+    growthStatus: growth.growthStatus,
+    stuntingScreening: growth.stuntingScreening,
     facialStatus: "unavailable",
   };
 }
