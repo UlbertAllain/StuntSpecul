@@ -248,7 +248,7 @@ export async function submitParentProfile(request: Request, env: Env) {
         input.name,
         input.birthDate,
         input.sex,
-        input.guardian,
+        input.guardian ?? "",
         now,
       ),
       env.DB.prepare(
