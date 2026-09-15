@@ -3,7 +3,7 @@ import {
   assessHeightForAge,
   type GrowthStatus,
   type StuntingScreening,
-} from "./growth";
+} from "./growth.ts";
 
 export const childSchema = z.object({
   ageMonths: z
