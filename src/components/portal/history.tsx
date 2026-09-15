@@ -1,12 +1,7 @@
 "use client";
+
 import { useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  RefreshCw,
-  QrCode,
-  Download,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
 import type { Examination } from "@/lib/portal";
 import { api, errorMessage } from "@/lib/api-client";
 import { formatReading } from "@/lib/screening";
@@ -14,11 +9,12 @@ import { Message } from "./shell";
 import { ResultSummary } from "./result-summary";
 
 const STATUS = {
-  queued: "Menunggu di mirror",
+  queued: "Menunggu mulai",
   running: "Sedang diperiksa",
   completed: "Selesai",
   cancelled: "Dibatalkan",
 };
+
 export function ExaminationHistory({
   childId = "",
   onBack,
@@ -30,17 +26,12 @@ export function ExaminationHistory({
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Examination | null>(null);
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
   const [revision, setRevision] = useState(0);
-  const [share, setShare] = useState<{
-    url: string;
-    qr: string;
-    expiresAt: number;
-  } | null>(null);
-  const [notice, setNotice] = useState("");
+
   useEffect(() => {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
+
     async function load() {
       try {
         const result = await api<Examination[]>(
@@ -61,145 +52,52 @@ export function ExaminationHistory({
         if (!controller.signal.aborted) setError(errorMessage(e));
       }
     }
+
     void load();
     return () => {
       controller.abort();
       clearTimeout(timer);
     };
   }, [childId, page, revision]);
-  async function action(path: string, method: string) {
-    setBusy(true);
-    setError("");
-    setNotice("");
-    try {
-      const value = await api<{ url: string; qr: string; expiresAt: number }>(
-        path,
-        { method, body: {} },
-      );
-      if (method === "POST") setShare(value);
-      else {
-        setShare(null);
-        setSelected(null);
-        setRevision((v) => v + 1);
-        setNotice("Akses atau sesi sudah dihentikan.");
-      }
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setBusy(false);
-    }
-  }
+
   if (selected)
     return (
       <div className="history-detail">
-        <button
-          className="portal-text"
-          onClick={() => {
-            setSelected(null);
-            setShare(null);
-            setNotice("");
-          }}
-        >
+        <button className="portal-text" onClick={() => setSelected(null)}>
           <ArrowLeft size={18} />
-          Kembali ke history
+          Kembali ke riwayat
         </button>
         <ResultSummary result={selected} />
-        {selected.status === "completed" ? (
-          <div className="portal-card">
-            <h3>
-              <QrCode /> Akses untuk orang tua
-            </h3>
-            <p>
-              Berikan QR langsung kepada pendamping anak. QR baru menggantikan
-              akses sebelumnya.
-            </p>
-            <div className="portal-actions">
-              <button
-                disabled={busy}
-                className="portal-primary"
-                onClick={() =>
-                  action(`/examinations/${selected.id}/access`, "POST")
-                }
-              >
-                {busy ? "Memproses…" : "Buat QR akses hasil"}
-              </button>
-              <button
-                disabled={busy}
-                className="portal-secondary"
-                onClick={() =>
-                  action(`/examinations/${selected.id}/access`, "DELETE")
-                }
-              >
-                Cabut akses
-              </button>
-            </div>
-            {share && (
-              <div className="result-share">
-                <div
-                  className="qr-image"
-                  dangerouslySetInnerHTML={{ __html: share.qr }}
-                />
-                <p>
-                  Berlaku sampai{" "}
-                  {new Date(share.expiresAt).toLocaleTimeString("id-ID", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}{" "}
-                  · sekali pakai
-                </p>
-                <a
-                  className="portal-text"
-                  href={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(share.qr)}`}
-                  download="qr-hasil-stuntspecula.svg"
-                >
-                  <Download size={18} />
-                  Unduh QR untuk slip hasil
-                </a>
-                <button
-                  className="portal-text"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(share.url);
-                      setNotice(
-                        "Tautan tersalin. Berikan hanya kepada pendamping anak ini.",
-                      );
-                    } catch {
-                      setNotice("Clipboard tidak tersedia. Gunakan QR.");
-                    }
-                  }}
-                >
-                  Salin tautan
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="portal-card">
-            <p>{STATUS[selected.status]}</p>
-            {selected.status !== "cancelled" && (
-              <button
-                disabled={busy}
-                className="portal-secondary"
-                onClick={() => action(`/examinations/${selected.id}`, "DELETE")}
-              >
-                Batalkan sesi ini
-              </button>
-            )}
-          </div>
-        )}
+        <div className="portal-card">
+          <h3>Status pemeriksaan</h3>
+          <p>
+            <span className={`status-label status-${selected.status}`}>
+              {STATUS[selected.status]}
+            </span>
+          </p>
+          <p className="portal-note">
+            Data di halaman petugas bersifat monitoring. Hasil dan chatbot orang tua
+            tetap terikat pada sesi pemeriksaan masing-masing.
+          </p>
+        </div>
         {error && <Message error>{error}</Message>}
-        {notice && <Message>{notice}</Message>}
       </div>
     );
+
   return (
     <>
       <div className="section-heading">
-        <h2>{childId ? "History anak" : "History pemeriksaan"}</h2>
+        <div>
+          <h2>{childId ? "Riwayat anak" : "Riwayat pemeriksaan"}</h2>
+          <p className="portal-note">
+            Seluruh pemeriksaan tampil otomatis dari flow orang tua dan mirror.
+          </p>
+        </div>
         <div className="portal-actions">
           {onBack && (
             <button className="portal-text" onClick={onBack}>
               <ArrowLeft size={17} />
-              Daftar anak
+              Data anak
             </button>
           )}
           <button
@@ -211,12 +109,13 @@ export function ExaminationHistory({
           </button>
         </div>
       </div>
+
       {error && <Message error>{error}</Message>}
-      {notice && <Message>{notice}</Message>}
+
       {items.length === 0 ? (
         <div className="portal-empty">
-          <h3>Belum ada pemeriksaan di halaman ini</h3>
-          <p>Hasil akan muncul setelah petugas memulai sesi untuk anak.</p>
+          <h3>Belum ada pemeriksaan</h3>
+          <p>Riwayat akan muncul setelah orang tua memulai screening.</p>
         </div>
       ) : (
         <div className="examination-list">
@@ -224,16 +123,16 @@ export function ExaminationHistory({
             <button
               key={item.id}
               className="examination-row"
-              onClick={() => {
-                setSelected(item);
-                setShare(null);
-              }}
+              onClick={() => setSelected(item)}
             >
               <span>
                 <strong>{item.childName}</strong>
                 <small>
                   {item.childCode} ·{" "}
-                  {new Date(item.createdAt).toLocaleDateString("id-ID")}
+                  {new Date(item.createdAt).toLocaleString("id-ID", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
                 </small>
               </span>
               <span className={`status-label status-${item.status}`}>
@@ -248,6 +147,7 @@ export function ExaminationHistory({
           ))}
         </div>
       )}
+
       <div className="pagination">
         <button
           disabled={page === 0}
