@@ -83,6 +83,7 @@ export const examinations = sqliteTable(
     heightCm: real("height_cm"),
     weightKg: real("weight_kg"),
     bmi: real("bmi"),
+    heightForAgeZ: real("height_for_age_z"),
     captureStatus: text("capture_status"),
     growthStatus: text("growth_status").notNull().default("unavailable"),
     createdAt: integer("created_at").notNull(),
