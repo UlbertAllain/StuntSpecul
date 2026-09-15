@@ -4,6 +4,7 @@ import * as auth from "./auth";
 import * as children from "./children";
 import * as screening from "./screenings";
 import * as access from "./access";
+import * as guest from "./guest-screening";
 import { chat } from "./ai";
 import { idSchema } from "./security";
 
@@ -37,6 +38,24 @@ export async function route(request: Request, env: Env): Promise<Response> {
       return screening.startExamination(request, env);
     case "GET /api/mirror/assignment":
       return screening.mirrorAssignment(request, env);
+    case "POST /api/screening/session":
+      return guest.createScreeningSession(request, env);
+    case "GET /api/screening/mirror":
+      return guest.mirrorState(request, env);
+    case "POST /api/screening/mirror/claim":
+      return guest.claimGuestExamination(request, env);
+    case "POST /api/screening/mirror/complete":
+      return guest.completeGuestExamination(request, env);
+    case "POST /api/screening/mirror/cancel":
+      return guest.cancelGuestExamination(request, env);
+    case "POST /api/screening/parent/exchange":
+      return guest.exchangeParentScreening(request, env);
+    case "GET /api/screening/parent":
+      return guest.parentScreeningState(request, env);
+    case "POST /api/screening/parent/profile":
+      return guest.submitParentProfile(request, env);
+    case "POST /api/screening/parent/finalize":
+      return guest.finalizeParentResult(request, env);
     case "POST /api/parent/exchange":
       return access.exchangeResultLink(request, env);
     case "GET /api/parent/result":
