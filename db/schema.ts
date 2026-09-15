@@ -14,6 +14,7 @@ export const facility = sqliteTable(
   { id: integer("id").primaryKey(), name: text("name").notNull() },
   (t) => [check("one_facility", sql`${t.id} = 1`)],
 );
+
 export const staff = sqliteTable(
   "staff",
   {
@@ -30,6 +31,7 @@ export const staff = sqliteTable(
     check("staff_active", sql`${t.active} IN (0,1)`),
   ],
 );
+
 export const children = sqliteTable(
   "children",
   {
@@ -43,6 +45,7 @@ export const children = sqliteTable(
   },
   (t) => [check("child_sex", sql`${t.sex} IN ('male','female')`)],
 );
+
 export const devices = sqliteTable(
   "devices",
   {
@@ -60,6 +63,7 @@ export const devices = sqliteTable(
     uniqueIndex("devices_pair").on(t.pairHash),
   ],
 );
+
 export const examinations = sqliteTable(
   "examinations",
   {
@@ -67,9 +71,7 @@ export const examinations = sqliteTable(
     childId: text("child_id")
       .notNull()
       .references(() => children.id),
-    staffId: text("staff_id")
-      .notNull()
-      .references(() => staff.id),
+    staffId: text("staff_id").references(() => staff.id),
     deviceId: text("device_id")
       .notNull()
       .references(() => devices.id),
@@ -103,6 +105,32 @@ export const examinations = sqliteTable(
     check("exam_weight", sql`${t.weightKg} IS NULL OR ${t.weightKg} > 0`),
   ],
 );
+
+export const screeningSessions = sqliteTable(
+  "screening_sessions",
+  {
+    id: text("id").primaryKey(),
+    mirrorTokenHash: text("mirror_token_hash").notNull().unique(),
+    parentTokenHash: text("parent_token_hash").notNull().unique(),
+    status: text("status").notNull().default("waiting_parent"),
+    childId: text("child_id").references(() => children.id),
+    examId: text("exam_id").references(() => examinations.id),
+    expiresAt: integer("expires_at").notNull(),
+    createdAt: integer("created_at").notNull(),
+    connectedAt: integer("connected_at"),
+    startedAt: integer("started_at"),
+    completedAt: integer("completed_at"),
+  },
+  (t) => [
+    uniqueIndex("screening_session_exam").on(t.examId),
+    index("screening_session_expiry").on(t.expiresAt),
+    check(
+      "screening_session_status",
+      sql`${t.status} IN ('waiting_parent','parent_connected','ready','running','completed','cancelled')`,
+    ),
+  ],
+);
+
 export const resultLinks = sqliteTable(
   "result_links",
   {
@@ -121,6 +149,7 @@ export const resultLinks = sqliteTable(
   },
   (t) => [index("links_exam").on(t.examId)],
 );
+
 export const sessions = sqliteTable(
   "sessions",
   {
@@ -128,6 +157,7 @@ export const sessions = sqliteTable(
     kind: text("kind").notNull(),
     staffId: text("staff_id").references(() => staff.id),
     linkId: text("link_id").references(() => resultLinks.id),
+    examId: text("exam_id").references(() => examinations.id),
     expiresAt: integer("expires_at").notNull(),
     createdAt: integer("created_at").notNull(),
     chatCount: integer("chat_count").notNull().default(0),
@@ -135,13 +165,15 @@ export const sessions = sqliteTable(
   },
   (t) => [
     uniqueIndex("sessions_parent_link").on(t.linkId),
+    uniqueIndex("sessions_parent_exam").on(t.examId),
     index("sessions_expiry").on(t.expiresAt),
     check(
       "session_owner",
-      sql`(${t.kind}='staff' AND ${t.staffId} IS NOT NULL AND ${t.linkId} IS NULL) OR (${t.kind}='parent' AND ${t.linkId} IS NOT NULL AND ${t.staffId} IS NULL)`,
+      sql`(${t.kind}='staff' AND ${t.staffId} IS NOT NULL AND ${t.linkId} IS NULL AND ${t.examId} IS NULL) OR (${t.kind}='parent' AND ${t.staffId} IS NULL AND ((${t.linkId} IS NOT NULL AND ${t.examId} IS NULL) OR (${t.linkId} IS NULL AND ${t.examId} IS NOT NULL)))`,
     ),
   ],
 );
+
 export const chatMessages = sqliteTable(
   "chat_messages",
   {
@@ -158,6 +190,7 @@ export const chatMessages = sqliteTable(
     check("chat_role", sql`${t.role} IN ('user','assistant')`),
   ],
 );
+
 export const rateLimits = sqliteTable(
   "rate_limits",
   {
