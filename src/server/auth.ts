@@ -113,7 +113,14 @@ export async function setup(request: Request, env: Env) {
   const results = await env.DB.batch([
     env.DB.prepare(
       "INSERT INTO staff (id,name,email,password_hash,role,active,created_at) SELECT ?,?,?,?,'admin',1,? WHERE NOT EXISTS (SELECT 1 FROM staff WHERE id<>?) RETURNING id",
-    ).bind(id, input.name, input.email, password, now, SYSTEM_SCREENING_STAFF_ID),
+    ).bind(
+      id,
+      input.name,
+      input.email,
+      password,
+      now,
+      SYSTEM_SCREENING_STAFF_ID,
+    ),
     env.DB.prepare(
       "INSERT INTO facility (id,name) SELECT 1,? WHERE EXISTS (SELECT 1 FROM staff WHERE id=?) ON CONFLICT(id) DO NOTHING",
     ).bind(input.facility, id),
