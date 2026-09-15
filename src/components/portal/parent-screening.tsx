@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2, LoaderCircle, Smartphone } from "lucide-react";
-import { api, ClientError, errorMessage } from "@/lib/api-client";
+import { api, errorMessage } from "@/lib/api-client";
 import { Message, PortalShell } from "./shell";
 
 type ScreeningStatus =
@@ -30,6 +30,8 @@ export function ParentScreening() {
   const [birthDate, setBirthDate] = useState("");
   const [sex, setSex] = useState<"male" | "female" | "">("");
   const [guardian, setGuardian] = useState("");
+  const stateId = state?.id;
+  const stateStatus = state?.status;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -59,12 +61,8 @@ export function ParentScreening() {
   }, []);
 
   useEffect(() => {
-    if (!state || !["ready", "running", "completed"].includes(state.status))
+    if (!stateId || !stateStatus || !["ready", "running"].includes(stateStatus))
       return;
-    if (state.status === "completed") {
-      void openResult();
-      return;
-    }
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     async function poll() {
@@ -86,7 +84,31 @@ export function ParentScreening() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [state?.status, state?.id]);
+  }, [stateId, stateStatus]);
+
+  useEffect(() => {
+    if (!stateId || stateStatus !== "completed") return;
+    const controller = new AbortController();
+    async function finalize() {
+      setBusy(true);
+      setError("");
+      try {
+        await api("/screening/parent/finalize", {
+          method: "POST",
+          body: {},
+          signal: controller.signal,
+        });
+        if (!controller.signal.aborted) window.location.assign("/hasil");
+      } catch (e) {
+        if (!controller.signal.aborted) {
+          setError(errorMessage(e));
+          setBusy(false);
+        }
+      }
+    }
+    void finalize();
+    return () => controller.abort();
+  }, [stateId, stateStatus]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -102,20 +124,6 @@ export function ParentScreening() {
     } catch (e) {
       setError(errorMessage(e));
     } finally {
-      setBusy(false);
-    }
-  }
-
-  async function openResult() {
-    if (busy) return;
-    setBusy(true);
-    setError("");
-    try {
-      await api("/screening/parent/finalize", { method: "POST", body: {} });
-      window.location.assign("/hasil");
-    } catch (e) {
-      if (!(e instanceof ClientError && e.status === 409))
-        setError(errorMessage(e));
       setBusy(false);
     }
   }
