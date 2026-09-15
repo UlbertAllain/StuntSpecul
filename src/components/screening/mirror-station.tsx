@@ -32,6 +32,8 @@ export function MirrorStation() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const sessionId = session?.id;
+  const sessionStatus = session?.status;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -56,7 +58,7 @@ export function MirrorStation() {
   }, []);
 
   useEffect(() => {
-    if (!session || active || session.status === "cancelled") return;
+    if (!sessionId || active || sessionStatus === "cancelled") return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     async function poll() {
@@ -83,7 +85,7 @@ export function MirrorStation() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [session?.id, active]);
+  }, [sessionId, sessionStatus, active]);
 
   async function createSession() {
     if (busy) return;
@@ -232,11 +234,11 @@ export function MirrorStation() {
               <QrCode size={52} />
               <p>QR lama tidak tersimpan setelah layar dimuat ulang.</p>
               <button
-                className="portal-primary"
+                className="rounded-xl bg-[var(--blue)] px-5 py-3 font-extrabold text-white"
                 disabled={busy}
                 onClick={restartSession}
               >
-                <RefreshCw size={18} /> Buat QR baru
+                <RefreshCw size={18} className="mr-2 inline" /> Buat QR baru
               </button>
             </div>
           )}
