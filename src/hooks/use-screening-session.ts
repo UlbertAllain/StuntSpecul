@@ -50,7 +50,7 @@ export function useScreeningSession(assignment?: MirrorAssignment) {
     setSaveError("");
     try {
       if (assignment)
-        await api(`/mirror/examinations/${assignment.id}/complete`, {
+        await api("/screening/mirror/complete", {
           method: "POST",
           body: {
             heightCm: report.readings.heightCm,
