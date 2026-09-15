@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, CheckCircle2, LoaderCircle, Smartphone } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  LoaderCircle,
+  Smartphone,
+} from "lucide-react";
 import { api, errorMessage } from "@/lib/api-client";
 import { Message, PortalShell } from "./shell";
 
@@ -233,7 +238,9 @@ export function ParentScreening() {
             value={birthDate}
             onChange={(event) => setBirthDate(event.target.value)}
           />
-          <small>Usia akan dihitung otomatis dalam bulan untuk pemeriksaan.</small>
+          <small>
+            Usia akan dihitung otomatis dalam bulan untuk pemeriksaan.
+          </small>
         </label>
         <label>
           Jenis kelamin
