@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2, LoaderCircle, Smartphone } from "lucide-react";
 import { api, ClientError, errorMessage } from "@/lib/api-client";
 import { Message, PortalShell } from "./shell";
@@ -88,7 +88,7 @@ export function ParentScreening() {
     };
   }, [state?.status, state?.id]);
 
-  async function submit(event: React.FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
     if (!sex || busy) return;
     setBusy(true);
@@ -120,14 +120,17 @@ export function ParentScreening() {
     }
   }
 
+  const statusCard =
+    "portal-card mx-auto flex max-w-xl flex-col items-center gap-4 text-center";
+
   if (loading)
     return (
       <PortalShell
         heading="Menghubungkan ke alat"
         subtitle="Sebentar, kami sedang menyiapkan sesi pemeriksaan."
       >
-        <div className="portal-card parent-intake-status">
-          <LoaderCircle className="spin" />
+        <div className={statusCard}>
+          <LoaderCircle className="animate-spin" />
           <p>Menghubungkan HP Anda dengan StuntSpecula…</p>
         </div>
       </PortalShell>
@@ -139,7 +142,7 @@ export function ParentScreening() {
         heading="Sesi belum terhubung"
         subtitle="Scan QR yang tampil pada layar StuntSpecula untuk memulai."
       >
-        <div className="portal-card parent-intake-status">
+        <div className={statusCard}>
           <Smartphone size={42} />
           <p>QR mungkin sudah kedaluwarsa atau sesi telah selesai.</p>
           {error && <Message error>{error}</Message>}
@@ -150,7 +153,7 @@ export function ParentScreening() {
   if (state.status === "cancelled")
     return (
       <PortalShell heading="Pemeriksaan dibatalkan">
-        <div className="portal-card parent-intake-status">
+        <div className={statusCard}>
           <p>Silakan kembali ke layar alat dan mulai sesi baru.</p>
         </div>
       </PortalShell>
@@ -168,11 +171,11 @@ export function ParentScreening() {
         }
         subtitle="HP ini tetap terhubung dengan pemeriksaan di alat."
       >
-        <div className="portal-card parent-intake-status">
+        <div className={statusCard}>
           {state.status === "completed" ? (
             <CheckCircle2 size={48} />
           ) : (
-            <LoaderCircle className="spin" size={44} />
+            <LoaderCircle className="animate-spin" size={44} />
           )}
           <h2>
             {state.status === "ready"
@@ -198,7 +201,10 @@ export function ParentScreening() {
       heading="Kenalan dulu dengan si kecil"
       subtitle="Isi data singkat berikut. Tidak perlu membuat akun atau login."
     >
-      <form className="portal-card profile-form parent-intake-form" onSubmit={submit}>
+      <form
+        className="portal-card profile-form mx-auto max-w-xl"
+        onSubmit={submit}
+      >
         <label>
           Nama anak
           <input
@@ -236,7 +242,8 @@ export function ParentScreening() {
           </select>
         </label>
         <label>
-          Nama orang tua / wali <span className="optional-label">opsional</span>
+          Nama orang tua / wali
+          <small>Opsional</small>
           <input
             maxLength={80}
             value={guardian}
@@ -245,7 +252,7 @@ export function ParentScreening() {
             autoComplete="name"
           />
         </label>
-        <button className="portal-primary parent-start-button" disabled={busy}>
+        <button className="portal-primary w-full" disabled={busy}>
           {busy ? "Menyiapkan pemeriksaan…" : "Mulai pemeriksaan"}
           <ArrowRight size={19} />
         </button>
