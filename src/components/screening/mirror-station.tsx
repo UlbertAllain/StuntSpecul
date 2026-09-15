@@ -162,7 +162,7 @@ export function MirrorStation() {
   if (active)
     return (
       <NutriMirror
-        key={active.id}
+        key={`running-${active.id}`}
         assignment={active}
         canBegin
         onFinish={finish}
@@ -172,11 +172,9 @@ export function MirrorStation() {
   if (session?.assignment)
     return (
       <NutriMirror
-        key={session.assignment.id}
-        assignment={session.assignment}
+        key={`ready-${session.assignment.id}`}
         canBegin={!busy && !error}
         onBegin={begin}
-        onFinish={finish}
         waitingLabel="Data si kecil sudah siap. Bantu si kecil berdiri di atas alat, ya."
       />
     );
