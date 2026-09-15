@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Activity,
   Baby,
@@ -37,7 +37,7 @@ export function MonitoringPanel() {
   const [overview, setOverview] = useState<MonitoringOverview | null>(null);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const since = useMemo(startOfToday, []);
+  const [since] = useState(() => startOfToday());
 
   useEffect(() => {
     const controller = new AbortController();
