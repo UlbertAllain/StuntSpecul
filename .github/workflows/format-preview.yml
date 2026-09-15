@@ -1,0 +1,20 @@
+name: Format Preview
+on:
+  push:
+    branches: [refactor/guest-screening-flow]
+permissions:
+  contents: read
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Show prettier patch
+        run: |
+          npx prettier --write src/components/portal/parent-screening.tsx src/server/access.ts src/server/auth.ts src/server/guest-screening.ts
+          git diff --no-color
