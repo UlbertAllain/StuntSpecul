@@ -72,7 +72,11 @@ async function requireMirror(request: Request, env: Env) {
     cookie(request, MIRROR_COOKIE),
   );
   if (!session)
-    throw new ApiError(401, "Mulai sesi pemeriksaan baru.", "screening_missing");
+    throw new ApiError(
+      401,
+      "Mulai sesi pemeriksaan baru.",
+      "screening_missing",
+    );
   return session;
 }
 
@@ -100,7 +104,12 @@ async function assignment(env: Env, examId: string) {
 }
 
 export async function createScreeningSession(request: Request, env: Env) {
-  await rateLimit(env.DB, `screening-create:${await requestKey(request)}`, 20, 900);
+  await rateLimit(
+    env.DB,
+    `screening-create:${await requestKey(request)}`,
+    20,
+    900,
+  );
   const active = await env.DB.prepare(
     "SELECT id FROM screening_sessions WHERE expires_at>? AND status IN ('waiting_parent','parent_connected','ready','running') LIMIT 1",
   )
@@ -133,19 +142,15 @@ export async function createScreeningSession(request: Request, env: Env) {
     color: { dark: "#203b57", light: "#ffffff" },
   });
 
-  return ok(
-    { id, status: "waiting_parent", url, qr, expiresAt },
-    201,
-    {
-      "Set-Cookie": sessionCookie(
-        request,
-        MIRROR_COOKIE,
-        mirrorRaw,
-        SCREENING_SECONDS,
-        env,
-      ),
-    },
-  );
+  return ok({ id, status: "waiting_parent", url, qr, expiresAt }, 201, {
+    "Set-Cookie": sessionCookie(
+      request,
+      MIRROR_COOKIE,
+      mirrorRaw,
+      SCREENING_SECONDS,
+      env,
+    ),
+  });
 }
 
 export async function mirrorState(request: Request, env: Env) {
@@ -160,7 +165,12 @@ export async function mirrorState(request: Request, env: Env) {
 }
 
 export async function exchangeParentScreening(request: Request, env: Env) {
-  await rateLimit(env.DB, `screening-parent:${await requestKey(request)}`, 20, 900);
+  await rateLimit(
+    env.DB,
+    `screening-parent:${await requestKey(request)}`,
+    20,
+    900,
+  );
   const { code } = await body(request, z.object({ code: tokenSchema }));
   const hash = await digest(code);
   const now = Date.now();
@@ -313,7 +323,8 @@ export async function completeGuestExamination(request: Request, env: Env) {
     .bind(session.examId)
     .first<{ status: string }>();
   if (!current) throw new ApiError(404, "Pemeriksaan tidak ditemukan.");
-  if (current.status === "completed") return ok({ id: session.examId, saved: true });
+  if (current.status === "completed")
+    return ok({ id: session.examId, saved: true });
 
   const bmi =
     input.heightCm && input.weightKg
