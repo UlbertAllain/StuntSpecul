@@ -228,10 +228,10 @@ export async function submitParentProfile(request: Request, env: Env) {
   } catch {
     throw new ApiError(422, "Tanggal lahir tidak valid.");
   }
-  if (ageMonths < 0 || ageMonths > 59)
+  if (ageMonths < 24 || ageMonths > 59)
     throw new ApiError(
       422,
-      "Pemeriksaan saat ini ditujukan untuk anak usia 0–59 bulan.",
+      "Pemeriksaan berdiri ini untuk anak usia 24–59 bulan.",
     );
 
   const active = await env.DB.prepare(
