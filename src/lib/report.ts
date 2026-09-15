@@ -1,9 +1,15 @@
+import {
+  followUpForGrowthStatus,
+  growthStatusLabel,
+  stuntingScreeningLabel,
+} from "./growth.ts";
 import { formatAge, formatReading, type ScreeningReport } from "./screening.ts";
 
 export const WHO_REFERENCE_URL =
   "https://www.who.int/tools/child-growth-standards/standards/length-height-for-age";
 
 export function reportText(report: ScreeningReport): string {
+  const followUp = followUpForGrowthStatus(report.growthStatus);
   return [
     "STUNTSPECULA — HASIL SCREENING",
     "",
@@ -13,15 +19,20 @@ export function reportText(report: ScreeningReport): string {
     `Tinggi badan: ${formatReading(report.readings.heightCm)} cm`,
     `Berat badan: ${formatReading(report.readings.weightKg)} kg`,
     `IMT: ${formatReading(report.bmi)} kg/m²`,
+    `TB/U Z-score WHO: ${formatReading(report.heightForAgeZ)}`,
     "",
-    "Status pertumbuhan: Belum tersedia",
-    "Risiko stunting: Belum tersedia",
+    `Status pertumbuhan: ${growthStatusLabel(report.growthStatus)}`,
+    `Skrining stunting: ${stuntingScreeningLabel(report.stuntingScreening)}`,
+    "",
+    "LANGKAH SELANJUTNYA",
+    ...followUp.map((item, index) => `${index + 1}. ${item}`),
+    "",
     "Analisis area mata: Belum tersedia",
     "Analisis kantong mata: Belum tersedia",
     "Analisis bibir: Belum tersedia",
     "",
-    "Pemeriksaan belum lengkap. Sensor dan layanan penilaian belum terhubung.",
-    "Foto wajah tidak disertakan dalam laporan.",
+    "Hasil ini merupakan skrining, bukan diagnosis. Hasil yang terindikasi perlu dikonfirmasi oleh tenaga kesehatan.",
+    "Foto wajah tidak disertakan dalam laporan dan tidak menentukan status stunting.",
     `Referensi: ${WHO_REFERENCE_URL}`,
   ].join("\n");
 }
