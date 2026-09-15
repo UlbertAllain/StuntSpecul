@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { GrowthStatus } from "./growth";
 
 export const childProfileSchema = z.object({
   code: z
@@ -40,8 +41,9 @@ export type Examination = {
   heightCm: number | null;
   weightKg: number | null;
   bmi: number | null;
+  heightForAgeZ: number | null;
   captureStatus: "captured" | "skipped" | "failed" | null;
-  growthStatus: "unavailable";
+  growthStatus: GrowthStatus;
   createdAt: number;
   completedAt: number | null;
 };
