@@ -363,17 +363,22 @@ export async function finalizeParentResult(request: Request, env: Env) {
   if (screening.status !== "completed" || !screening.examId)
     throw new ApiError(409, "Hasil pemeriksaan belum siap.");
 
+  const parentRaw = cookie(request, PARENT_SCREENING_COOKIE);
+  if (!/^[a-f0-9]{64}$/.test(parentRaw))
+    throw new ApiError(401, "Sesi orang tua sudah berakhir.");
+
   const now = Date.now();
-  const raw = token();
-  const linkToken = token();
-  const linkId = crypto.randomUUID();
   const expiresAt = now + PARENT_SECONDS * 1000;
+  const parentHash = await digest(parentRaw);
+  const linkId = `screening-${screening.id}`;
+  const resultTokenHash = await digest(`result:${screening.id}`);
+
   await env.DB.batch([
     env.DB.prepare(
-      "INSERT INTO result_links (id,token_hash,exam_id,created_by,expires_at,used_at,created_at) VALUES (?,?,?,?,?,?,?)",
+      "INSERT INTO result_links (id,token_hash,exam_id,created_by,expires_at,used_at,created_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET expires_at=excluded.expires_at,used_at=COALESCE(result_links.used_at,excluded.used_at),revoked_at=NULL",
     ).bind(
       linkId,
-      await digest(linkToken),
+      resultTokenHash,
       screening.examId,
       SYSTEM_SCREENING_STAFF_ID,
       expiresAt,
@@ -381,15 +386,15 @@ export async function finalizeParentResult(request: Request, env: Env) {
       now,
     ),
     env.DB.prepare(
-      "INSERT INTO sessions (token_hash,kind,link_id,expires_at,created_at) VALUES (?,'parent',?,?,?)",
-    ).bind(await digest(raw), linkId, expiresAt, now),
+      "INSERT INTO sessions (token_hash,kind,link_id,expires_at,created_at) VALUES (?,'parent',?,?,?) ON CONFLICT(token_hash) DO UPDATE SET link_id=excluded.link_id,expires_at=excluded.expires_at",
+    ).bind(parentHash, linkId, expiresAt, now),
   ]);
 
   return ok({ ready: true, expiresAt }, 200, {
     "Set-Cookie": sessionCookie(
       request,
       PARENT_COOKIE,
-      raw,
+      parentRaw,
       PARENT_SECONDS,
       env,
     ),
