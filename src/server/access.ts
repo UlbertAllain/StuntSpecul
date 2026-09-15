@@ -74,7 +74,13 @@ export async function exchangeResultLink(request: Request, env: Env) {
       "link_expired",
     );
   return ok({ expiresAt: now + PARENT_SECONDS * 1000 }, 200, {
-    "Set-Cookie": sessionCookie(request, PARENT_COOKIE, raw, PARENT_SECONDS, env),
+    "Set-Cookie": sessionCookie(
+      request,
+      PARENT_COOKIE,
+      raw,
+      PARENT_SECONDS,
+      env,
+    ),
   });
 }
 export async function requireParent(request: Request, env: Env) {
