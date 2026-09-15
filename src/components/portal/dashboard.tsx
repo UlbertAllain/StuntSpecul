@@ -1,21 +1,30 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { UsersRound, History, Settings, LogOut, Monitor } from "lucide-react";
+import {
+  History,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  UsersRound,
+} from "lucide-react";
 import { api, ClientError, errorMessage } from "@/lib/api-client";
 import type { Staff } from "@/lib/portal";
 import { StaffLogin } from "./login";
 import { PortalShell, Message } from "./shell";
 import { ChildrenPanel } from "./children";
 import { ExaminationHistory } from "./history";
+import { MonitoringPanel } from "./monitoring";
 import { SettingsPanel } from "./settings";
+
+type DashboardTab = "monitoring" | "children" | "history" | "settings";
 
 export function StaffDashboard() {
   const [user, setUser] = useState<Staff | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("children");
+  const [tab, setTab] = useState<DashboardTab>("monitoring");
   const [error, setError] = useState("");
   const [facility, setFacility] = useState("Fasilitas StuntSpecula");
+
   useEffect(() => {
     const controller = new AbortController();
     api<Staff>("/auth/me", { signal: controller.signal })
@@ -35,15 +44,17 @@ export function StaffDashboard() {
       .catch(() => {});
     return () => controller.abort();
   }, []);
+
   async function logout() {
     try {
       await api("/auth/logout", { method: "POST", body: {} });
       setUser(null);
-      setTab("children");
+      setTab("monitoring");
     } catch (e) {
       setError(errorMessage(e));
     }
   }
+
   if (loading)
     return (
       <PortalShell heading="Menyiapkan ruang petugas">
@@ -51,37 +62,39 @@ export function StaffDashboard() {
       </PortalShell>
     );
   if (!user) return <StaffLogin onLogin={setUser} />;
+
   return (
     <PortalShell
       heading={facility}
-      subtitle={`Halo, ${user.name}. Mari dampingi tumbuh kembang si kecil.`}
+      subtitle={`Halo, ${user.name}. Pantau pemeriksaan dan riwayat pertumbuhan dari sini.`}
       actions={
-        <>
-          <Link className="portal-text" href="/">
-            <Monitor size={18} />
-            Mirror
-          </Link>
-          <button className="portal-text" onClick={logout}>
-            <LogOut size={18} />
-            Keluar
-          </button>
-        </>
+        <button className="portal-text" onClick={logout}>
+          <LogOut size={18} />
+          Keluar
+        </button>
       }
     >
       <nav className="portal-nav" aria-label="Menu petugas">
+        <button
+          aria-current={tab === "monitoring" ? "page" : undefined}
+          onClick={() => setTab("monitoring")}
+        >
+          <LayoutDashboard />
+          Dashboard
+        </button>
         <button
           aria-current={tab === "children" ? "page" : undefined}
           onClick={() => setTab("children")}
         >
           <UsersRound />
-          Anak & pemeriksaan
+          Data anak
         </button>
         <button
           aria-current={tab === "history" ? "page" : undefined}
           onClick={() => setTab("history")}
         >
           <History />
-          History
+          Riwayat
         </button>
         {user.role === "admin" && (
           <button
@@ -89,13 +102,16 @@ export function StaffDashboard() {
             onClick={() => setTab("settings")}
           >
             <Settings />
-            Pengaturan
+            Kelola petugas
           </button>
         )}
       </nav>
+
       {error && <Message error>{error}</Message>}
       <div className="portal-content" key={tab}>
-        {tab === "children" ? (
+        {tab === "monitoring" ? (
+          <MonitoringPanel />
+        ) : tab === "children" ? (
           <ChildrenPanel />
         ) : tab === "history" ? (
           <ExaminationHistory />
