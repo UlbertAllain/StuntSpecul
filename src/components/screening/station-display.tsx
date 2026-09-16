@@ -274,7 +274,9 @@ export function StationDisplay() {
                 </span>
                 <h1 className="mx-auto mt-3 max-w-md text-[2.25rem] font-black leading-[0.98] tracking-[-0.045em] sm:text-[2.75rem]">
                   Mimo siap menemani
-                  <span className="block text-[#b43e70]">cek tumbuh kembangmu</span>
+                  <span className="block text-[#b43e70]">
+                    cek tumbuh kembangmu
+                  </span>
                 </h1>
                 <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
                   Santai saja. Kita cuma punya tiga misi kecil.
@@ -314,7 +316,9 @@ export function StationDisplay() {
                       >
                         <step.icon size={21} strokeWidth={2.3} />
                       </span>
-                      <strong className="mt-2 block text-sm">{step.label}</strong>
+                      <strong className="mt-2 block text-sm">
+                        {step.label}
+                      </strong>
                       <small className="mt-0.5 block text-[10px] font-bold leading-4 text-[var(--muted-foreground)] sm:text-[11px]">
                         {step.caption}
                       </small>
