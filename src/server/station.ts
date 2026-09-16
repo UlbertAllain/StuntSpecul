@@ -13,7 +13,7 @@ type ActiveStationExam = {
 
 async function findActiveStationExam(env: Env) {
   return env.DB.prepare(
-    "SELECT id,age_months AS ageMonths,sex,status,capture_status IS NULL AS cameraEnabled,created_at AS createdAt FROM examinations WHERE status IN ('queued','running') OR (status='completed' AND finalized_at IS NULL) ORDER BY created_at ASC LIMIT 1",
+    "SELECT e.id,e.age_months AS ageMonths,e.sex,e.status,e.capture_status IS NULL AS cameraEnabled,e.created_at AS createdAt FROM examinations e WHERE e.status IN ('queued','running') OR (e.status='completed' AND EXISTS (SELECT 1 FROM examination_workflow ew WHERE ew.exam_id=e.id AND ew.finalized_at IS NULL)) ORDER BY e.created_at ASC LIMIT 1",
   ).first<ActiveStationExam>();
 }
 
@@ -71,7 +71,7 @@ const completionSchema = z
 export async function completeStationExamination(request: Request, env: Env) {
   const input = await body(request, completionSchema);
   const exam = await env.DB.prepare(
-    "SELECT id,status FROM examinations WHERE status='running' OR (status='completed' AND finalized_at IS NULL) ORDER BY created_at DESC LIMIT 1",
+    "SELECT e.id,e.status FROM examinations e WHERE e.status='running' OR (e.status='completed' AND EXISTS (SELECT 1 FROM examination_workflow ew WHERE ew.exam_id=e.id AND ew.finalized_at IS NULL)) ORDER BY e.created_at DESC LIMIT 1",
   ).first<{ id: string; status: string }>();
 
   if (!exam) throw new ApiError(409, "Belum ada pemeriksaan aktif pada alat.");
@@ -82,7 +82,7 @@ export async function completeStationExamination(request: Request, env: Env) {
       ? Number((input.weightKg / (input.heightCm / 100) ** 2).toFixed(1))
       : null;
   const completed = await env.DB.prepare(
-    "UPDATE examinations SET status='completed',height_cm=?,weight_kg=?,bmi=?,capture_status=?,completed_at=?,finalized_at=NULL WHERE id=? AND status='running' RETURNING id",
+    "UPDATE examinations SET status='completed',height_cm=?,weight_kg=?,bmi=?,capture_status=?,completed_at=? WHERE id=? AND status='running' RETURNING id",
   )
     .bind(
       input.heightCm,
