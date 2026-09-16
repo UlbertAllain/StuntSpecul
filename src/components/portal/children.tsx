@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { History, Search, UserRound } from "lucide-react";
+import { History, Play, Search, UserRound } from "lucide-react";
 import type { ChildProfile } from "@/lib/portal";
 import { ageInMonths } from "@/lib/portal";
 import { api, errorMessage } from "@/lib/api-client";
@@ -14,6 +14,8 @@ export function ChildrenPanel() {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [history, setHistory] = useState("");
+  const [busyId, setBusyId] = useState("");
+  const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -28,6 +30,26 @@ export function ChildrenPanel() {
     return () => controller.abort();
   }, [query]);
 
+  async function start(child: ChildProfile) {
+    if (busyId) return;
+    setBusyId(child.id);
+    setError("");
+    setNotice("");
+    try {
+      await api("/examinations", {
+        method: "POST",
+        body: { childId: child.id, cameraEnabled: true, canStand: true },
+      });
+      setNotice(
+        `Pemeriksaan ${child.name} sudah dikirim ke alat. Arahkan anak ke StuntSpecula.`,
+      );
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusyId("");
+    }
+  }
+
   if (history)
     return (
       <ExaminationHistory childId={history} onBack={() => setHistory("")} />
@@ -39,12 +61,13 @@ export function ChildrenPanel() {
         <div>
           <h2>Data anak</h2>
           <p className="portal-note">
-            Data dibuat dari formulir yang diisi orang tua saat memulai
-            pemeriksaan.
+            Pilih profil anak yang akan diperiksa. Hasil pengukuran akan masuk
+            otomatis ke riwayat anak dan akun orang tua yang terhubung.
           </p>
         </div>
       </div>
 
+      {notice && <Message>{notice}</Message>}
       {error && <Message error>{error}</Message>}
 
       <form
@@ -70,38 +93,54 @@ export function ChildrenPanel() {
           <UserRound />
           <h3>{query ? "Data anak tidak ditemukan" : "Belum ada data anak"}</h3>
           <p>
-            Data akan muncul otomatis setelah orang tua mengisi formulir
-            pemeriksaan.
+            Profil anak akan muncul setelah terdaftar pada sistem StuntSpecula.
           </p>
         </div>
       ) : (
         <div className="child-list">
-          {children.map((child) => (
-            <article className="child-row" key={child.id}>
-              <span className="child-avatar">
-                {child.name.slice(0, 1).toUpperCase()}
-              </span>
-              <div>
-                <h3>{child.name}</h3>
-                <p>
-                  {child.code} · {formatAge(ageInMonths(child.birthDate))}
-                </p>
-                <small>
-                  {child.sex === "male" ? "Laki-laki" : "Perempuan"}
-                  {child.guardian ? ` · Pendamping: ${child.guardian}` : ""}
-                </small>
-              </div>
-              <div className="portal-actions">
-                <button
-                  className="portal-secondary"
-                  onClick={() => setHistory(child.id)}
-                >
-                  <History size={18} />
-                  Lihat riwayat
-                </button>
-              </div>
-            </article>
-          ))}
+          {children.map((child) => {
+            const months = ageInMonths(child.birthDate);
+            const eligible = months >= 24 && months <= 59;
+            return (
+              <article className="child-row" key={child.id}>
+                <span className="child-avatar">
+                  {child.name.slice(0, 1).toUpperCase()}
+                </span>
+                <div>
+                  <h3>{child.name}</h3>
+                  <p>
+                    {child.code} · {formatAge(months)}
+                  </p>
+                  <small>
+                    {child.sex === "male" ? "Laki-laki" : "Perempuan"}
+                    {child.guardian ? ` · Orang tua/wali: ${child.guardian}` : ""}
+                  </small>
+                  {!eligible && (
+                    <small className="field-error">
+                      Alat standing height saat ini digunakan untuk usia 24–59 bulan.
+                    </small>
+                  )}
+                </div>
+                <div className="portal-actions">
+                  <button
+                    className="portal-secondary"
+                    onClick={() => setHistory(child.id)}
+                  >
+                    <History size={18} />
+                    Riwayat
+                  </button>
+                  <button
+                    className="portal-primary"
+                    disabled={!eligible || !!busyId}
+                    onClick={() => void start(child)}
+                  >
+                    <Play size={18} />
+                    {busyId === child.id ? "Mengirim…" : "Mulai pemeriksaan"}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </>
