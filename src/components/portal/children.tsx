@@ -113,11 +113,14 @@ export function ChildrenPanel() {
                   </p>
                   <small>
                     {child.sex === "male" ? "Laki-laki" : "Perempuan"}
-                    {child.guardian ? ` · Orang tua/wali: ${child.guardian}` : ""}
+                    {child.guardian
+                      ? ` · Orang tua/wali: ${child.guardian}`
+                      : ""}
                   </small>
                   {!eligible && (
                     <small className="field-error">
-                      Alat standing height saat ini digunakan untuk usia 24–59 bulan.
+                      Alat standing height saat ini digunakan untuk usia 24–59
+                      bulan.
                     </small>
                   )}
                 </div>

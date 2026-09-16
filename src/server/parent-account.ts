@@ -60,19 +60,15 @@ async function createParentSession(
       now,
     )
     .run();
-  return ok(
-    { id: parent.id, name: parent.name, email: parent.email },
-    200,
-    {
-      "Set-Cookie": sessionCookie(
-        request,
-        PARENT_ACCOUNT_COOKIE,
-        raw,
-        PARENT_ACCOUNT_SECONDS,
-        env,
-      ),
-    },
-  );
+  return ok({ id: parent.id, name: parent.name, email: parent.email }, 200, {
+    "Set-Cookie": sessionCookie(
+      request,
+      PARENT_ACCOUNT_COOKIE,
+      raw,
+      PARENT_ACCOUNT_SECONDS,
+      env,
+    ),
+  });
 }
 
 export async function requireParentAccount(
@@ -81,7 +77,11 @@ export async function requireParentAccount(
 ): Promise<ParentSession> {
   const raw = cookie(request, PARENT_ACCOUNT_COOKIE);
   if (!/^[a-f0-9]{64}$/.test(raw))
-    throw new ApiError(401, "Silakan masuk sebagai orang tua.", "unauthenticated");
+    throw new ApiError(
+      401,
+      "Silakan masuk sebagai orang tua.",
+      "unauthenticated",
+    );
   const hash = await digest(raw);
   const parent = await env.DB.prepare(
     "SELECT p.id,p.name,p.email,p.active,s.token_hash AS sessionHash FROM parent_accounts p JOIN parent_account_sessions s ON s.parent_id=p.id WHERE s.token_hash=? AND s.expires_at>? AND p.active=1",
@@ -98,7 +98,12 @@ export async function requireParentAccount(
 }
 
 export async function registerParent(request: Request, env: Env) {
-  await rateLimit(env.DB, `parent-register:${await requestKey(request)}`, 6, 3600);
+  await rateLimit(
+    env.DB,
+    `parent-register:${await requestKey(request)}`,
+    6,
+    3600,
+  );
   const input = await body(request, registerSchema);
   let months: number;
   try {
@@ -107,9 +112,14 @@ export async function registerParent(request: Request, env: Env) {
     throw new ApiError(422, "Tanggal lahir anak tidak valid.");
   }
   if (months < 0 || months > 59)
-    throw new ApiError(422, "Profil pertumbuhan ditujukan untuk anak usia 0–59 bulan.");
+    throw new ApiError(
+      422,
+      "Profil pertumbuhan ditujukan untuk anak usia 0–59 bulan.",
+    );
 
-  const exists = await env.DB.prepare("SELECT id FROM parent_accounts WHERE email=?")
+  const exists = await env.DB.prepare(
+    "SELECT id FROM parent_accounts WHERE email=?",
+  )
     .bind(input.email)
     .first();
   if (exists) throw new ApiError(409, "Email sudah terdaftar. Silakan masuk.");
@@ -182,7 +192,9 @@ export async function loginParent(request: Request, env: Env) {
 export async function logoutParent(request: Request, env: Env) {
   const raw = cookie(request, PARENT_ACCOUNT_COOKIE);
   if (/^[a-f0-9]{64}$/.test(raw))
-    await env.DB.prepare("DELETE FROM parent_account_sessions WHERE token_hash=?")
+    await env.DB.prepare(
+      "DELETE FROM parent_account_sessions WHERE token_hash=?",
+    )
       .bind(await digest(raw))
       .run();
   return ok(null, 200, {
@@ -254,8 +266,18 @@ export async function parentAccountChat(request: Request, env: Env) {
       "ai_not_configured",
     );
 
-  await rateLimit(env.DB, `parent-account-chat:${parent.sessionHash}`, 20, 7200);
-  await rateLimit(env.DB, `parent-account-chat-minute:${parent.sessionHash}`, 4, 60);
+  await rateLimit(
+    env.DB,
+    `parent-account-chat:${parent.sessionHash}`,
+    20,
+    7200,
+  );
+  await rateLimit(
+    env.DB,
+    `parent-account-chat-minute:${parent.sessionHash}`,
+    4,
+    60,
+  );
   const exam = await requireOwnedExam(env, parent.id, input.examId);
   const history = (
     await env.DB.prepare(
@@ -294,7 +316,14 @@ export async function parentAccountChat(request: Request, env: Env) {
   await env.DB.batch([
     env.DB.prepare(
       "INSERT INTO parent_account_chat_messages (id,parent_id,exam_id,role,content,created_at) VALUES (?,?,?,?,?,?)",
-    ).bind(user.id, parent.id, exam.id, user.role, user.content, user.createdAt),
+    ).bind(
+      user.id,
+      parent.id,
+      exam.id,
+      user.role,
+      user.content,
+      user.createdAt,
+    ),
     env.DB.prepare(
       "INSERT INTO parent_account_chat_messages (id,parent_id,exam_id,role,content,created_at) VALUES (?,?,?,?,?,?)",
     ).bind(

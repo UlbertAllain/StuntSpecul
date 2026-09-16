@@ -67,7 +67,9 @@ export function StationDisplay() {
           {error ? (
             <>
               <Activity className="mx-auto mb-5" size={48} />
-              <h1 className="text-3xl font-black">Koneksi perangkat terganggu</h1>
+              <h1 className="text-3xl font-black">
+                Koneksi perangkat terganggu
+              </h1>
               <p className="mt-4 leading-7 text-[var(--muted-foreground)]">
                 {error}. Layar akan mencoba terhubung kembali secara otomatis.
               </p>
@@ -120,7 +122,9 @@ export function StationDisplay() {
                   <span className="text-xs font-bold text-[var(--muted-foreground)]">
                     Usia
                   </span>
-                  <strong className="mt-1 block">{formatAge(active.ageMonths)}</strong>
+                  <strong className="mt-1 block">
+                    {formatAge(active.ageMonths)}
+                  </strong>
                 </div>
                 <div className="rounded-2xl bg-[#f6faff] p-4">
                   <span className="text-xs font-bold text-[var(--muted-foreground)]">
@@ -142,8 +146,8 @@ export function StationDisplay() {
                 </div>
               </div>
               <p className="mx-auto mt-6 max-w-md text-sm leading-6 text-[var(--muted-foreground)]">
-                Analisis wajah digunakan untuk indikator visual seperti area mata
-                dan kondisi bibir, bukan untuk mengenali identitas anak.
+                Analisis wajah digunakan untuk indikator visual seperti area
+                mata dan kondisi bibir, bukan untuk mengenali identitas anak.
               </p>
             </>
           )}

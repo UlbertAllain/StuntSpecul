@@ -75,12 +75,13 @@ export function ParentAccountPortal() {
   const latest = completedExams[0] || null;
   const selectedExam =
     completedExams.find((exam) => exam.id === selectedExamId) || latest;
+  const selectedExamForChatId = selectedExam?.id || "";
 
   useEffect(() => {
-    if (tab !== "assistant" || !selectedExam) return;
+    if (tab !== "assistant" || !selectedExamForChatId) return;
     const controller = new AbortController();
     api<ChatMessage[]>(
-      `/parent-account/messages?examId=${encodeURIComponent(selectedExam.id)}`,
+      `/parent-account/messages?examId=${encodeURIComponent(selectedExamForChatId)}`,
       { signal: controller.signal },
     )
       .then(setMessages)
@@ -88,7 +89,7 @@ export function ParentAccountPortal() {
         if (!controller.signal.aborted) setError(errorMessage(e));
       });
     return () => controller.abort();
-  }, [tab, selectedExam?.id]);
+  }, [tab, selectedExamForChatId]);
 
   async function refresh() {
     setView(await api<ParentAccountView>("/parent-account/me"));
@@ -278,7 +279,10 @@ function ParentAccountAuth({
       heading="StuntSpecula untuk Orang Tua"
       subtitle="Akun ini digunakan untuk memantau hasil dan riwayat pertumbuhan anak. Pemeriksaan tetap dilakukan melalui alat di fasilitas kesehatan."
     >
-      <form className="portal-card profile-form mx-auto max-w-xl" onSubmit={submit}>
+      <form
+        className="portal-card profile-form mx-auto max-w-xl"
+        onSubmit={submit}
+      >
         <div className="section-heading">
           <div>
             <h2>{mode === "login" ? "Masuk" : "Buat akun orang tua"}</h2>
@@ -303,7 +307,9 @@ function ParentAccountAuth({
               />
             </label>
             <div className="portal-card !mb-2">
-              <h3><Baby size={18} /> Profil anak</h3>
+              <h3>
+                <Baby size={18} /> Profil anak
+              </h3>
               <label>
                 Nama anak
                 <input
@@ -360,11 +366,16 @@ function ParentAccountAuth({
             minLength={12}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            autoComplete={
+              mode === "login" ? "current-password" : "new-password"
+            }
           />
           {mode === "register" && <small>Minimal 12 karakter.</small>}
         </label>
-        <button className="portal-primary w-full" disabled={busy || (mode === "register" && !sex)}>
+        <button
+          className="portal-primary w-full"
+          disabled={busy || (mode === "register" && !sex)}
+        >
           {busy ? "Memproses…" : mode === "login" ? "Masuk" : "Buat akun"}
         </button>
         <button
@@ -402,8 +413,12 @@ function ParentHome({
           <p className="portal-note">Profil pertumbuhan</p>
           <h2>{child?.name || "Anak"}</h2>
           <p>
-            {child ? formatAge(Math.max(0, Math.floor((Date.now() - new Date(`${child.birthDate}T00:00:00Z`).getTime()) / 2629800000))) : "—"}
-            {child ? ` · ${child.sex === "male" ? "Laki-laki" : "Perempuan"}` : ""}
+            {latest
+              ? formatAge(latest.ageMonths)
+              : "Usia akan tampil setelah pemeriksaan"}
+            {child
+              ? ` · ${child.sex === "male" ? "Laki-laki" : "Perempuan"}`
+              : ""}
           </p>
         </article>
         <article className="portal-card !mb-0">
@@ -452,14 +467,16 @@ function ParentHistory({
   selectedExamId: string;
   onSelect: (id: string) => void;
 }) {
-  const selected = examinations.find((e) => e.id === selectedExamId) || examinations[0];
+  const selected =
+    examinations.find((e) => e.id === selectedExamId) || examinations[0];
   return (
     <>
       <div className="section-heading">
         <div>
           <h2>Riwayat pertumbuhan</h2>
           <p className="portal-note">
-            Bandingkan hasil antar pemeriksaan untuk melihat perubahan dari waktu ke waktu.
+            Bandingkan hasil antar pemeriksaan untuk melihat perubahan dari
+            waktu ke waktu.
           </p>
         </div>
       </div>
@@ -480,7 +497,9 @@ function ParentHistory({
               >
                 <span>
                   <strong>
-                    {new Date(exam.completedAt || exam.createdAt).toLocaleDateString("id-ID", {
+                    {new Date(
+                      exam.completedAt || exam.createdAt,
+                    ).toLocaleDateString("id-ID", {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
@@ -489,7 +508,8 @@ function ParentHistory({
                   <small>{growthStatusLabel(exam.growthStatus)}</small>
                 </span>
                 <span className="row-readings">
-                  {formatReading(exam.heightCm)} cm / {formatReading(exam.weightKg)} kg
+                  {formatReading(exam.heightCm)} cm /{" "}
+                  {formatReading(exam.weightKg)} kg
                 </span>
               </button>
             ))}
@@ -531,16 +551,22 @@ function ParentAssistant({
   return (
     <section className="portal-card parent-chat">
       <div className="chat-title">
-        <span><MessageCircle /></span>
+        <span>
+          <MessageCircle />
+        </span>
         <div>
           <h2>Asisten Pertumbuhan</h2>
           <p>Membantu menjelaskan hasil yang sudah dihitung sistem.</p>
         </div>
       </div>
       {examinations.length === 0 ? (
-        <Message>Asisten tersedia setelah anak memiliki hasil pemeriksaan.</Message>
+        <Message>
+          Asisten tersedia setelah anak memiliki hasil pemeriksaan.
+        </Message>
       ) : !aiAvailable ? (
-        <Message>Asisten sedang tidak tersedia. Hasil tetap dapat dilihat dari riwayat.</Message>
+        <Message>
+          Asisten sedang tidak tersedia. Hasil tetap dapat dilihat dari riwayat.
+        </Message>
       ) : (
         <>
           <label>
@@ -551,7 +577,10 @@ function ParentAssistant({
             >
               {examinations.map((exam) => (
                 <option key={exam.id} value={exam.id}>
-                  {new Date(exam.completedAt || exam.createdAt).toLocaleDateString("id-ID")} · {exam.childName}
+                  {new Date(
+                    exam.completedAt || exam.createdAt,
+                  ).toLocaleDateString("id-ID")}{" "}
+                  · {exam.childName}
                 </option>
               ))}
             </select>
@@ -571,7 +600,9 @@ function ParentAssistant({
             {messages.length === 0 ? (
               <div className="chat-welcome">
                 <h3>Ada yang ingin dipahami?</h3>
-                <p>Pilih pertanyaan singkat atau tulis pertanyaan Anda sendiri.</p>
+                <p>
+                  Pilih pertanyaan singkat atau tulis pertanyaan Anda sendiri.
+                </p>
               </div>
             ) : (
               messages.map((item) => (
@@ -581,7 +612,9 @@ function ParentAssistant({
                 </div>
               ))
             )}
-            {busy && <div className="chat-bubble assistant">Menyiapkan jawaban…</div>}
+            {busy && (
+              <div className="chat-bubble assistant">Menyiapkan jawaban…</div>
+            )}
           </div>
           <div className="chat-suggestions">
             {QUESTIONS.map((item) => (
@@ -629,18 +662,42 @@ function ParentProfile({ view }: { view: ParentAccountView }) {
       <section className="portal-card">
         <h2>Profil orang tua</h2>
         <dl className="portal-details">
-          <div><dt>Nama</dt><dd>{view.parent.name}</dd></div>
-          <div><dt>Email</dt><dd>{view.parent.email}</dd></div>
-          <div><dt>Akses</dt><dd>Monitoring hasil pertumbuhan</dd></div>
+          <div>
+            <dt>Nama</dt>
+            <dd>{view.parent.name}</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>{view.parent.email}</dd>
+          </div>
+          <div>
+            <dt>Akses</dt>
+            <dd>Monitoring hasil pertumbuhan</dd>
+          </div>
         </dl>
       </section>
       {view.children.map((child) => (
         <section className="portal-card" key={child.id}>
-          <h3><Baby size={18} /> {child.name}</h3>
+          <h3>
+            <Baby size={18} /> {child.name}
+          </h3>
           <dl className="portal-details">
-            <div><dt>Kode anak</dt><dd>{child.code}</dd></div>
-            <div><dt>Tanggal lahir</dt><dd>{new Date(`${child.birthDate}T00:00:00Z`).toLocaleDateString("id-ID")}</dd></div>
-            <div><dt>Jenis kelamin</dt><dd>{child.sex === "male" ? "Laki-laki" : "Perempuan"}</dd></div>
+            <div>
+              <dt>Kode anak</dt>
+              <dd>{child.code}</dd>
+            </div>
+            <div>
+              <dt>Tanggal lahir</dt>
+              <dd>
+                {new Date(`${child.birthDate}T00:00:00Z`).toLocaleDateString(
+                  "id-ID",
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt>Jenis kelamin</dt>
+              <dd>{child.sex === "male" ? "Laki-laki" : "Perempuan"}</dd>
+            </div>
           </dl>
           <p className="portal-note">
             Data hasil pengukuran tidak dapat diubah dari akun orang tua. Bila
