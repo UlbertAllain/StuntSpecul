@@ -62,6 +62,20 @@ export type ParentView = {
   aiAvailable: boolean;
   messages: ChatMessage[];
 };
+
+export type ParentAccountSummary = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+export type ParentAccountView = {
+  parent: ParentAccountSummary;
+  children: ChildProfile[];
+  examinations: Examination[];
+  aiAvailable: boolean;
+};
+
 export type MirrorAssignment = {
   id: string;
   ageMonths: number;
