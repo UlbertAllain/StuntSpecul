@@ -45,6 +45,12 @@ export async function route(request: Request, env: Env): Promise<Response> {
       return screening.mirrorAssignment(request, env);
     case "GET /api/station/active":
       return station.stationStatus(request, env);
+    case "POST /api/station/claim":
+      return station.claimStationExamination(request, env);
+    case "POST /api/station/complete":
+      return station.completeStationExamination(request, env);
+    case "POST /api/station/cancel":
+      return station.cancelStationExamination(request, env);
 
     case "POST /api/parent-account/register":
       return parentAccount.registerParent(request, env);
