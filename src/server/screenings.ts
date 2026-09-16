@@ -161,8 +161,7 @@ export async function finalizeExamination(
   if (!exam) throw new ApiError(404, "Pemeriksaan tidak ditemukan.");
   if (exam.status !== "completed")
     throw new ApiError(409, "Pemeriksaan belum selesai di alat.");
-  if (!exam.workflowId || exam.finalizedAt)
-    return ok({ id, finalized: true });
+  if (!exam.workflowId || exam.finalizedAt) return ok({ id, finalized: true });
 
   await env.DB.prepare(
     "UPDATE examination_workflow SET finalized_at=? WHERE exam_id=? AND finalized_at IS NULL",
