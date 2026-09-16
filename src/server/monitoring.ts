@@ -32,7 +32,7 @@ export async function monitoringOverview(request: Request, env: Env) {
       CASE WHEN e.status='running' THEN e.created_at ELSE NULL END AS startedAt
      FROM examinations e
      JOIN children c ON c.id=e.child_id
-     WHERE e.status IN ('queued','running') OR (e.status='completed' AND e.finalized_at IS NULL)
+     WHERE e.status IN ('queued','running') OR (e.status='completed' AND EXISTS (SELECT 1 FROM examination_workflow ew WHERE ew.exam_id=e.id AND ew.finalized_at IS NULL))
      ORDER BY e.created_at DESC LIMIT 5`,
   ).all();
 
@@ -56,9 +56,11 @@ export async function monitoringOverview(request: Request, env: Env) {
     .slice(0, 5);
 
   const recent = await env.DB.prepare(
-    `SELECT e.id,c.name AS childName,e.age_months AS ageMonths,e.sex,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.created_at AS createdAt,e.completed_at AS completedAt,e.finalized_at AS finalizedAt
+    `SELECT e.id,c.name AS childName,e.age_months AS ageMonths,e.sex,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.created_at AS createdAt,e.completed_at AS completedAt,
+      CASE WHEN ew.exam_id IS NULL THEN e.completed_at ELSE ew.finalized_at END AS finalizedAt
      FROM examinations e
      JOIN children c ON c.id=e.child_id
+     LEFT JOIN examination_workflow ew ON ew.exam_id=e.id
      ORDER BY e.created_at DESC,e.id DESC LIMIT 8`,
   ).all();
 
