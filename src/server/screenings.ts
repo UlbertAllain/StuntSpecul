@@ -9,7 +9,7 @@ import { findChild } from "./children";
 
 // Keep historical device foreign keys intact; the single station needs no user setup.
 const STATION_ID = "single-station";
-const EXAM_SELECT = `SELECT e.id,e.child_id AS childId,c.name AS childName,c.code AS childCode,e.age_months AS ageMonths,e.sex,e.device_id AS deviceId,d.name AS deviceName,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.bmi,e.capture_status AS captureStatus,e.growth_status AS growthStatus,e.created_at AS createdAt,e.completed_at AS completedAt,e.finalized_at AS finalizedAt FROM examinations e JOIN children c ON c.id=e.child_id JOIN devices d ON d.id=e.device_id`;
+const EXAM_SELECT = `SELECT e.id,e.child_id AS childId,c.name AS childName,c.code AS childCode,e.age_months AS ageMonths,e.sex,e.device_id AS deviceId,d.name AS deviceName,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.bmi,e.capture_status AS captureStatus,e.growth_status AS growthStatus,e.created_at AS createdAt,e.completed_at AS completedAt,CASE WHEN ew.exam_id IS NULL THEN e.completed_at ELSE ew.finalized_at END AS finalizedAt FROM examinations e JOIN children c ON c.id=e.child_id JOIN devices d ON d.id=e.device_id LEFT JOIN examination_workflow ew ON ew.exam_id=e.id`;
 type StoredExamination = Omit<Examination, "heightForAgeZ" | "growthStatus"> & {
   growthStatus: string;
 };
@@ -94,13 +94,14 @@ export async function startExamination(request: Request, env: Env) {
       "Pemeriksaan berdiri ini untuk anak usia 24–59 bulan.",
     );
   const id = crypto.randomUUID();
+  const createdAt = Date.now();
   await env.DB.prepare(
     "INSERT INTO devices (id,name,active,created_at) VALUES (?,'Mirror',1,?) ON CONFLICT(id) DO NOTHING",
   )
-    .bind(STATION_ID, Date.now())
+    .bind(STATION_ID, createdAt)
     .run();
   const created = await env.DB.prepare(
-    "INSERT INTO examinations (id,child_id,staff_id,device_id,age_months,sex,status,capture_status,created_at) SELECT ?,?,?,?,?,?,'queued',?,? WHERE NOT EXISTS (SELECT 1 FROM examinations WHERE status IN ('queued','running') OR (status='completed' AND finalized_at IS NULL AND device_id='single-station')) RETURNING id",
+    "INSERT INTO examinations (id,child_id,staff_id,device_id,age_months,sex,status,capture_status,created_at) SELECT ?,?,?,?,?,?,'queued',?,? WHERE NOT EXISTS (SELECT 1 FROM examinations e WHERE e.status IN ('queued','running') OR (e.status='completed' AND e.device_id='single-station' AND EXISTS (SELECT 1 FROM examination_workflow ew WHERE ew.exam_id=e.id AND ew.finalized_at IS NULL))) RETURNING id",
   )
     .bind(
       id,
@@ -110,7 +111,7 @@ export async function startExamination(request: Request, env: Env) {
       age,
       child.sex,
       input.cameraEnabled ? null : "skipped",
-      Date.now(),
+      createdAt,
     )
     .first();
   if (!created)
@@ -118,6 +119,12 @@ export async function startExamination(request: Request, env: Env) {
       409,
       "Masih ada pemeriksaan yang belum ditutup petugas. Selesaikan sesi aktif terlebih dahulu.",
     );
+
+  await env.DB.prepare(
+    "INSERT INTO examination_workflow (exam_id,finalized_at,created_at) VALUES (?,NULL,?) ON CONFLICT(exam_id) DO NOTHING",
+  )
+    .bind(id, createdAt)
+    .run();
   return ok({ id }, 201);
 }
 
@@ -143,17 +150,22 @@ export async function finalizeExamination(
 ) {
   await requireStaff(request, env);
   const exam = await env.DB.prepare(
-    "SELECT status,finalized_at AS finalizedAt FROM examinations WHERE id=?",
+    "SELECT e.status,ew.exam_id AS workflowId,ew.finalized_at AS finalizedAt FROM examinations e LEFT JOIN examination_workflow ew ON ew.exam_id=e.id WHERE e.id=?",
   )
     .bind(id)
-    .first<{ status: string; finalizedAt: number | null }>();
+    .first<{
+      status: string;
+      workflowId: string | null;
+      finalizedAt: number | null;
+    }>();
   if (!exam) throw new ApiError(404, "Pemeriksaan tidak ditemukan.");
   if (exam.status !== "completed")
     throw new ApiError(409, "Pemeriksaan belum selesai di alat.");
-  if (exam.finalizedAt) return ok({ id, finalized: true });
+  if (!exam.workflowId || exam.finalizedAt)
+    return ok({ id, finalized: true });
 
   await env.DB.prepare(
-    "UPDATE examinations SET finalized_at=? WHERE id=? AND status='completed' AND finalized_at IS NULL",
+    "UPDATE examination_workflow SET finalized_at=? WHERE exam_id=? AND finalized_at IS NULL",
   )
     .bind(Date.now(), id)
     .run();
@@ -208,7 +220,7 @@ export async function completeExamination(
       ? Number((input.weightKg / (input.heightCm / 100) ** 2).toFixed(1))
       : null;
   const result = await env.DB.prepare(
-    "UPDATE examinations SET status='completed',height_cm=?,weight_kg=?,bmi=?,capture_status=?,completed_at=?,finalized_at=NULL WHERE id=? AND staff_id=? AND status='running' RETURNING id",
+    "UPDATE examinations SET status='completed',height_cm=?,weight_kg=?,bmi=?,capture_status=?,completed_at=? WHERE id=? AND staff_id=? AND status='running' RETURNING id",
   )
     .bind(
       input.heightCm,
