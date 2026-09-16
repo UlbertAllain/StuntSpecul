@@ -139,7 +139,9 @@ export function StationIdleScreen({
                       >
                         <step.icon size={21} strokeWidth={2.3} />
                       </span>
-                      <strong className="mt-2 block text-sm">{step.label}</strong>
+                      <strong className="mt-2 block text-sm">
+                        {step.label}
+                      </strong>
                       <small className="mt-0.5 block text-[10px] font-bold leading-4 text-[var(--muted-foreground)] sm:text-[11px]">
                         {step.caption}
                       </small>
