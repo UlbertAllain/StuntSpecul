@@ -13,7 +13,7 @@ import {
   verifyPassword,
 } from "./security";
 import { ageInMonths, type ChatMessage, type Examination } from "../lib/portal";
-import { getExamination } from "./screenings";
+import { getExamination, listParentExaminations } from "./screenings";
 import { geminiExplainer } from "./gemini";
 
 const PARENT_ACCOUNT_COOKIE = "ss_parent_account";
@@ -202,16 +202,6 @@ export async function logoutParent(request: Request, env: Env) {
   });
 }
 
-async function parentExamIds(env: Env, parentId: string) {
-  return (
-    await env.DB.prepare(
-      "SELECT e.id FROM examinations e JOIN parent_children pc ON pc.child_id=e.child_id WHERE pc.parent_id=? ORDER BY e.created_at DESC LIMIT 100",
-    )
-      .bind(parentId)
-      .all<{ id: string }>()
-  ).results;
-}
-
 export async function parentAccountView(request: Request, env: Env) {
   const parent = await requireParentAccount(request, env);
   const children = (
@@ -221,11 +211,7 @@ export async function parentAccountView(request: Request, env: Env) {
       .bind(parent.id)
       .all()
   ).results;
-
-  const exams: Examination[] = [];
-  for (const row of await parentExamIds(env, parent.id)) {
-    exams.push(await getExamination(env, row.id));
-  }
+  const exams = await listParentExaminations(env, parent.id);
 
   return ok({
     parent: { id: parent.id, name: parent.name, email: parent.email },
