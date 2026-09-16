@@ -4,12 +4,8 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Activity, Baby, LoaderCircle, Ruler, Scale } from "lucide-react";
 import { api, errorMessage } from "@/lib/api-client";
-import { formatAge } from "@/lib/screening";
 
 type StationActive = {
-  id: string;
-  ageMonths: number;
-  sex: "male" | "female";
   status: "queued" | "running";
   cameraEnabled: boolean;
   createdAt: number;
@@ -117,25 +113,11 @@ export function StationDisplay() {
                   ? "Tetap berdiri tegak, ya."
                   : "Silakan bersiap di atas alat."}
               </h1>
-              <div className="mx-auto mt-7 grid w-full max-w-sm grid-cols-2 gap-3 text-left">
-                <div className="rounded-2xl bg-[#f6faff] p-4">
-                  <span className="text-xs font-bold text-[var(--muted-foreground)]">
-                    Usia
-                  </span>
-                  <strong className="mt-1 block">
-                    {formatAge(active.ageMonths)}
-                  </strong>
-                </div>
-                <div className="rounded-2xl bg-[#f6faff] p-4">
-                  <span className="text-xs font-bold text-[var(--muted-foreground)]">
-                    Jenis kelamin
-                  </span>
-                  <strong className="mt-1 block">
-                    {active.sex === "male" ? "Laki-laki" : "Perempuan"}
-                  </strong>
-                </div>
-              </div>
-              <div className="mx-auto mt-6 flex w-full max-w-sm flex-col gap-3 text-left">
+              <p className="mx-auto mt-5 max-w-md leading-7 text-[var(--muted-foreground)]">
+                Profil anak telah dipilih oleh petugas. Data identitas tidak
+                ditampilkan pada layar alat untuk menjaga privasi.
+              </p>
+              <div className="mx-auto mt-7 flex w-full max-w-sm flex-col gap-3 text-left">
                 <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] p-4">
                   <Ruler size={22} />
                   <span>Pengukuran tinggi badan</span>
