@@ -20,16 +20,41 @@ export async function monitoringOverview(request: Request, env: Env) {
   )
     .bind(since)
     .first<{ total: number; completed: number }>();
-  const active = await env.DB.prepare(
-    `SELECT ss.id,ss.status,c.name AS childName,e.age_months AS ageMonths,e.status AS examStatus,ss.created_at AS createdAt,ss.connected_at AS connectedAt,ss.started_at AS startedAt
+
+  const activeExams = await env.DB.prepare(
+    `SELECT e.id,
+      CASE WHEN e.status='running' THEN 'running' ELSE 'ready' END AS status,
+      c.name AS childName,
+      e.age_months AS ageMonths,
+      e.status AS examStatus,
+      e.created_at AS createdAt,
+      NULL AS connectedAt,
+      CASE WHEN e.status='running' THEN e.created_at ELSE NULL END AS startedAt
+     FROM examinations e
+     JOIN children c ON c.id=e.child_id
+     WHERE e.status IN ('queued','running')
+     ORDER BY e.created_at DESC LIMIT 5`,
+  ).all();
+
+  const waitingGuestSessions = await env.DB.prepare(
+    `SELECT ss.id,ss.status,NULL AS childName,NULL AS ageMonths,NULL AS examStatus,
+      ss.created_at AS createdAt,ss.connected_at AS connectedAt,ss.started_at AS startedAt
      FROM screening_sessions ss
-     LEFT JOIN children c ON c.id=ss.child_id
-     LEFT JOIN examinations e ON e.id=ss.exam_id
-     WHERE ss.expires_at>? AND ss.status IN ('waiting_parent','parent_connected','ready','running')
+     WHERE ss.expires_at>? AND ss.exam_id IS NULL
+       AND ss.status IN ('waiting_parent','parent_connected')
      ORDER BY ss.created_at DESC LIMIT 5`,
   )
     .bind(now)
     .all();
+
+  const active = [...activeExams.results, ...waitingGuestSessions.results]
+    .sort(
+      (a, b) =>
+        Number((b as { createdAt: number }).createdAt) -
+        Number((a as { createdAt: number }).createdAt),
+    )
+    .slice(0, 5);
+
   const recent = await env.DB.prepare(
     `SELECT e.id,c.name AS childName,e.age_months AS ageMonths,e.sex,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.created_at AS createdAt,e.completed_at AS completedAt
      FROM examinations e
@@ -42,9 +67,9 @@ export async function monitoringOverview(request: Request, env: Env) {
       totalChildren: childCount?.count ?? 0,
       todayExaminations: today?.total ?? 0,
       todayCompleted: today?.completed ?? 0,
-      activeSessions: active.results.length,
+      activeSessions: active.length,
     },
-    active: active.results,
+    active,
     recent: recent.results,
   });
 }
