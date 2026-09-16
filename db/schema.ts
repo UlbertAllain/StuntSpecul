@@ -88,7 +88,6 @@ export const examinations = sqliteTable(
     growthStatus: text("growth_status").notNull().default("unavailable"),
     createdAt: integer("created_at").notNull(),
     completedAt: integer("completed_at"),
-    finalizedAt: integer("finalized_at"),
   },
   (t) => [
     index("exams_child_time").on(t.childId, t.createdAt),
@@ -109,6 +108,14 @@ export const examinations = sqliteTable(
     check("exam_weight", sql`${t.weightKg} IS NULL OR ${t.weightKg} > 0`),
   ],
 );
+
+export const examinationWorkflow = sqliteTable("examination_workflow", {
+  examId: text("exam_id")
+    .primaryKey()
+    .references(() => examinations.id, { onDelete: "cascade" }),
+  finalizedAt: integer("finalized_at"),
+  createdAt: integer("created_at").notNull(),
+});
 
 export const screeningSessions = sqliteTable(
   "screening_sessions",
