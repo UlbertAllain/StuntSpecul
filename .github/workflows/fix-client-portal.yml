@@ -1,0 +1,53 @@
+name: Fix Client Portal
+on:
+  push:
+    branches: [feature/client-tracking-portal-final2]
+permissions:
+  contents: write
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/client-tracking-portal-final2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Fix hook purity and dependencies
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/portal/parent-account-portal.tsx')
+          s = p.read_text()
+          s = s.replace(
+              '  const selectedExam =\n    completedExams.find((exam) => exam.id === selectedExamId) || latest;\n\n  useEffect(() => {\n    if (tab !== "assistant" || !selectedExam) return;',
+              '  const selectedExam =\n    completedExams.find((exam) => exam.id === selectedExamId) || latest;\n  const selectedExamForChatId = selectedExam?.id || "";\n\n  useEffect(() => {\n    if (tab !== "assistant" || !selectedExamForChatId) return;'
+          )
+          s = s.replace(
+              '`/parent-account/messages?examId=${encodeURIComponent(selectedExam.id)}`',
+              '`/parent-account/messages?examId=${encodeURIComponent(selectedExamForChatId)}`'
+          )
+          s = s.replace(
+              '  }, [tab, selectedExam?.id]);',
+              '  }, [tab, selectedExamForChatId]);'
+          )
+          old = '{child ? formatAge(Math.max(0, Math.floor((Date.now() - new Date(`${child.birthDate}T00:00:00Z`).getTime()) / 2629800000))) : "—"}'
+          new = '{latest ? formatAge(latest.ageMonths) : "Usia akan tampil setelah pemeriksaan"}'
+          if old not in s:
+              raise SystemExit('age expression not found')
+          s = s.replace(old, new)
+          p.write_text(s)
+          PY
+      - name: Format changed files
+        run: npx prettier --write db/schema.ts src/lib/portal.ts src/server/parent-account.ts src/server/router.ts src/server/station.ts src/server/monitoring.ts src/components/portal/parent-account-portal.tsx src/components/portal/children.tsx src/components/screening/station-display.tsx src/app/page.tsx src/app/ortu/page.tsx
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add db/schema.ts src/lib/portal.ts src/server/parent-account.ts src/server/router.ts src/server/station.ts src/server/monitoring.ts src/components/portal/parent-account-portal.tsx src/components/portal/children.tsx src/components/screening/station-display.tsx src/app/page.tsx src/app/ortu/page.tsx
+          git diff --cached --quiet || git commit -m "fix: stabilize and format client portal refactor"
+          git push origin HEAD:feature/client-tracking-portal-final2
