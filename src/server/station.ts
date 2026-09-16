@@ -12,9 +12,11 @@ type ActiveStationExam = {
 };
 
 async function findActiveStationExam(env: Env) {
-  return env.DB.prepare(
-    "SELECT id,age_months AS ageMonths,sex,status,capture_status IS NULL AS cameraEnabled,created_at AS createdAt FROM examinations WHERE status IN ('queued','running') ORDER BY created_at ASC LIMIT 1",
-  ).first<ActiveStationExam>();
+  return env.DB
+    .prepare(
+      "SELECT id,age_months AS ageMonths,sex,status,capture_status IS NULL AS cameraEnabled,created_at AS createdAt FROM examinations WHERE status IN ('queued','running') ORDER BY created_at ASC LIMIT 1",
+    )
+    .first<ActiveStationExam>();
 }
 
 export async function stationStatus(_request: Request, env: Env) {
@@ -31,7 +33,10 @@ export async function stationStatus(_request: Request, env: Env) {
   });
 }
 
-export async function claimStationExamination(_request: Request, env: Env) {
+export async function claimStationExamination(
+  _request: Request,
+  env: Env,
+) {
   const active = await findActiveStationExam(env);
   if (!active)
     throw new ApiError(409, "Belum ada pemeriksaan yang dikirim ke alat.");
@@ -63,11 +68,16 @@ const completionSchema = z
   })
   .strict();
 
-export async function completeStationExamination(request: Request, env: Env) {
+export async function completeStationExamination(
+  request: Request,
+  env: Env,
+) {
   const input = await body(request, completionSchema);
-  const exam = await env.DB.prepare(
-    "SELECT id,status FROM examinations ORDER BY created_at DESC LIMIT 1",
-  ).first<{ id: string; status: string }>();
+  const exam = await env.DB
+    .prepare(
+      "SELECT id,status FROM examinations ORDER BY created_at DESC LIMIT 1",
+    )
+    .first<{ id: string; status: string }>();
 
   if (!exam)
     throw new ApiError(409, "Belum ada pemeriksaan aktif pada alat.");
@@ -97,7 +107,10 @@ export async function completeStationExamination(request: Request, env: Env) {
   return ok({ saved: true });
 }
 
-export async function cancelStationExamination(_request: Request, env: Env) {
+export async function cancelStationExamination(
+  _request: Request,
+  env: Env,
+) {
   const active = await findActiveStationExam(env);
   if (!active) return ok({ cancelled: false });
 
