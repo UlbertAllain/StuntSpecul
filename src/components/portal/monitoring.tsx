@@ -127,7 +127,7 @@ export function MonitoringPanel() {
             {overview.active.length === 0 ? (
               <div className="portal-empty">
                 <h3>Tidak ada pemeriksaan aktif</h3>
-                <p>Mirror siap menerima pemeriksaan berikutnya.</p>
+                <p>Alat siap menerima pemeriksaan berikutnya.</p>
               </div>
             ) : (
               <div className="examination-list">
@@ -135,11 +135,11 @@ export function MonitoringPanel() {
                   <div className="examination-row" key={item.id}>
                     <span>
                       <strong>
-                        {item.childName || "Data anak belum diisi"}
+                        {item.childName || "Sesi pemeriksaan sementara"}
                       </strong>
                       <small>
                         {item.ageMonths === null
-                          ? "Menunggu data dari HP orang tua"
+                          ? "Menunggu data sesi"
                           : formatAge(item.ageMonths)}
                       </small>
                     </span>
@@ -167,7 +167,10 @@ export function MonitoringPanel() {
             {overview.recent.length === 0 ? (
               <div className="portal-empty">
                 <h3>Belum ada riwayat pemeriksaan</h3>
-                <p>Data akan muncul setelah orang tua memulai screening.</p>
+                <p>
+                  Data akan muncul setelah petugas memilih anak dan pemeriksaan
+                  dijalankan melalui alat StuntSpecula.
+                </p>
               </div>
             ) : (
               <div className="examination-list">
