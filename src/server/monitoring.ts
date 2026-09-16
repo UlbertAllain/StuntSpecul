@@ -23,7 +23,7 @@ export async function monitoringOverview(request: Request, env: Env) {
 
   const activeExams = await env.DB.prepare(
     `SELECT e.id,
-      CASE WHEN e.status='running' THEN 'running' ELSE 'ready' END AS status,
+      CASE WHEN e.status='completed' THEN 'awaiting_confirmation' WHEN e.status='running' THEN 'running' ELSE 'ready' END AS status,
       c.name AS childName,
       e.age_months AS ageMonths,
       e.status AS examStatus,
@@ -32,7 +32,7 @@ export async function monitoringOverview(request: Request, env: Env) {
       CASE WHEN e.status='running' THEN e.created_at ELSE NULL END AS startedAt
      FROM examinations e
      JOIN children c ON c.id=e.child_id
-     WHERE e.status IN ('queued','running')
+     WHERE e.status IN ('queued','running') OR (e.status='completed' AND e.finalized_at IS NULL)
      ORDER BY e.created_at DESC LIMIT 5`,
   ).all();
 
@@ -56,7 +56,7 @@ export async function monitoringOverview(request: Request, env: Env) {
     .slice(0, 5);
 
   const recent = await env.DB.prepare(
-    `SELECT e.id,c.name AS childName,e.age_months AS ageMonths,e.sex,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.created_at AS createdAt,e.completed_at AS completedAt
+    `SELECT e.id,c.name AS childName,e.age_months AS ageMonths,e.sex,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.created_at AS createdAt,e.completed_at AS completedAt,e.finalized_at AS finalizedAt
      FROM examinations e
      JOIN children c ON c.id=e.child_id
      ORDER BY e.created_at DESC,e.id DESC LIMIT 8`,
