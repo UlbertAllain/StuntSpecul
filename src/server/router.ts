@@ -94,7 +94,7 @@ export async function route(request: Request, env: Env): Promise<Response> {
       return chat(request, env);
   }
   const match = path.match(
-    /^\/api\/(staff|examinations|mirror\/examinations)\/([^/]+)(?:\/(access|claim|complete|cancel))?$/,
+    /^\/api\/(staff|examinations|mirror\/examinations)\/([^/]+)(?:\/(access|claim|complete|cancel|finalize))?$/,
   );
   if (match) {
     const [, resource, rawId, action] = match;
@@ -114,6 +114,8 @@ export async function route(request: Request, env: Env): Promise<Response> {
         return access.createResultLink(request, env, id);
       if (method === "DELETE" && action === "access")
         return access.revokeResultLinks(request, env, id);
+      if (method === "POST" && action === "finalize")
+        return screening.finalizeExamination(request, env, id);
     }
     if (resource === "mirror/examinations" && method === "POST") {
       if (action === "claim")
