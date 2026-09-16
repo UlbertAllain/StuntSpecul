@@ -100,7 +100,7 @@ export async function startExamination(request: Request, env: Env) {
     .bind(STATION_ID, Date.now())
     .run();
   const created = await env.DB.prepare(
-    "INSERT INTO examinations (id,child_id,staff_id,device_id,age_months,sex,status,capture_status,created_at) SELECT ?,?,?,?,?,?,'queued',?,? WHERE NOT EXISTS (SELECT 1 FROM examinations WHERE status IN ('queued','running') OR (status='completed' AND finalized_at IS NULL)) RETURNING id",
+    "INSERT INTO examinations (id,child_id,staff_id,device_id,age_months,sex,status,capture_status,created_at) SELECT ?,?,?,?,?,?,'queued',?,? WHERE NOT EXISTS (SELECT 1 FROM examinations WHERE status IN ('queued','running') OR (status='completed' AND finalized_at IS NULL AND device_id='single-station')) RETURNING id",
   )
     .bind(
       id,
