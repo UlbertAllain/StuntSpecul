@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+
 import Image from "next/image";
-import { Star } from "lucide-react";
+import { useState } from "react";
 
 const GREETINGS = [
   "Hai jugaaa!",
@@ -22,12 +22,13 @@ export function Mascot({
   className?: string;
 }) {
   const [reaction, setReaction] = useState(0);
-  const waving = reaction > 0;
+  const reacted = reaction > 0;
   const messages = interaction === "high-five" ? HIGH_FIVES : GREETINGS;
+
   const image = (
     <Image
-      key={reaction}
-      src={`/images/mimo-${waving ? "cheer" : pose}.png`}
+      key={`mascot-image-${reaction}`}
+      src={`/images/mimo-${reacted ? "cheer" : pose}.png`}
       alt={
         interactive
           ? "Mimo, teman pemeriksaan. Sentuh untuk menyapa."
@@ -38,24 +39,19 @@ export function Mascot({
       height={1024}
     />
   );
+
   if (!interactive) return <div className={`mascot ${className}`}>{image}</div>;
+
   return (
     <button
-      className={`mascot mascot-button ${className} ${waving ? "waving" : ""}`}
+      className={`mascot mascot-button ${className} ${reacted ? "waving" : ""}`}
       type="button"
       onClick={() => setReaction((value) => value + 1)}
       aria-label={interaction === "high-five" ? "Tos dengan Mimo" : "Sapa Mimo"}
     >
       {image}
-      {waving && (
-        <span className="reaction-burst" key={reaction} aria-hidden="true">
-          {Array.from({ length: 6 }, (_, index) => (
-            <Star key={index} />
-          ))}
-        </span>
-      )}
       <span className="mascot-speech" role="status">
-        {waving
+        {reacted
           ? messages[(reaction - 1) % messages.length]
           : interaction === "high-five"
             ? "Tos di sini!"

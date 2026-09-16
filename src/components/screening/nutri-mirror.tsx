@@ -25,7 +25,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useScreeningSession } from "@/hooks/use-screening-session";
+import {
+  useScreeningSession,
+  type ScreeningCompletion,
+} from "@/hooks/use-screening-session";
 import { useSpeech } from "@/hooks/use-speech";
 import { STEP_INSTRUCTIONS, STEP_PROGRESS, type Step } from "@/lib/session";
 import { CameraStep } from "./camera-step";
@@ -67,17 +70,21 @@ export function NutriMirror({
   assignment,
   canBegin = false,
   onBegin,
+  onComplete,
   onFinish,
   waitingLabel = "Petugas menyiapkan pemeriksaan.",
+  awaitingStaffFinalize = false,
 }: {
   assignment?: MirrorAssignment;
   canBegin?: boolean;
   onBegin?: () => void;
+  onComplete?: (payload: ScreeningCompletion) => Promise<void>;
   onFinish?: (cancel: boolean) => Promise<void>;
   waitingLabel?: string;
+  awaitingStaffFinalize?: boolean;
 }) {
   const { session, dispatch, active, isPaused, complete, saveError, saving } =
-    useScreeningSession(assignment);
+    useScreeningSession(assignment, onComplete);
   const { step, report, paused, exitOpen } = session;
   const [voice, setVoice] = useState(false);
   const [notice, setNotice] = useState("");
@@ -100,7 +107,8 @@ export function NutriMirror({
   }
 
   function requestExit() {
-    if (step !== "welcome") dispatch({ type: "set-exit", open: true });
+    if (step !== "welcome" && !(awaitingStaffFinalize && step === "result"))
+      dispatch({ type: "set-exit", open: true });
   }
 
   async function fullscreen() {
@@ -188,9 +196,19 @@ export function NutriMirror({
       case "analysis":
         return <ProcessingStage paused={isPaused} onComplete={complete} />;
       case "result":
-        return report && <Results report={report} onFinish={reset} />;
+        return (
+          report && (
+            <Results
+              report={report}
+              onFinish={awaitingStaffFinalize ? undefined : reset}
+              awaitingStaffFinalize={awaitingStaffFinalize}
+            />
+          )
+        );
     }
   }
+
+  const resultLocked = awaitingStaffFinalize && step === "result";
 
   return (
     <div
@@ -236,14 +254,16 @@ export function NutriMirror({
       >
         {step !== "welcome" && (
           <div className="stage-controls">
-            <button
-              className="back-button"
-              onClick={requestExit}
-              aria-label="Kembali ke awal"
-            >
-              <ArrowLeft size={20} />
-              <span>Kembali</span>
-            </button>
+            {!resultLocked && (
+              <button
+                className="back-button"
+                onClick={requestExit}
+                aria-label="Kembali ke awal"
+              >
+                <ArrowLeft size={20} />
+                <span>Kembali</span>
+              </button>
+            )}
             <span>
               {step === "result"
                 ? "HASIL SCREENING"

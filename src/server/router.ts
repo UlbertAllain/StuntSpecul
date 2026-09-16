@@ -6,6 +6,8 @@ import * as screening from "./screenings";
 import * as access from "./access";
 import * as guest from "./guest-screening";
 import * as monitoring from "./monitoring";
+import * as parentAccount from "./parent-account";
+import * as station from "./station";
 import { chat } from "./ai";
 import { idSchema } from "./security";
 
@@ -41,6 +43,29 @@ export async function route(request: Request, env: Env): Promise<Response> {
       return screening.startExamination(request, env);
     case "GET /api/mirror/assignment":
       return screening.mirrorAssignment(request, env);
+    case "GET /api/station/active":
+      return station.stationStatus(request, env);
+    case "POST /api/station/claim":
+      return station.claimStationExamination(request, env);
+    case "POST /api/station/complete":
+      return station.completeStationExamination(request, env);
+    case "POST /api/station/cancel":
+      return station.cancelStationExamination(request, env);
+
+    case "POST /api/parent-account/register":
+      return parentAccount.registerParent(request, env);
+    case "POST /api/parent-account/login":
+      return parentAccount.loginParent(request, env);
+    case "POST /api/parent-account/logout":
+      return parentAccount.logoutParent(request, env);
+    case "GET /api/parent-account/me":
+      return parentAccount.parentAccountView(request, env);
+    case "GET /api/parent-account/messages":
+      return parentAccount.parentAccountMessages(request, env);
+    case "POST /api/parent-account/chat":
+      return parentAccount.parentAccountChat(request, env);
+
+    // Legacy guest-screening flow is retained as a fallback for events/demo use.
     case "POST /api/screening/session":
       return guest.createScreeningSession(request, env);
     case "GET /api/screening/mirror":
@@ -69,7 +94,7 @@ export async function route(request: Request, env: Env): Promise<Response> {
       return chat(request, env);
   }
   const match = path.match(
-    /^\/api\/(staff|examinations|mirror\/examinations)\/([^/]+)(?:\/(access|claim|complete|cancel))?$/,
+    /^\/api\/(staff|examinations|mirror\/examinations)\/([^/]+)(?:\/(access|claim|complete|cancel|finalize))?$/,
   );
   if (match) {
     const [, resource, rawId, action] = match;
@@ -89,6 +114,8 @@ export async function route(request: Request, env: Env): Promise<Response> {
         return access.createResultLink(request, env, id);
       if (method === "DELETE" && action === "access")
         return access.revokeResultLinks(request, env, id);
+      if (method === "POST" && action === "finalize")
+        return screening.finalizeExamination(request, env, id);
     }
     if (resource === "mirror/examinations" && method === "POST") {
       if (action === "claim")

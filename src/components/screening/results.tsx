@@ -35,9 +35,11 @@ const CAPTURE_LABELS = {
 export function Results({
   report,
   onFinish,
+  awaitingStaffFinalize = false,
 }: {
   report: ScreeningReport;
-  onFinish: () => void;
+  onFinish?: () => void;
+  awaitingStaffFinalize?: boolean;
 }) {
   const [detail, setDetail] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -195,24 +197,42 @@ export function Results({
           <ArrowRight size={18} />
         </button>
       )}
-      <div className="result-actions">
-        <button className="secondary-button" onClick={save}>
-          {saved ? <Check size={20} /> : <Download size={20} />}Simpan
-        </button>
-        <button className="primary-button" onClick={onFinish}>
-          Selesai
-          <Check size={21} />
-        </button>
-      </div>
+
+      {awaitingStaffFinalize ? (
+        <div className="growth-result">
+          <div>
+            <span>Status sesi</span>
+            <strong>Menunggu petugas</strong>
+          </div>
+          <p>
+            Hasil sudah tersimpan. Petugas akan menutup sesi dari dashboard,
+            lalu alat kembali siap untuk pemeriksaan berikutnya.
+          </p>
+        </div>
+      ) : (
+        <div className="result-actions">
+          <button className="secondary-button" onClick={save}>
+            {saved ? <Check size={20} /> : <Download size={20} />}Simpan
+          </button>
+          {onFinish && (
+            <button className="primary-button" onClick={onFinish}>
+              Selesai
+              <Check size={21} />
+            </button>
+          )}
+        </div>
+      )}
       {error && (
         <p className="field-error" role="alert">
           {error}
         </p>
       )}
       <p className="parent-caption" role="status">
-        {saved
-          ? "Laporan sudah diunduh (.txt)."
-          : "Hasil juga tersedia di HP orang tua yang terhubung."}
+        {awaitingStaffFinalize
+          ? "Hasil juga tersedia pada akun orang tua yang terhubung."
+          : saved
+            ? "Laporan sudah diunduh (.txt)."
+            : "Hasil juga tersedia di HP orang tua yang terhubung."}
       </p>
     </section>
   );

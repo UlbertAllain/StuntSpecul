@@ -14,7 +14,16 @@ function subscribeVisibility(onChange: () => void) {
 const getHidden = () => document.hidden;
 const getServerHidden = () => false;
 
-export function useScreeningSession(assignment?: MirrorAssignment) {
+export type ScreeningCompletion = {
+  heightCm: number | null;
+  weightKg: number | null;
+  captureStatus: "captured" | "skipped" | "failed";
+};
+
+export function useScreeningSession(
+  assignment?: MirrorAssignment,
+  saveCompletion?: (payload: ScreeningCompletion) => Promise<void>,
+) {
   const [session, dispatch] = useReducer(
     sessionReducer,
     assignment
@@ -46,18 +55,23 @@ export function useScreeningSession(assignment?: MirrorAssignment) {
       readMeasurements(),
       session.capture,
     );
+    const payload: ScreeningCompletion = {
+      heightCm: report.readings.heightCm,
+      weightKg: report.readings.weightKg,
+      captureStatus: report.captureStatus,
+    };
+
     setSaving(true);
     setSaveError("");
     try {
-      if (assignment)
-        await api("/screening/mirror/complete", {
-          method: "POST",
-          body: {
-            heightCm: report.readings.heightCm,
-            weightKg: report.readings.weightKg,
-            captureStatus: report.captureStatus,
-          },
-        });
+      if (assignment) {
+        if (saveCompletion) await saveCompletion(payload);
+        else
+          await api("/screening/mirror/complete", {
+            method: "POST",
+            body: payload,
+          });
+      }
       dispatch({ type: "complete", report });
     } catch (error) {
       setSaveError(errorMessage(error));

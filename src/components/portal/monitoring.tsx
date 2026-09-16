@@ -12,6 +12,7 @@ const SESSION_LABEL = {
   parent_connected: "Orang tua sedang mengisi data",
   ready: "Siap diperiksa",
   running: "Sedang diperiksa",
+  awaiting_confirmation: "Menunggu konfirmasi petugas",
 };
 
 const EXAM_LABEL = {
@@ -30,7 +31,10 @@ function startOfToday() {
 export function MonitoringPanel() {
   const [overview, setOverview] = useState<MonitoringOverview | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [finalizing, setFinalizing] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
   const [since] = useState(() => startOfToday());
 
   useEffect(() => {
@@ -52,7 +56,7 @@ export function MonitoringPanel() {
       } finally {
         if (!controller.signal.aborted) {
           setRefreshing(false);
-          timer = setTimeout(() => void load(true), 5000);
+          timer = setTimeout(() => void load(true), 3000);
         }
       }
     }
@@ -62,7 +66,25 @@ export function MonitoringPanel() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [since]);
+  }, [since, refreshKey]);
+
+  async function finalize(id: string) {
+    if (finalizing) return;
+    setFinalizing(id);
+    setError("");
+    setNotice("");
+    try {
+      await api(`/examinations/${id}/finalize`, { method: "POST", body: {} });
+      setNotice(
+        "Pemeriksaan sudah ditutup. Layar alat siap untuk anak berikutnya.",
+      );
+      setRefreshKey((value) => value + 1);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setFinalizing("");
+    }
+  }
 
   if (!overview && !error) return <Message>Memuat data monitoring…</Message>;
 
@@ -78,13 +100,14 @@ export function MonitoringPanel() {
         <button
           className="portal-text"
           disabled={refreshing}
-          onClick={() => window.location.reload()}
+          onClick={() => setRefreshKey((value) => value + 1)}
         >
           <RefreshCw size={17} />
           {refreshing ? "Memperbarui…" : "Perbarui"}
         </button>
       </div>
 
+      {notice && <Message>{notice}</Message>}
       {error && <Message error>{error}</Message>}
 
       {overview && (
@@ -127,7 +150,7 @@ export function MonitoringPanel() {
             {overview.active.length === 0 ? (
               <div className="portal-empty">
                 <h3>Tidak ada pemeriksaan aktif</h3>
-                <p>Mirror siap menerima pemeriksaan berikutnya.</p>
+                <p>Alat siap menerima pemeriksaan berikutnya.</p>
               </div>
             ) : (
               <div className="examination-list">
@@ -135,11 +158,11 @@ export function MonitoringPanel() {
                   <div className="examination-row" key={item.id}>
                     <span>
                       <strong>
-                        {item.childName || "Data anak belum diisi"}
+                        {item.childName || "Sesi pemeriksaan sementara"}
                       </strong>
                       <small>
                         {item.ageMonths === null
-                          ? "Menunggu data dari HP orang tua"
+                          ? "Menunggu data sesi"
                           : formatAge(item.ageMonths)}
                       </small>
                     </span>
@@ -148,12 +171,25 @@ export function MonitoringPanel() {
                     >
                       {SESSION_LABEL[item.status]}
                     </span>
-                    <span className="row-readings">
-                      {new Date(item.createdAt).toLocaleTimeString("id-ID", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
+                    {item.status === "awaiting_confirmation" ? (
+                      <button
+                        className="portal-primary"
+                        disabled={!!finalizing}
+                        onClick={() => void finalize(item.id)}
+                      >
+                        <CheckCircle2 size={18} />
+                        {finalizing === item.id
+                          ? "Menutup…"
+                          : "Selesaikan pemeriksaan"}
+                      </button>
+                    ) : (
+                      <span className="row-readings">
+                        {new Date(item.createdAt).toLocaleTimeString("id-ID", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -167,7 +203,10 @@ export function MonitoringPanel() {
             {overview.recent.length === 0 ? (
               <div className="portal-empty">
                 <h3>Belum ada riwayat pemeriksaan</h3>
-                <p>Data akan muncul setelah orang tua memulai screening.</p>
+                <p>
+                  Data akan muncul setelah petugas memilih anak dan pemeriksaan
+                  dijalankan melalui alat StuntSpecula.
+                </p>
               </div>
             ) : (
               <div className="examination-list">
@@ -184,7 +223,9 @@ export function MonitoringPanel() {
                       </small>
                     </span>
                     <span className={`status-label status-${item.status}`}>
-                      {EXAM_LABEL[item.status]}
+                      {item.status === "completed" && !item.finalizedAt
+                        ? "Menunggu konfirmasi"
+                        : EXAM_LABEL[item.status]}
                     </span>
                     <span className="row-readings">
                       {formatReading(item.heightCm)} cm /{" "}

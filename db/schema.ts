@@ -6,6 +6,7 @@ import {
   index,
   uniqueIndex,
   check,
+  primaryKey,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
@@ -108,6 +109,14 @@ export const examinations = sqliteTable(
   ],
 );
 
+export const examinationWorkflow = sqliteTable("examination_workflow", {
+  examId: text("exam_id")
+    .primaryKey()
+    .references(() => examinations.id, { onDelete: "cascade" }),
+  finalizedAt: integer("finalized_at"),
+  createdAt: integer("created_at").notNull(),
+});
+
 export const screeningSessions = sqliteTable(
   "screening_sessions",
   {
@@ -188,6 +197,72 @@ export const chatMessages = sqliteTable(
   (t) => [
     index("chat_session_time").on(t.sessionHash, t.createdAt),
     check("chat_role", sql`${t.role} IN ('user','assistant')`),
+  ],
+);
+
+export const parentAccounts = sqliteTable(
+  "parent_accounts",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull().unique(),
+    passwordHash: text("password_hash").notNull(),
+    active: integer("active").notNull().default(1),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [check("parent_account_active", sql`${t.active} IN (0,1)`)],
+);
+
+export const parentChildren = sqliteTable(
+  "parent_children",
+  {
+    parentId: text("parent_id")
+      .notNull()
+      .references(() => parentAccounts.id, { onDelete: "cascade" }),
+    childId: text("child_id")
+      .notNull()
+      .references(() => children.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.parentId, t.childId] }),
+    index("parent_children_child").on(t.childId),
+  ],
+);
+
+export const parentAccountSessions = sqliteTable(
+  "parent_account_sessions",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    parentId: text("parent_id")
+      .notNull()
+      .references(() => parentAccounts.id, { onDelete: "cascade" }),
+    expiresAt: integer("expires_at").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [
+    index("parent_account_sessions_parent").on(t.parentId),
+    index("parent_account_sessions_expiry").on(t.expiresAt),
+  ],
+);
+
+export const parentAccountChatMessages = sqliteTable(
+  "parent_account_chat_messages",
+  {
+    id: text("id").primaryKey(),
+    parentId: text("parent_id")
+      .notNull()
+      .references(() => parentAccounts.id, { onDelete: "cascade" }),
+    examId: text("exam_id")
+      .notNull()
+      .references(() => examinations.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    content: text("content").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [
+    index("parent_account_chat_exam").on(t.parentId, t.examId, t.createdAt),
+    check("parent_account_chat_role", sql`${t.role} IN ('user','assistant')`),
   ],
 );
 
