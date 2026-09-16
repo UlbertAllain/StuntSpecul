@@ -1,4 +1,5 @@
-import { MirrorStation } from "@/components/screening/mirror-station";
+import { StationDisplay } from "@/components/screening/station-display";
+
 export default function Home() {
-  return <MirrorStation />;
+  return <StationDisplay />;
 }
