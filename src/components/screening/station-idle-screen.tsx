@@ -106,7 +106,9 @@ export function StationIdleScreen({
                 </h1>
                 <p className="mx-auto mt-3 max-w-xs text-center text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
                   Santai saja, ya.
-                  <span className="block">Tiga langkah sederhana bersama Mimo.</span>
+                  <span className="block">
+                    Tiga langkah sederhana bersama Mimo.
+                  </span>
                 </p>
               </div>
 
