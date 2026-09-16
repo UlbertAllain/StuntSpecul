@@ -167,12 +167,16 @@ test("parent portal exposes only examinations belonging to linked children", asy
     const now = Date.now();
     const staffId = crypto.randomUUID();
     const deviceId = crypto.randomUUID();
-    f.db.prepare(
-      "INSERT INTO staff (id,name,email,password_hash,role,active,created_at) VALUES (?,'Petugas','petugas-parent-test@example.test','unused','staff',1,?)",
-    ).run(staffId, now);
-    f.db.prepare(
-      "INSERT INTO devices (id,name,active,created_at) VALUES (?,'Mirror',1,?)",
-    ).run(deviceId, now);
+    f.db
+      .prepare(
+        "INSERT INTO staff (id,name,email,password_hash,role,active,created_at) VALUES (?,'Petugas','petugas-parent-test@example.test','unused','staff',1,?)",
+      )
+      .run(staffId, now);
+    f.db
+      .prepare(
+        "INSERT INTO devices (id,name,active,created_at) VALUES (?,'Mirror',1,?)",
+      )
+      .run(deviceId, now);
 
     const childA = f.db
       .prepare(
@@ -191,9 +195,11 @@ test("parent portal exposes only examinations belonging to linked children", asy
       [examA, childA, "female", 95],
       [examB, childB, "male", 97],
     ]) {
-      f.db.prepare(
-        "INSERT INTO examinations (id,child_id,staff_id,device_id,age_months,sex,status,height_cm,weight_kg,bmi,capture_status,created_at,completed_at) VALUES (?,?,?,?,36,?,'completed',?,14,15.5,'captured',?,?)",
-      ).run(id, childId, staffId, deviceId, sex, height, now, now);
+      f.db
+        .prepare(
+          "INSERT INTO examinations (id,child_id,staff_id,device_id,age_months,sex,status,height_cm,weight_kg,bmi,capture_status,created_at,completed_at) VALUES (?,?,?,?,36,?,'completed',?,14,15.5,'captured',?,?)",
+        )
+        .run(id, childId, staffId, deviceId, sex, height, now, now);
     }
 
     const viewA = await data(
@@ -257,15 +263,21 @@ test("public portrait station status never exposes child identity or examination
     const now = Date.now();
     const staffId = crypto.randomUUID();
     const deviceId = crypto.randomUUID();
-    f.db.prepare(
-      "INSERT INTO staff (id,name,email,password_hash,role,active,created_at) VALUES (?,'Petugas','station@example.test','unused','staff',1,?)",
-    ).run(staffId, now);
-    f.db.prepare(
-      "INSERT INTO devices (id,name,active,created_at) VALUES (?,'Mirror',1,?)",
-    ).run(deviceId, now);
-    f.db.prepare(
-      "INSERT INTO examinations (id,child_id,staff_id,device_id,age_months,sex,status,created_at) VALUES (?,?,?,?,36,'female','queued',?)",
-    ).run(crypto.randomUUID(), childId, staffId, deviceId, now);
+    f.db
+      .prepare(
+        "INSERT INTO staff (id,name,email,password_hash,role,active,created_at) VALUES (?,'Petugas','station@example.test','unused','staff',1,?)",
+      )
+      .run(staffId, now);
+    f.db
+      .prepare(
+        "INSERT INTO devices (id,name,active,created_at) VALUES (?,'Mirror',1,?)",
+      )
+      .run(deviceId, now);
+    f.db
+      .prepare(
+        "INSERT INTO examinations (id,child_id,staff_id,device_id,age_months,sex,status,created_at) VALUES (?,?,?,?,36,'female','queued',?)",
+      )
+      .run(crypto.randomUUID(), childId, staffId, deviceId, now);
 
     const station = await data(
       await api.route(request("/api/station/active"), f.env),
