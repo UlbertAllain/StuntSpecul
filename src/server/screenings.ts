@@ -57,6 +57,20 @@ export async function getExamination(
   return withGrowthAssessment(exam);
 }
 
+export async function listParentExaminations(
+  env: Env,
+  parentId: string,
+): Promise<Examination[]> {
+  const rows = (
+    await env.DB.prepare(
+      `${EXAM_SELECT} JOIN parent_children pc ON pc.child_id=e.child_id WHERE pc.parent_id=? ORDER BY e.created_at DESC,e.id DESC LIMIT 100`,
+    )
+      .bind(parentId)
+      .all<StoredExamination>()
+  ).results;
+  return rows.map(withGrowthAssessment);
+}
+
 export async function startExamination(request: Request, env: Env) {
   const actor = await requireStaff(request, env);
   const input = await body(
