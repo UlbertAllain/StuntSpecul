@@ -104,8 +104,11 @@ export function StationIdleScreen({
                   Yuk, cek
                   <span className="block text-[#b43e70]">tumbuh kembangmu</span>
                 </h1>
-                <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
-                  Santai saja. Kita cuma punya tiga langkah sederhana.
+                <p className="mx-auto mt-3 max-w-xs text-center text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
+                  Santai saja, ya.
+                  <span className="block">
+                    Tiga langkah sederhana bersama Mimo.
+                  </span>
                 </p>
               </div>
 
