@@ -2,8 +2,6 @@ import { z } from "zod";
 import type { Env } from "./env";
 import { ApiError, body, ok } from "./http";
 
-const STATION_ID = "single-station";
-
 type ActiveStationExam = {
   id: string;
   ageMonths: number;
@@ -15,10 +13,8 @@ type ActiveStationExam = {
 
 async function findActiveStationExam(env: Env) {
   return env.DB.prepare(
-    "SELECT id,age_months AS ageMonths,sex,status,capture_status IS NULL AS cameraEnabled,created_at AS createdAt FROM examinations WHERE device_id=? AND status IN ('queued','running') ORDER BY created_at ASC LIMIT 1",
-  )
-    .bind(STATION_ID)
-    .first<ActiveStationExam>();
+    "SELECT id,age_months AS ageMonths,sex,status,capture_status IS NULL AS cameraEnabled,created_at AS createdAt FROM examinations WHERE status IN ('queued','running') ORDER BY created_at ASC LIMIT 1",
+  ).first<ActiveStationExam>();
 }
 
 export async function stationStatus(_request: Request, env: Env) {
@@ -70,10 +66,8 @@ const completionSchema = z
 export async function completeStationExamination(request: Request, env: Env) {
   const input = await body(request, completionSchema);
   const exam = await env.DB.prepare(
-    "SELECT id,status FROM examinations WHERE device_id=? ORDER BY created_at DESC LIMIT 1",
-  )
-    .bind(STATION_ID)
-    .first<{ id: string; status: string }>();
+    "SELECT id,status FROM examinations ORDER BY created_at DESC LIMIT 1",
+  ).first<{ id: string; status: string }>();
 
   if (!exam)
     throw new ApiError(409, "Belum ada pemeriksaan aktif pada alat.");
