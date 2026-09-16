@@ -28,7 +28,7 @@ try {
     if (applied.has(name)) {
       if (applied.get(name) !== checksum)
         throw new Error(
-          "Migration checksum changed; restore the original migration.",
+          `Migration checksum changed for ${name}; restore the original migration.`,
         );
       continue;
     }
@@ -57,8 +57,10 @@ try {
   ) {
     console.error(`${error.code}: ${error.message}`);
   } else {
+    const detail = error instanceof Error ? error.message : String(error);
     console.error(
-      "Migrasi gagal. Periksa akses database dan pastikan skema lama tidak diubah. Jangan menghapus database yang berisi data.",
+      "Migrasi gagal. Database tidak dihapus atau di-reset. Detail:",
+      detail,
     );
   }
   process.exitCode = 1;
