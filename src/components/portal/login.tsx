@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api, errorMessage } from "@/lib/api-client";
 import type { Staff } from "@/lib/portal";
 import { Message, PortalShell } from "./shell";
+import { PasswordInput } from "./password-input";
 
 type Config = {
   needsSetup: boolean;
@@ -92,9 +93,8 @@ export function StaffLogin({ onLogin }: { onLogin: (staff: Staff) => void }) {
         </label>
         <label>
           Password
-          <input
+          <PasswordInput
             name="password"
-            type="password"
             required
             minLength={config?.needsSetup ? 12 : 1}
             maxLength={72}
