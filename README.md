@@ -15,9 +15,10 @@ npm run dev
 
 Rute utama:
 
-- `http://localhost:3000` — layar perangkat/timbangan StuntSpecula dengan layout portrait.
+- `http://localhost:3000` — portal utama orang tua.
+- `http://localhost:3000/ortu` — alias portal monitoring orang tua.
 - `http://localhost:3000/petugas` — dashboard Puskesmas/petugas.
-- `http://localhost:3000/ortu` — portal monitoring orang tua.
+- `http://localhost:3000/alat` — layar perangkat/timbangan StuntSpecula dengan layout portrait.
 
 Pada penggunaan lokal pertama, buat akun pengelola dari portal petugas.
 
@@ -39,7 +40,7 @@ Simpan konfigurasi lokal di `.env.local` dan konfigurasi produksi di Vercel Envi
 
 ### 1. Orang tua
 
-1. Orang tua membuat akun atau masuk melalui `/ortu`.
+1. Orang tua membuka aplikasi utama pada `/` atau `/ortu`, kemudian membuat akun atau masuk.
 2. Profil anak terhubung dengan akun orang tua.
 3. Orang tua hanya memantau data; nilai hasil pemeriksaan tidak dapat diedit dari portal orang tua.
 4. Setelah pemeriksaan selesai, hasil terbaru dan riwayat pertumbuhan otomatis tersedia pada akun orang tua.
@@ -55,8 +56,8 @@ Simpan konfigurasi lokal di `.env.local` dan konfigurasi produksi di Vercel Envi
 
 ### 3. Perangkat IoT
 
-1. Layar portrait pada `/` menunggu assignment dari dashboard petugas.
-2. Setelah petugas memilih anak, layar menunjukkan bahwa data pemeriksaan sudah diterima.
+1. Layar portrait pada `/alat` menunggu assignment dari dashboard petugas.
+2. Setelah petugas memilih anak, layar menunjukkan bahwa data pemeriksaan sudah diterima tanpa menampilkan identitas anak di layar publik.
 3. Pengukuran fisik dirancang untuk tinggi badan, berat badan, dan capture kamera.
 4. Setelah hardware terhubung, pembacaan sensor akan dikirim ke examination yang sudah dipilih petugas.
 
@@ -86,7 +87,7 @@ Model analisis wajah belum terhubung pada versi saat ini. Foto kamera juga tidak
 
 ## Portal orang tua
 
-Portal `/ortu` menyediakan:
+Portal utama `/` (dengan alias `/ortu`) menyediakan:
 
 - login dan sesi akun orang tua yang persisten;
 - profil anak yang terhubung;
@@ -129,18 +130,19 @@ npm start
 
 ## Struktur penting
 
-- `src/app/page.tsx`: layar portrait perangkat/timbangan.
+- `src/app/page.tsx`: portal utama orang tua.
+- `src/app/ortu`: alias portal monitoring orang tua.
 - `src/app/petugas`: dashboard Puskesmas/petugas.
-- `src/app/ortu`: portal monitoring orang tua.
+- `src/app/alat`: layar portrait perangkat/timbangan.
 - `src/server/router.ts`: pemetaan endpoint dan pemeriksaan origin.
 - `src/server/parent-account.ts`: akun, sesi, hubungan data orang tua, hasil, dan chat orang tua.
-- `src/server/station.ts`: status assignment untuk layar perangkat statis.
+- `src/server/station.ts`: status assignment minimal untuk layar perangkat statis.
 - `src/server/screenings.ts`: examination dan hasil pemeriksaan.
 - `src/lib/growth.ts`: WHO height-for-age engine dan tindak lanjut.
 - `src/server/gemini.ts`: provider asisten penjelasan hasil.
 - `src/components/screening`: antarmuka portrait perangkat.
 - `src/components/portal`: portal orang tua dan petugas.
 - `db/schema.ts`, `drizzle`: skema dan migrasi.
-- `tests`: aturan bisnis, otorisasi, WHO growth engine, sesi, kamera, database, dan deployment.
+- `tests`: aturan bisnis, isolasi akun orang tua, otorisasi, WHO growth engine, sesi, kamera, database, dan deployment.
 
 [Arah arsitektur](docs/ARCHITECTURE.md) · [Catatan cleanup](docs/CLEANUP.md)
