@@ -66,7 +66,7 @@ export function StaffDashboard() {
   return (
     <PortalShell
       heading={facility}
-      subtitle={`Halo, ${user.name}. Pantau pemeriksaan dan riwayat pertumbuhan dari sini.`}
+      subtitle={`Halo, ${user.name}. Pilih anak untuk pemeriksaan, lalu pantau proses dan riwayat pertumbuhannya.`}
       actions={
         <button className="portal-text" onClick={logout}>
           <LogOut size={18} />
