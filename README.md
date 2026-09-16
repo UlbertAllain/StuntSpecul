@@ -1,6 +1,6 @@
 # StuntSpecula
 
-Smart mirror untuk skrining pertumbuhan anak usia 24–59 bulan yang dapat berdiri sendiri. Aplikasi menggunakan Next.js App Router, Tailwind, API Next.js, SQLite/libSQL, WHO Child Growth Standards untuk tinggi menurut umur, dan Gemini sebagai asisten penjelasan hasil.
+StuntSpecula adalah platform pemantauan pertumbuhan anak yang menghubungkan perangkat pemeriksaan IoT, dashboard Puskesmas/fasilitas kesehatan, dan portal orang tua. Sistem menggunakan Next.js App Router, Tailwind, API Next.js, SQLite/libSQL, WHO Child Growth Standards untuk tinggi menurut umur, serta Gemini sebagai asisten penjelasan hasil.
 
 ## Jalankan lokal
 
@@ -13,11 +13,17 @@ npm run db:migrate
 npm run dev
 ```
 
-Buka `http://localhost:3000` untuk layar mirror dan `http://localhost:3000/petugas` untuk portal monitoring. Pada penggunaan lokal pertama, buat akun pengelola dari portal petugas.
+Rute utama:
+
+- `http://localhost:3000` — layar perangkat/timbangan StuntSpecula dengan layout portrait.
+- `http://localhost:3000/petugas` — dashboard Puskesmas/petugas.
+- `http://localhost:3000/ortu` — portal monitoring orang tua.
+
+Pada penggunaan lokal pertama, buat akun pengelola dari portal petugas.
 
 ## Deploy di Vercel
 
-Ikuti [panduan langkah demi langkah](docs/VERCEL.md). Untuk akun dan riwayat yang tersimpan, gunakan database **libSQL di Turso**. API dan Gemini berjalan di Next.js Route Handler.
+Ikuti [panduan langkah demi langkah](docs/VERCEL.md). Untuk akun, hubungan orang tua-anak, dan riwayat pemeriksaan yang persisten, gunakan database **libSQL di Turso**. API dan Gemini berjalan melalui Next.js Route Handler.
 
 | Environment variable | Fungsi                                                           |
 | -------------------- | ---------------------------------------------------------------- |
@@ -31,17 +37,30 @@ Simpan konfigurasi lokal di `.env.local` dan konfigurasi produksi di Vercel Envi
 
 ## Alur utama
 
-1. Mirror membuka sesi pemeriksaan dan menampilkan QR/link.
-2. Orang tua membuka QR/link dari HP tanpa membuat akun.
-3. Orang tua mengisi nama anak, tanggal lahir, jenis kelamin, dan nama wali opsional.
-4. Sistem memvalidasi usia 24–59 bulan dan membuat examination yang terikat ke sesi tersebut.
-5. Mirror melanjutkan flow pemeriksaan tinggi, berat, kamera, dan pemrosesan.
-6. Hasil pemeriksaan tersedia pada mirror dan HP orang tua.
-7. Tinggi menurut umur dinilai secara deterministik menggunakan WHO Child Growth Standards.
-8. Orang tua mendapat interpretasi skrining, langkah tindak lanjut, dan dapat bertanya kepada asisten hasil Gemini.
-9. Petugas/pengelola memantau pemeriksaan, data anak, dan riwayat dari `/petugas`.
+### 1. Orang tua
 
-Satu pemeriksaan aktif digunakan untuk satu alat. Kamera tidak dipakai untuk mengenali identitas dan tidak menentukan status stunting.
+1. Orang tua membuat akun atau masuk melalui `/ortu`.
+2. Profil anak terhubung dengan akun orang tua.
+3. Orang tua hanya memantau data; nilai hasil pemeriksaan tidak dapat diedit dari portal orang tua.
+4. Setelah pemeriksaan selesai, hasil terbaru dan riwayat pertumbuhan otomatis tersedia pada akun orang tua.
+5. Orang tua dapat membuka detail hasil dan bertanya kepada Asisten Pertumbuhan mengenai hasil yang sudah dihitung server.
+
+### 2. Puskesmas / petugas
+
+1. Petugas masuk melalui `/petugas`.
+2. Petugas mencari profil anak pada menu Data Anak.
+3. Petugas menekan **Mulai pemeriksaan** untuk mengirim assignment ke perangkat StuntSpecula.
+4. Dashboard digunakan untuk memantau pemeriksaan aktif, data anak, dan riwayat hasil.
+5. Pengelola dapat mengelola akun petugas.
+
+### 3. Perangkat IoT
+
+1. Layar portrait pada `/` menunggu assignment dari dashboard petugas.
+2. Setelah petugas memilih anak, layar menunjukkan bahwa data pemeriksaan sudah diterima.
+3. Pengukuran fisik dirancang untuk tinggi badan, berat badan, dan capture kamera.
+4. Setelah hardware terhubung, pembacaan sensor akan dikirim ke examination yang sudah dipilih petugas.
+
+Saat ini tampilan dan alur integrasi perangkat sudah disiapkan, tetapi adapter sensor tinggi/berat nyata masih menunggu hardware IoT final. Sistem tidak membuat nilai sensor palsu jika perangkat belum terhubung.
 
 ## Skrining pertumbuhan
 
@@ -59,18 +78,42 @@ Hasil merupakan **skrining, bukan diagnosis**. Hasil terindikasi perlu dikonfirm
 
 Referensi utama: [WHO Child Growth Standards — Length/height-for-age](https://www.who.int/tools/child-growth-standards/standards/length-height-for-age).
 
-## Integrasi yang tersedia
+## Analisis wajah
 
-- Guest screening: QR/link, sesi sementara mirror ↔ HP orang tua, dan akses hasil terisolasi per pemeriksaan.
-- Login petugas: password bcrypt, sesi cookie HttpOnly, role pengelola/petugas.
-- Monitoring: pemeriksaan aktif, statistik, data anak, riwayat, dan detail hasil.
-- WHO growth engine: TB/U z-score dan klasifikasi skrining dihitung dari usia, jenis kelamin, dan tinggi badan.
-- Tindak lanjut: rekomendasi berbasis status skrining ditampilkan pada mirror, HP orang tua, dan laporan.
-- Gemini: hanya menjelaskan hasil yang sudah dihitung server; tidak menghitung atau mengganti status stunting.
-- Kamera: capture flow tersedia, tetapi model analisis wajah belum terhubung.
-- Sensor tinggi/berat: adapter hardware nyata belum terhubung; tanpa pembacaan sensor, nilai tetap `null` dan WHO engine tidak mengarang hasil.
+Kamera tetap disiapkan untuk analisis indikator visual seperti area mata, kantong mata, dan kondisi bibir. Kamera **bukan** face recognition untuk menentukan identitas anak. Hasil analisis wajah dipisahkan dari WHO growth engine dan tidak menentukan status stunting.
 
-Foto kamera tidak dikirim otomatis ke Gemini. Nama, kode anak, dan identitas profil tidak disertakan otomatis dalam konteks chatbot.
+Model analisis wajah belum terhubung pada versi saat ini. Foto kamera juga tidak dikirim otomatis ke Gemini.
+
+## Portal orang tua
+
+Portal `/ortu` menyediakan:
+
+- login dan sesi akun orang tua yang persisten;
+- profil anak yang terhubung;
+- hasil pemeriksaan terbaru;
+- riwayat pertumbuhan longitudinal;
+- detail tinggi, berat, TB/U Z-score, dan status skrining;
+- tindak lanjut yang sesuai dengan hasil;
+- Asisten Pertumbuhan untuk menjelaskan hasil pemeriksaan.
+
+Asisten Gemini hanya menjelaskan hasil yang sudah dihitung server. Gemini tidak menghitung ulang atau mengganti klasifikasi WHO.
+
+## Dashboard Puskesmas
+
+Portal `/petugas` menyediakan:
+
+- monitoring pemeriksaan aktif;
+- statistik pemeriksaan;
+- pencarian data anak;
+- tombol mulai pemeriksaan untuk anak yang dipilih;
+- riwayat pemeriksaan dan detail hasil;
+- kelola akun petugas untuk role pengelola.
+
+Satu alat menggunakan satu pemeriksaan aktif pada satu waktu.
+
+## Legacy guest flow
+
+Flow QR/link tanpa akun dari versi sebelumnya masih dipertahankan di backend sebagai jalur kompatibilitas/demo, tetapi bukan alur utama produk setelah refactor client tracking.
 
 ## Verifikasi
 
@@ -86,13 +129,16 @@ npm start
 
 ## Struktur penting
 
-- `src/app/api/[...path]/route.ts`: adapter HTTP Next.js.
+- `src/app/page.tsx`: layar portrait perangkat/timbangan.
+- `src/app/petugas`: dashboard Puskesmas/petugas.
+- `src/app/ortu`: portal monitoring orang tua.
 - `src/server/router.ts`: pemetaan endpoint dan pemeriksaan origin.
-- `src/server/guest-screening.ts`: sesi QR/link dan orkestrasi parent ↔ mirror.
-- `src/server/screenings.ts`: examination dan hasil yang dibaca petugas/orang tua.
+- `src/server/parent-account.ts`: akun, sesi, hubungan data orang tua, hasil, dan chat orang tua.
+- `src/server/station.ts`: status assignment untuk layar perangkat statis.
+- `src/server/screenings.ts`: examination dan hasil pemeriksaan.
 - `src/lib/growth.ts`: WHO height-for-age engine dan tindak lanjut.
 - `src/server/gemini.ts`: provider asisten penjelasan hasil.
-- `src/components/screening`: antarmuka mirror.
+- `src/components/screening`: antarmuka portrait perangkat.
 - `src/components/portal`: portal orang tua dan petugas.
 - `db/schema.ts`, `drizzle`: skema dan migrasi.
 - `tests`: aturan bisnis, otorisasi, WHO growth engine, sesi, kamera, database, dan deployment.
