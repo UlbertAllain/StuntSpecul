@@ -25,7 +25,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useScreeningSession } from "@/hooks/use-screening-session";
+import {
+  useScreeningSession,
+  type ScreeningCompletion,
+} from "@/hooks/use-screening-session";
 import { useSpeech } from "@/hooks/use-speech";
 import { STEP_INSTRUCTIONS, STEP_PROGRESS, type Step } from "@/lib/session";
 import { CameraStep } from "./camera-step";
@@ -67,17 +70,19 @@ export function NutriMirror({
   assignment,
   canBegin = false,
   onBegin,
+  onComplete,
   onFinish,
   waitingLabel = "Petugas menyiapkan pemeriksaan.",
 }: {
   assignment?: MirrorAssignment;
   canBegin?: boolean;
   onBegin?: () => void;
+  onComplete?: (payload: ScreeningCompletion) => Promise<void>;
   onFinish?: (cancel: boolean) => Promise<void>;
   waitingLabel?: string;
 }) {
   const { session, dispatch, active, isPaused, complete, saveError, saving } =
-    useScreeningSession(assignment);
+    useScreeningSession(assignment, onComplete);
   const { step, report, paused, exitOpen } = session;
   const [voice, setVoice] = useState(false);
   const [notice, setNotice] = useState("");
