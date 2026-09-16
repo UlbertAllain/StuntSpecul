@@ -2,8 +2,11 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Activity, Baby, LoaderCircle, Ruler, Scale } from "lucide-react";
+import { Activity, Baby, LoaderCircle } from "lucide-react";
 import { api, errorMessage } from "@/lib/api-client";
+import type { MirrorAssignment } from "@/lib/portal";
+import type { ScreeningCompletion } from "@/hooks/use-screening-session";
+import { NutriMirror } from "./nutri-mirror";
 
 type StationActive = {
   status: "queued" | "running";
@@ -15,9 +18,12 @@ type StationState = { active: StationActive | null };
 
 export function StationDisplay() {
   const [state, setState] = useState<StationState | null>(null);
+  const [assignment, setAssignment] = useState<MirrorAssignment | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (assignment) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
 
@@ -41,9 +47,63 @@ export function StationDisplay() {
       controller.abort();
       clearTimeout(timer);
     };
-  }, []);
+  }, [assignment]);
 
-  const active = state?.active ?? null;
+  async function begin() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const claimed = await api<MirrorAssignment>("/station/claim", {
+        method: "POST",
+        body: {},
+      });
+      setAssignment({ ...claimed, cameraEnabled: !!claimed.cameraEnabled });
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveCompletion(payload: ScreeningCompletion) {
+    await api("/station/complete", {
+      method: "POST",
+      body: payload,
+    });
+  }
+
+  async function finish(cancel: boolean) {
+    if (cancel)
+      await api("/station/cancel", {
+        method: "POST",
+        body: {},
+      });
+    setAssignment(null);
+    setState({ active: null });
+    setError("");
+  }
+
+  if (assignment)
+    return (
+      <NutriMirror
+        key="station-running"
+        assignment={assignment}
+        canBegin
+        onComplete={saveCompletion}
+        onFinish={finish}
+      />
+    );
+
+  if (state?.active)
+    return (
+      <NutriMirror
+        key={`station-ready-${state.active.createdAt}`}
+        canBegin={!busy && !error}
+        onBegin={begin}
+        waitingLabel="Petugas sudah memilih profil anak. Tekan Aku siap! untuk memulai pemeriksaan."
+      />
+    );
 
   return (
     <main className="min-h-svh bg-[var(--brand-ice)] px-5 py-8 text-[var(--ink)] sm:px-8">
@@ -78,7 +138,7 @@ export function StationDisplay() {
                 Menghubungkan layar StuntSpecula dengan sistem fasilitas.
               </p>
             </>
-          ) : !active ? (
+          ) : (
             <>
               <span className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-full bg-[var(--brand-ice)]">
                 <Baby size={42} />
@@ -91,45 +151,7 @@ export function StationDisplay() {
               </h1>
               <p className="mx-auto mt-5 max-w-md text-lg leading-8 text-[var(--muted-foreground)]">
                 Petugas akan memilih profil anak dari dashboard Puskesmas.
-                Setelah data diterima, layar ini akan berubah otomatis.
-              </p>
-            </>
-          ) : (
-            <>
-              <span className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-full bg-[var(--brand-ice)]">
-                {active.status === "running" ? (
-                  <LoaderCircle className="animate-spin" size={42} />
-                ) : (
-                  <Activity size={42} />
-                )}
-              </span>
-              <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-[var(--blue)]">
-                {active.status === "running"
-                  ? "Pemeriksaan berlangsung"
-                  : "Data pemeriksaan diterima"}
-              </p>
-              <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
-                {active.status === "running"
-                  ? "Tetap berdiri tegak, ya."
-                  : "Silakan bersiap di atas alat."}
-              </h1>
-              <p className="mx-auto mt-5 max-w-md leading-7 text-[var(--muted-foreground)]">
-                Profil anak telah dipilih oleh petugas. Data identitas tidak
-                ditampilkan pada layar alat untuk menjaga privasi.
-              </p>
-              <div className="mx-auto mt-7 flex w-full max-w-sm flex-col gap-3 text-left">
-                <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] p-4">
-                  <Ruler size={22} />
-                  <span>Pengukuran tinggi badan</span>
-                </div>
-                <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] p-4">
-                  <Scale size={22} />
-                  <span>Pengukuran berat badan</span>
-                </div>
-              </div>
-              <p className="mx-auto mt-6 max-w-md text-sm leading-6 text-[var(--muted-foreground)]">
-                Analisis wajah digunakan untuk indikator visual seperti area
-                mata dan kondisi bibir, bukan untuk mengenali identitas anak.
+                Setelah data diterima, layar pemeriksaan akan terbuka otomatis.
               </p>
             </>
           )}
