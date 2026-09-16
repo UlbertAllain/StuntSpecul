@@ -36,7 +36,10 @@ export async function claimStationExamination(_request: Request, env: Env) {
   if (!active)
     throw new ApiError(409, "Belum ada pemeriksaan yang dikirim ke alat.");
   if (active.status === "completed")
-    throw new ApiError(409, "Pemeriksaan sudah selesai. Menunggu konfirmasi petugas.");
+    throw new ApiError(
+      409,
+      "Pemeriksaan sudah selesai. Menunggu konfirmasi petugas.",
+    );
 
   if (active.status === "queued") {
     const claimed = await env.DB.prepare(

@@ -75,7 +75,9 @@ export function MonitoringPanel() {
     setNotice("");
     try {
       await api(`/examinations/${id}/finalize`, { method: "POST", body: {} });
-      setNotice("Pemeriksaan sudah ditutup. Layar alat siap untuk anak berikutnya.");
+      setNotice(
+        "Pemeriksaan sudah ditutup. Layar alat siap untuk anak berikutnya.",
+      );
       setRefreshKey((value) => value + 1);
     } catch (e) {
       setError(errorMessage(e));
