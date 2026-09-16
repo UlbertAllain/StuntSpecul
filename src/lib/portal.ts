@@ -46,6 +46,7 @@ export type Examination = {
   growthStatus: GrowthStatus;
   createdAt: number;
   completedAt: number | null;
+  finalizedAt: number | null;
 };
 export type ChatMessage = {
   id: string;
@@ -86,10 +87,15 @@ export type MirrorAssignment = {
 
 export type MonitoringSession = {
   id: string;
-  status: "waiting_parent" | "parent_connected" | "ready" | "running";
+  status:
+    | "waiting_parent"
+    | "parent_connected"
+    | "ready"
+    | "running"
+    | "awaiting_confirmation";
   childName: string | null;
   ageMonths: number | null;
-  examStatus: "queued" | "running" | null;
+  examStatus: "queued" | "running" | "completed" | null;
   createdAt: number;
   connectedAt: number | null;
   startedAt: number | null;
@@ -105,6 +111,7 @@ export type MonitoringRecentExam = {
   weightKg: number | null;
   createdAt: number;
   completedAt: number | null;
+  finalizedAt: number | null;
 };
 
 export type MonitoringOverview = {
