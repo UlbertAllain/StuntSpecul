@@ -73,6 +73,7 @@ export function NutriMirror({
   onComplete,
   onFinish,
   waitingLabel = "Petugas menyiapkan pemeriksaan.",
+  awaitingStaffFinalize = false,
 }: {
   assignment?: MirrorAssignment;
   canBegin?: boolean;
@@ -80,6 +81,7 @@ export function NutriMirror({
   onComplete?: (payload: ScreeningCompletion) => Promise<void>;
   onFinish?: (cancel: boolean) => Promise<void>;
   waitingLabel?: string;
+  awaitingStaffFinalize?: boolean;
 }) {
   const { session, dispatch, active, isPaused, complete, saveError, saving } =
     useScreeningSession(assignment, onComplete);
@@ -105,7 +107,8 @@ export function NutriMirror({
   }
 
   function requestExit() {
-    if (step !== "welcome") dispatch({ type: "set-exit", open: true });
+    if (step !== "welcome" && !awaitingStaffFinalize)
+      dispatch({ type: "set-exit", open: true });
   }
 
   async function fullscreen() {
@@ -193,7 +196,15 @@ export function NutriMirror({
       case "analysis":
         return <ProcessingStage paused={isPaused} onComplete={complete} />;
       case "result":
-        return report && <Results report={report} onFinish={reset} />;
+        return (
+          report && (
+            <Results
+              report={report}
+              onFinish={awaitingStaffFinalize ? undefined : reset}
+              awaitingStaffFinalize={awaitingStaffFinalize}
+            />
+          )
+        );
     }
   }
 
@@ -241,14 +252,16 @@ export function NutriMirror({
       >
         {step !== "welcome" && (
           <div className="stage-controls">
-            <button
-              className="back-button"
-              onClick={requestExit}
-              aria-label="Kembali ke awal"
-            >
-              <ArrowLeft size={20} />
-              <span>Kembali</span>
-            </button>
+            {!awaitingStaffFinalize && (
+              <button
+                className="back-button"
+                onClick={requestExit}
+                aria-label="Kembali ke awal"
+              >
+                <ArrowLeft size={20} />
+                <span>Kembali</span>
+              </button>
+            )}
             <span>
               {step === "result"
                 ? "HASIL SCREENING"
@@ -297,7 +310,7 @@ export function NutriMirror({
           <span>{notice}</span>
           <button
             aria-label="Tutup pemberitahuan"
-            onClick={() => setNotice("")}
+            onClick={() => setNotice("")
           >
             ×
           </button>
