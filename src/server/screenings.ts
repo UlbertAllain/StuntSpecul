@@ -9,7 +9,7 @@ import { findChild } from "./children";
 
 // Keep historical device foreign keys intact; the single station needs no user setup.
 const STATION_ID = "single-station";
-const EXAM_SELECT = `SELECT e.id,e.child_id AS childId,c.name AS childName,c.code AS childCode,e.age_months AS ageMonths,e.sex,e.device_id AS deviceId,d.name AS deviceName,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.bmi,e.capture_status AS captureStatus,e.growth_status AS growthStatus,e.created_at AS createdAt,e.completed_at AS completedAt FROM examinations e JOIN children c ON c.id=e.child_id JOIN devices d ON d.id=e.device_id`;
+const EXAM_SELECT = `SELECT e.id,e.child_id AS childId,c.name AS childName,c.code AS childCode,e.age_months AS ageMonths,e.sex,e.device_id AS deviceId,d.name AS deviceName,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.bmi,e.capture_status AS captureStatus,e.growth_status AS growthStatus,e.created_at AS createdAt,e.completed_at AS completedAt,e.finalized_at AS finalizedAt FROM examinations e JOIN children c ON c.id=e.child_id JOIN devices d ON d.id=e.device_id`;
 type StoredExamination = Omit<Examination, "heightForAgeZ" | "growthStatus"> & {
   growthStatus: string;
 };
@@ -99,9 +99,8 @@ export async function startExamination(request: Request, env: Env) {
   )
     .bind(STATION_ID, Date.now())
     .run();
-  // A single INSERT checks and reserves the station atomically, including legacy sessions.
   const created = await env.DB.prepare(
-    "INSERT INTO examinations (id,child_id,staff_id,device_id,age_months,sex,status,capture_status,created_at) SELECT ?,?,?,?,?,?,'queued',?,? WHERE NOT EXISTS (SELECT 1 FROM examinations WHERE status IN ('queued','running')) RETURNING id",
+    "INSERT INTO examinations (id,child_id,staff_id,device_id,age_months,sex,status,capture_status,created_at) SELECT ?,?,?,?,?,?,'queued',?,? WHERE NOT EXISTS (SELECT 1 FROM examinations WHERE status IN ('queued','running') OR (status='completed' AND finalized_at IS NULL)) RETURNING id",
   )
     .bind(
       id,
@@ -117,7 +116,7 @@ export async function startExamination(request: Request, env: Env) {
   if (!created)
     throw new ApiError(
       409,
-      "Masih ada pemeriksaan aktif. Lanjutkan atau batalkan melalui History sebelum memulai anak berikutnya.",
+      "Masih ada pemeriksaan yang belum ditutup petugas. Selesaikan sesi aktif terlebih dahulu.",
     );
   return ok({ id }, 201);
 }
@@ -135,6 +134,30 @@ export async function cancelExamination(
     .first();
   if (!changed) throw new ApiError(409, "Sesi sudah selesai atau dibatalkan.");
   return ok(changed);
+}
+
+export async function finalizeExamination(
+  request: Request,
+  env: Env,
+  id: string,
+) {
+  await requireStaff(request, env);
+  const exam = await env.DB.prepare(
+    "SELECT status,finalized_at AS finalizedAt FROM examinations WHERE id=?",
+  )
+    .bind(id)
+    .first<{ status: string; finalizedAt: number | null }>();
+  if (!exam) throw new ApiError(404, "Pemeriksaan tidak ditemukan.");
+  if (exam.status !== "completed")
+    throw new ApiError(409, "Pemeriksaan belum selesai di alat.");
+  if (exam.finalizedAt) return ok({ id, finalized: true });
+
+  await env.DB.prepare(
+    "UPDATE examinations SET finalized_at=? WHERE id=? AND status='completed' AND finalized_at IS NULL",
+  )
+    .bind(Date.now(), id)
+    .run();
+  return ok({ id, finalized: true });
 }
 
 export async function mirrorAssignment(request: Request, env: Env) {
@@ -185,7 +208,7 @@ export async function completeExamination(
       ? Number((input.weightKg / (input.heightCm / 100) ** 2).toFixed(1))
       : null;
   const result = await env.DB.prepare(
-    "UPDATE examinations SET status='completed',height_cm=?,weight_kg=?,bmi=?,capture_status=?,completed_at=? WHERE id=? AND staff_id=? AND status='running' RETURNING id",
+    "UPDATE examinations SET status='completed',height_cm=?,weight_kg=?,bmi=?,capture_status=?,completed_at=?,finalized_at=NULL WHERE id=? AND staff_id=? AND status='running' RETURNING id",
   )
     .bind(
       input.heightCm,
