@@ -26,7 +26,7 @@ export function Mascot({
   const messages = interaction === "high-five" ? HIGH_FIVES : GREETINGS;
   const image = (
     <Image
-      key={reaction}
+      key={`mascot-image-${reaction}`}
       src={`/images/mimo-${waving ? "cheer" : pose}.png`}
       alt={
         interactive
@@ -48,9 +48,13 @@ export function Mascot({
     >
       {image}
       {waving && (
-        <span className="reaction-burst" key={reaction} aria-hidden="true">
+        <span
+          className="reaction-burst"
+          key={`reaction-burst-${reaction}`}
+          aria-hidden="true"
+        >
           {Array.from({ length: 6 }, (_, index) => (
-            <Star key={index} />
+            <Star key={`reaction-star-${index}`} />
           ))}
         </span>
       )}
