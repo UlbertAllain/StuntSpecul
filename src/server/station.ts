@@ -6,14 +6,14 @@ type ActiveStationExam = {
   id: string;
   ageMonths: number;
   sex: "male" | "female";
-  status: "queued" | "running";
+  status: "queued" | "running" | "completed";
   cameraEnabled: number;
   createdAt: number;
 };
 
 async function findActiveStationExam(env: Env) {
   return env.DB.prepare(
-    "SELECT id,age_months AS ageMonths,sex,status,capture_status IS NULL AS cameraEnabled,created_at AS createdAt FROM examinations WHERE status IN ('queued','running') ORDER BY created_at ASC LIMIT 1",
+    "SELECT id,age_months AS ageMonths,sex,status,capture_status IS NULL AS cameraEnabled,created_at AS createdAt FROM examinations WHERE status IN ('queued','running') OR (status='completed' AND finalized_at IS NULL) ORDER BY created_at ASC LIMIT 1",
   ).first<ActiveStationExam>();
 }
 
@@ -35,6 +35,8 @@ export async function claimStationExamination(_request: Request, env: Env) {
   const active = await findActiveStationExam(env);
   if (!active)
     throw new ApiError(409, "Belum ada pemeriksaan yang dikirim ke alat.");
+  if (active.status === "completed")
+    throw new ApiError(409, "Pemeriksaan sudah selesai. Menunggu konfirmasi petugas.");
 
   if (active.status === "queued") {
     const claimed = await env.DB.prepare(
@@ -66,20 +68,18 @@ const completionSchema = z
 export async function completeStationExamination(request: Request, env: Env) {
   const input = await body(request, completionSchema);
   const exam = await env.DB.prepare(
-    "SELECT id,status FROM examinations ORDER BY created_at DESC LIMIT 1",
+    "SELECT id,status FROM examinations WHERE status='running' OR (status='completed' AND finalized_at IS NULL) ORDER BY created_at DESC LIMIT 1",
   ).first<{ id: string; status: string }>();
 
   if (!exam) throw new ApiError(409, "Belum ada pemeriksaan aktif pada alat.");
   if (exam.status === "completed") return ok({ saved: true });
-  if (exam.status !== "running")
-    throw new ApiError(409, "Pemeriksaan belum dimulai atau sudah dibatalkan.");
 
   const bmi =
     input.heightCm && input.weightKg
       ? Number((input.weightKg / (input.heightCm / 100) ** 2).toFixed(1))
       : null;
   const completed = await env.DB.prepare(
-    "UPDATE examinations SET status='completed',height_cm=?,weight_kg=?,bmi=?,capture_status=?,completed_at=? WHERE id=? AND status='running' RETURNING id",
+    "UPDATE examinations SET status='completed',height_cm=?,weight_kg=?,bmi=?,capture_status=?,completed_at=?,finalized_at=NULL WHERE id=? AND status='running' RETURNING id",
   )
     .bind(
       input.heightCm,
@@ -97,7 +97,9 @@ export async function completeStationExamination(request: Request, env: Env) {
 }
 
 export async function cancelStationExamination(_request: Request, env: Env) {
-  const active = await findActiveStationExam(env);
+  const active = await env.DB.prepare(
+    "SELECT id FROM examinations WHERE status IN ('queued','running') ORDER BY created_at ASC LIMIT 1",
+  ).first<{ id: string }>();
   if (!active) return ok({ cancelled: false });
 
   await env.DB.prepare(
