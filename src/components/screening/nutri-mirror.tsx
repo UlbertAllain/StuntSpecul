@@ -107,7 +107,7 @@ export function NutriMirror({
   }
 
   function requestExit() {
-    if (step !== "welcome" && !awaitingStaffFinalize)
+    if (step !== "welcome" && !(awaitingStaffFinalize && step === "result"))
       dispatch({ type: "set-exit", open: true });
   }
 
@@ -208,6 +208,8 @@ export function NutriMirror({
     }
   }
 
+  const resultLocked = awaitingStaffFinalize && step === "result";
+
   return (
     <div
       className={`mirror-shell screen-${step} ${isPaused ? "is-paused" : ""}`}
@@ -252,7 +254,7 @@ export function NutriMirror({
       >
         {step !== "welcome" && (
           <div className="stage-controls">
-            {!awaitingStaffFinalize && (
+            {!resultLocked && (
               <button
                 className="back-button"
                 onClick={requestExit}
@@ -310,7 +312,7 @@ export function NutriMirror({
           <span>{notice}</span>
           <button
             aria-label="Tutup pemberitahuan"
-            onClick={() => setNotice("")
+            onClick={() => setNotice("")}
           >
             ×
           </button>
