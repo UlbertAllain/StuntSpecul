@@ -88,6 +88,7 @@ export const examinations = sqliteTable(
     growthStatus: text("growth_status").notNull().default("unavailable"),
     createdAt: integer("created_at").notNull(),
     completedAt: integer("completed_at"),
+    finalizedAt: integer("finalized_at"),
   },
   (t) => [
     index("exams_child_time").on(t.childId, t.createdAt),
