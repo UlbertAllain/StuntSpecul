@@ -1,0 +1,46 @@
+name: Refine Parent Trend Wording Temp
+on:
+  push:
+    branches: [feature/public-landing-device-monitoring-insights]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/public-landing-device-monitoring-insights
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Refine parent trend wording
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/components/portal/parent-growth-insights.tsx')
+          text = path.read_text()
+          text = text.replace(
+              'type TrendTone = "improving" | "stable" | "attention" | "unavailable";',
+              'type TrendTone = "up" | "stable" | "down" | "unavailable";',
+          )
+          old = '''  const change = latest.heightForAgeZ - previous.heightForAgeZ;\n  if (change >= 0.15)\n    return {\n      tone: "improving" as TrendTone,\n      title: "Tren TB/U bergerak ke arah yang lebih baik",\n      text: `Nilai TB/U berubah ${signed(change, 2)} SD dibanding pemeriksaan sebelumnya.`,\n    };\n  if (change <= -0.15)\n    return {\n      tone: "attention" as TrendTone,\n      title: "Tren TB/U perlu diperhatikan",\n      text: `Nilai TB/U berubah ${signed(change, 2)} SD dibanding pemeriksaan sebelumnya. Pantau pemeriksaan berikutnya dan ikuti arahan petugas kesehatan.`,\n    };\n  return {\n    tone: "stable" as TrendTone,\n    title: "Tren TB/U relatif stabil",\n    text: `Perubahan ${signed(change, 2)} SD dari pemeriksaan sebelumnya masih kecil.`,\n  };'''
+          new = '''  const change = latest.heightForAgeZ - previous.heightForAgeZ;\n  if (change > 0)\n    return {\n      tone: "up" as TrendTone,\n      title: "Nilai TB/U meningkat dari pemeriksaan sebelumnya",\n      text: `Perubahan tercatat ${signed(change, 2)} SD. Lihat bersama status skrining terbaru untuk memahami hasilnya.`,\n    };\n  if (change < 0)\n    return {\n      tone: "down" as TrendTone,\n      title: "Nilai TB/U menurun dari pemeriksaan sebelumnya",\n      text: `Perubahan tercatat ${signed(change, 2)} SD. Lihat bersama status skrining terbaru dan ikuti arahan petugas kesehatan bila diperlukan.`,\n    };\n  return {\n    tone: "stable" as TrendTone,\n    title: "Nilai TB/U sama dengan pemeriksaan sebelumnya",\n    text: "Belum ada perubahan nilai TB/U dibanding pemeriksaan sebelumnya.",\n  };'''
+          if old not in text:
+              raise SystemExit('Trend block not found')
+          text = text.replace(old, new, 1)
+          text = text.replace('trend.tone === "improving"', 'trend.tone === "up"')
+          text = text.replace('trend.tone === "attention"', 'trend.tone === "down"')
+          path.write_text(text)
+          PY
+      - run: npx prettier --write src/components/portal/parent-growth-insights.tsx
+      - name: Commit wording refinement
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/portal/parent-growth-insights.tsx
+          git diff --cached --quiet || git commit -m "refactor(parent): keep growth trend insight descriptive"
+          git push origin HEAD:feature/public-landing-device-monitoring-insights
