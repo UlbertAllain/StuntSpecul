@@ -208,16 +208,16 @@ export async function adminInsights(request: Request, env: Env) {
       else if (exam.ageMonths <= 47) ageBands["36-47"] += 1;
       else ageBands["48-59"] += 1;
 
-      if (result.growthStatus === "normal") growth.normal += 1;
-      else if (result.growthStatus === "watch") growth.watch += 1;
+      if (result.growthStatus === "within_range") growth.normal += 1;
+      else if (result.growthStatus === "monitor") growth.watch += 1;
       else if (result.growthStatus === "stunted") growth.stunted += 1;
-      else if (result.growthStatus === "severe_stunted") growth.severe += 1;
+      else if (result.growthStatus === "severely_stunted") growth.severe += 1;
       else growth.unavailable += 1;
     }
 
     if (
       result.growthStatus === "stunted" ||
-      result.growthStatus === "severe_stunted"
+      result.growthStatus === "severely_stunted"
     ) {
       if (isCurrent) currentRisk += 1;
       else previousRisk += 1;
