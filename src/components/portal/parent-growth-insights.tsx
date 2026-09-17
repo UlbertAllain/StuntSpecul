@@ -28,8 +28,7 @@ function sameChildExams(examinations: Examination[]) {
 function chronological(examinations: Examination[]) {
   return [...examinations]
     .sort(
-      (a, b) =>
-        (a.completedAt || a.createdAt) - (b.completedAt || b.createdAt),
+      (a, b) => (a.completedAt || a.createdAt) - (b.completedAt || b.createdAt),
     )
     .slice(-MAX_POINTS);
 }
@@ -56,7 +55,11 @@ function signed(value: number, digits = 1) {
 }
 
 function zTrend(latest: Examination, previous: Examination | undefined) {
-  if (latest.heightForAgeZ === null || previous?.heightForAgeZ === null || !previous)
+  if (
+    latest.heightForAgeZ === null ||
+    previous?.heightForAgeZ === null ||
+    !previous
+  )
     return {
       tone: "unavailable" as TrendTone,
       title: "Belum cukup data untuk membaca tren",
@@ -104,7 +107,9 @@ function MiniLineChart({
     return (
       <article className="rounded-2xl border border-[var(--border)] bg-white p-5">
         <h3 className="text-base font-black">{title}</h3>
-        <p className="portal-note mt-2">Belum ada data yang dapat digambarkan.</p>
+        <p className="portal-note mt-2">
+          Belum ada data yang dapat digambarkan.
+        </p>
       </article>
     );
   }
@@ -137,7 +142,9 @@ function MiniLineChart({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-base font-black">{title}</h3>
-          <p className="portal-note mt-1">{values.length} pemeriksaan terakhir</p>
+          <p className="portal-note mt-1">
+            {values.length} pemeriksaan terakhir
+          </p>
         </div>
         <strong className="text-lg font-black text-[var(--foreground)]">
           {latest.value.toFixed(decimals)} {unit}
@@ -286,7 +293,9 @@ export function ParentGrowthInsights({
           <article className="rounded-2xl border border-[var(--border)] bg-white p-4">
             <div className="flex items-center gap-2 text-[var(--blue)]">
               <Activity size={18} />
-              <span className="text-xs font-extrabold">PEMERIKSAAN TERAKHIR</span>
+              <span className="text-xs font-extrabold">
+                PEMERIKSAAN TERAKHIR
+              </span>
             </div>
             <strong className="mt-3 block text-lg font-black">
               {new Date(
@@ -346,12 +355,7 @@ export function ParentGrowthInsights({
         <div className="grid gap-4 lg:grid-cols-3">
           <MiniLineChart title="Tinggi badan" unit="cm" values={heightValues} />
           <MiniLineChart title="Berat badan" unit="kg" values={weightValues} />
-          <MiniLineChart
-            title="TB/U"
-            unit="SD"
-            values={zValues}
-            decimals={2}
-          />
+          <MiniLineChart title="TB/U" unit="SD" values={zValues} decimals={2} />
         </div>
       </div>
     </section>

@@ -21,6 +21,7 @@ import { formatAge, formatReading } from "@/lib/screening";
 import { growthStatusLabel } from "@/lib/growth";
 import { Message, PortalShell } from "./shell";
 import { ResultSummary } from "./result-summary";
+import { ParentGrowthInsights } from "./parent-growth-insights";
 
 type Tab = "home" | "history" | "assistant" | "profile";
 type AuthMode = "login" | "register";
@@ -480,6 +481,7 @@ function ParentHistory({
           </p>
         </div>
       </div>
+      <ParentGrowthInsights examinations={examinations} />
       {examinations.length === 0 ? (
         <div className="portal-empty">
           <h3>Belum ada riwayat</h3>
