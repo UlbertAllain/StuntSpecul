@@ -108,7 +108,7 @@ export function PublicLanding() {
           </div>
           <div className="w-full max-w-[300px] text-center">
             <Image
-              src="/images/mascot-welcome.png"
+              src="/images/mimo-cheer.png"
               alt="Mimo, teman pemeriksaan StuntSpecula"
               width={800}
               height={800}
