@@ -96,20 +96,22 @@ export function StationIdleScreen({
             </div>
           ) : (
             <>
-              <div className="relative z-10 text-center">
+              <div className="relative z-10 flex w-full flex-col items-center text-center">
                 <span className="inline-flex rounded-full bg-[#e5f3ff] px-4 py-2 text-[11px] font-black tracking-[0.14em] text-[#2f6f9f]">
                   HALO, AKU MIMO!
                 </span>
-                <h1 className="mx-auto mt-3 max-w-md text-[2.25rem] font-black leading-[0.98] tracking-[-0.045em] sm:text-[2.75rem]">
-                  Yuk, cek
-                  <span className="block text-[#b43e70]">tumbuh kembangmu</span>
+                <h1 className="mx-auto mt-3 w-full max-w-md text-center text-[2.25rem] font-black leading-[0.98] tracking-[-0.045em] sm:text-[2.75rem]">
+                  <span className="block w-full text-center">Yuk, cek</span>
+                  <span className="block w-full text-center text-[#b43e70]">
+                    tumbuh kembangmu
+                  </span>
                 </h1>
-                <p className="mx-auto mt-3 max-w-xs text-center text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
-                  Santai saja, ya.
-                  <span className="block">
+                <div className="mx-auto mt-3 flex w-full max-w-sm flex-col items-center justify-center text-center text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
+                  <span className="block w-full text-center">Santai saja, ya.</span>
+                  <span className="block w-full text-center">
                     Tiga langkah sederhana bersama Mimo.
                   </span>
-                </p>
+                </div>
               </div>
 
               <div className="relative z-10 mx-auto mt-1 flex min-h-[195px] w-full items-center justify-center sm:min-h-[220px]">
@@ -163,7 +165,7 @@ export function StationIdleScreen({
                 </div>
                 <p
                   key={tipIndex}
-                  className="mt-1.5 animate-in text-xs font-semibold leading-5 text-[var(--muted-foreground)] fade-in duration-500 sm:text-sm"
+                  className="mt-1.5 animate-in text-center text-xs font-semibold leading-5 text-[var(--muted-foreground)] fade-in duration-500 sm:text-sm"
                 >
                   {WAITING_TIPS[tipIndex]}
                 </p>
