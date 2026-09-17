@@ -1,64 +1,109 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
+  Activity,
   ArrowRight,
+  Baby,
   Building2,
   Camera,
-  ChartNoAxesCombined,
+  ChevronRight,
+  ClipboardCheck,
   HeartPulse,
+  LineChart,
   Ruler,
   Scale,
   ShieldCheck,
+  Smartphone,
+  Stethoscope,
 } from "lucide-react";
 
-const FEATURES = [
+const CHECKS = [
   {
     icon: Ruler,
     title: "Tinggi badan",
-    text: "Membantu mencatat tinggi badan anak secara terstruktur.",
+    text: "Pengukuran tinggi menjadi dasar pemantauan TB/U pada anak usia 24–59 bulan.",
   },
   {
     icon: Scale,
     title: "Berat badan",
-    text: "Data pengukuran tersimpan bersama riwayat pemeriksaan anak.",
+    text: "Berat badan tersimpan bersama pemeriksaan untuk membantu melihat perkembangan anak dari waktu ke waktu.",
   },
   {
     icon: Camera,
     title: "Indikator visual",
-    text: "Kamera digunakan untuk analisis visual pendukung, bukan mengenali identitas anak.",
+    text: "Kamera digunakan untuk pemeriksaan visual pendukung pada area wajah, bukan untuk mengenali identitas anak.",
   },
 ] as const;
 
-const STEPS = [
-  "Petugas memilih profil anak yang akan diperiksa.",
-  "Anak mengikuti panduan pemeriksaan pada alat StuntSpecula.",
-  "Hasil pertumbuhan dihitung dan tersimpan secara otomatis.",
-  "Orang tua dapat memantau hasil, riwayat, dan penjelasan tindak lanjut.",
+const FLOW = [
+  {
+    number: "01",
+    title: "Petugas memilih anak",
+    text: "Profil anak dipilih dari dashboard Puskesmas sebelum pemeriksaan dimulai.",
+  },
+  {
+    number: "02",
+    title: "Anak mengikuti panduan alat",
+    text: "Layar vertikal memberikan instruksi sederhana untuk tinggi, berat, dan kamera.",
+  },
+  {
+    number: "03",
+    title: "Sistem mengolah hasil",
+    text: "Data pertumbuhan diproses dan hasil skrining TB/U disiapkan secara otomatis.",
+  },
+  {
+    number: "04",
+    title: "Orang tua memantau",
+    text: "Hasil, riwayat, dan tindak lanjut dapat dibaca kembali melalui akun orang tua.",
+  },
+] as const;
+
+const ROLES = [
+  {
+    icon: Building2,
+    eyebrow: "PUSKESMAS",
+    title: "Mengelola pemeriksaan",
+    text: "Petugas memilih anak, memantau proses, melihat riwayat, kondisi alat, dan insight fasilitas.",
+  },
+  {
+    icon: Smartphone,
+    eyebrow: "ORANG TUA",
+    title: "Memantau pertumbuhan",
+    text: "Orang tua melihat hasil pemeriksaan, riwayat pertumbuhan, tindak lanjut, dan penjelasan hasil.",
+  },
+  {
+    icon: HeartPulse,
+    eyebrow: "ALAT STUNTSPECULA",
+    title: "Memandu pemeriksaan",
+    text: "Layar alat fokus pada pengalaman anak dan menjadi penghubung antara pemeriksaan fisik dengan sistem.",
+  },
 ] as const;
 
 export function PublicLanding() {
   return (
-    <main className="min-h-svh bg-[#f7fbff] text-[#17324d]">
-      <header className="border-b border-[#dce9f4] bg-white/95">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-5 px-5 py-4 md:px-8">
-          <Image
-            src="/images/stuntspecula-logo.jpeg"
-            alt="StuntSpecula"
-            width={1536}
-            height={1024}
-            className="h-14 w-40 object-contain"
-            priority
-          />
+    <main className="min-h-svh bg-[#f6faff] text-[#17324d]">
+      <header className="sticky top-0 z-30 border-b border-[#dbe8f2] bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-3.5 md:px-8">
+          <Link href="/" aria-label="StuntSpecula" className="shrink-0">
+            <Image
+              src="/images/stuntspecula-logo.jpeg"
+              alt="StuntSpecula"
+              width={1536}
+              height={1024}
+              className="h-12 w-36 object-contain md:h-14 md:w-40"
+              priority
+            />
+          </Link>
           <nav className="flex items-center gap-2">
             <Link
               href="/petugas"
-              className="hidden rounded-xl px-4 py-3 text-sm font-bold text-[#315c82] hover:bg-[#eef6fc] sm:inline-flex"
+              className="hidden rounded-xl px-4 py-3 text-sm font-bold text-[#315c82] transition hover:bg-[#edf5fb] sm:inline-flex"
             >
-              Akses petugas
+              Dashboard Puskesmas
             </Link>
             <Link
               href="/ortu"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#3475aa] px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-[#2b6594]"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#2f6f9f] px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#285f88]"
             >
               Masuk orang tua <ArrowRight size={17} />
             </Link>
@@ -66,148 +111,254 @@ export function PublicLanding() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-[1.08fr_.92fr] md:px-8 md:py-20">
-        <div className="flex flex-col justify-center">
-          <span className="mb-5 w-fit rounded-full border border-[#cfe4f4] bg-white px-4 py-2 text-xs font-extrabold tracking-[0.08em] text-[#3475aa]">
-            PEMANTAUAN PERTUMBUHAN ANAK
-          </span>
-          <h1 className="max-w-3xl text-4xl font-black leading-[1.05] tracking-[-0.04em] md:text-6xl">
-            Pantau tumbuh kembang anak dengan lebih mudah.
-          </h1>
-          <p className="mt-6 max-w-2xl text-base leading-8 text-[#5d7184] md:text-lg">
-            StuntSpecula membantu fasilitas kesehatan melakukan pemeriksaan
-            pertumbuhan anak, menyimpan riwayat hasil, dan memberikan informasi
-            yang lebih mudah dipahami oleh orang tua.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/ortu"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#3475aa] px-6 py-3.5 font-extrabold text-white shadow-sm hover:bg-[#2b6594]"
-            >
-              Masuk sebagai orang tua <ArrowRight size={18} />
-            </Link>
-            <Link
-              href="/petugas"
-              className="inline-flex items-center gap-2 rounded-xl border border-[#bdd6e8] bg-white px-6 py-3.5 font-extrabold text-[#284e70] hover:bg-[#f1f7fb]"
-            >
-              <Building2 size={18} /> Dashboard Puskesmas
-            </Link>
-          </div>
-          <div className="mt-8 flex items-start gap-3 rounded-2xl border border-[#dce9f4] bg-white p-4 text-sm leading-6 text-[#5d7184]">
-            <ShieldCheck className="mt-0.5 shrink-0 text-[#39765f]" size={21} />
-            <p>
-              Hasil StuntSpecula merupakan hasil skrining pertumbuhan dan bukan
-              pengganti diagnosis tenaga kesehatan.
+      <section className="relative overflow-hidden border-b border-[#dbe8f2]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(117,194,238,.22),transparent_28%),radial-gradient(circle_at_88%_22%,rgba(239,161,190,.17),transparent_26%)]" />
+        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 py-14 md:grid-cols-[1.05fr_.95fr] md:px-8 md:py-20 lg:py-24">
+          <div className="flex flex-col justify-center">
+            <div className="mb-6 flex w-fit items-center gap-2 rounded-full border border-[#cfe2f1] bg-white/85 px-4 py-2 text-xs font-extrabold tracking-[0.08em] text-[#2f6f9f] shadow-sm">
+              <HeartPulse size={15} /> PEMANTAUAN PERTUMBUHAN ANAK
+            </div>
+            <h1 className="max-w-3xl text-4xl font-black leading-[1.03] tracking-[-0.045em] md:text-6xl lg:text-[4.4rem]">
+              Pemeriksaan anak yang terhubung dari alat sampai orang tua.
+            </h1>
+            <p className="mt-6 max-w-2xl text-base leading-8 text-[#5b7082] md:text-lg">
+              StuntSpecula membantu Puskesmas menjalankan pemeriksaan pertumbuhan,
+              menyimpan riwayat anak, dan menyampaikan hasil skrining dengan bahasa
+              yang lebih mudah dipahami keluarga.
             </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/ortu"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#2f6f9f] px-6 py-3.5 font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#285f88]"
+              >
+                Buka portal orang tua <ArrowRight size={18} />
+              </Link>
+              <Link
+                href="/petugas"
+                className="inline-flex items-center gap-2 rounded-xl border border-[#bdd4e5] bg-white px-6 py-3.5 font-extrabold text-[#284e70] transition hover:bg-[#edf5fb]"
+              >
+                <Building2 size={18} /> Akses Puskesmas
+              </Link>
+            </div>
+            <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
+              {[
+                ["24–59", "bulan target pemeriksaan"],
+                ["TB/U", "skrining pertumbuhan"],
+                ["1 akun", "riwayat anak terhubung"],
+              ].map(([value, label]) => (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-[#d7e6f1] bg-white/80 px-4 py-4 shadow-sm"
+                >
+                  <strong className="block text-xl font-black text-[#17324d]">
+                    {value}
+                  </strong>
+                  <span className="mt-1 block text-xs font-semibold leading-5 text-[#6a7d8d]">
+                    {label}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="relative flex min-h-[440px] items-center justify-center overflow-hidden rounded-[2.25rem] border border-[#d8e8f4] bg-[linear-gradient(180deg,#dff2ff_0%,#eef8ff_55%,#ffeaf2_100%)] p-7 shadow-[0_24px_70px_rgba(45,104,151,.12)]">
-          <div className="absolute left-7 top-7 rounded-2xl bg-white/90 px-4 py-3 shadow-sm">
-            <HeartPulse className="text-[#3475aa]" size={28} />
-          </div>
-          <div className="w-full max-w-[300px] text-center">
-            <Image
-              src="/images/mimo-cheer.png"
-              alt="Mimo, teman pemeriksaan StuntSpecula"
-              width={800}
-              height={800}
-              className="mx-auto h-64 w-64 object-contain"
-            />
-            <div className="rounded-2xl bg-white/90 px-5 py-4 shadow-sm backdrop-blur">
-              <strong className="block text-lg">
-                Pemeriksaan yang ramah anak
-              </strong>
-              <p className="mt-1 text-sm leading-6 text-[#64788a]">
-                Panduan pada layar membantu anak mengikuti setiap tahap dengan
-                sederhana.
-              </p>
+          <div className="relative flex min-h-[500px] items-center justify-center">
+            <div className="absolute inset-x-6 bottom-2 top-8 rounded-[2.75rem] bg-[#d9effd]" />
+            <div className="relative z-10 w-full max-w-[480px] overflow-hidden rounded-[2.5rem] border border-white/80 bg-white shadow-[0_30px_90px_rgba(48,102,145,.18)]">
+              <div className="flex items-center justify-between border-b border-[#e1ebf2] px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e4f2fc] text-[#2f6f9f]">
+                    <Activity size={20} />
+                  </span>
+                  <div>
+                    <strong className="block text-sm">Pemeriksaan StuntSpecula</strong>
+                    <span className="text-xs text-[#6d7f8d]">Panduan ramah anak</span>
+                  </div>
+                </div>
+                <span className="rounded-full bg-[#edf8f1] px-3 py-1.5 text-[11px] font-extrabold text-[#39755a]">
+                  ALAT SIAP
+                </span>
+              </div>
+
+              <div className="relative bg-[linear-gradient(180deg,#edf8ff_0%,#ffffff_58%,#fff0f5_100%)] px-7 pt-8 text-center">
+                <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">
+                  BARENG MIMO
+                </p>
+                <h2 className="mx-auto mt-2 max-w-sm text-3xl font-black tracking-[-0.035em]">
+                  Tiga langkah sederhana untuk cek pertumbuhan
+                </h2>
+                <Image
+                  src="/images/mimo-cheer.png"
+                  alt="Mimo, teman pemeriksaan StuntSpecula"
+                  width={800}
+                  height={800}
+                  className="mx-auto mt-3 h-56 w-56 object-contain"
+                />
+                <div className="-mt-4 grid grid-cols-3 gap-2 pb-7">
+                  {[
+                    [Ruler, "Tinggi"],
+                    [Scale, "Berat"],
+                    [Camera, "Wajah"],
+                  ].map(([Icon, label]) => {
+                    const StepIcon = Icon as typeof Ruler;
+                    return (
+                      <div
+                        key={label as string}
+                        className="rounded-2xl border border-[#dbe8f2] bg-white px-3 py-4 shadow-sm"
+                      >
+                        <StepIcon className="mx-auto text-[#2f6f9f]" size={19} />
+                        <span className="mt-2 block text-xs font-extrabold">
+                          {label as string}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute right-0 top-4 z-20 hidden rounded-2xl border border-[#dce8f0] bg-white p-4 shadow-lg lg:block">
+              <LineChart className="text-[#c54f80]" size={20} />
+              <strong className="mt-3 block text-sm">Riwayat tersimpan</strong>
+              <span className="mt-1 block text-xs text-[#70818f]">Bisa dipantau kembali</span>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="border-y border-[#dce9f4] bg-white">
-        <div className="mx-auto max-w-6xl px-5 py-14 md:px-8">
-          <div className="max-w-2xl">
-            <p className="text-xs font-extrabold tracking-[0.12em] text-[#3475aa]">
-              APA YANG DIPERIKSA
+      <section className="bg-white">
+        <div className="mx-auto max-w-7xl px-5 py-16 md:px-8 md:py-20">
+          <div className="grid gap-8 lg:grid-cols-[.72fr_1.28fr] lg:items-end">
+            <div>
+              <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">
+                SATU EKOSISTEM
+              </p>
+              <h2 className="mt-3 max-w-xl text-3xl font-black tracking-[-0.035em] md:text-4xl">
+                Setiap pengguna punya peran yang jelas.
+              </h2>
+            </div>
+            <p className="max-w-2xl leading-7 text-[#617585] lg:justify-self-end">
+              Pemeriksaan tetap berpusat pada alat dan petugas, sementara orang tua
+              memperoleh akses monitoring tanpa perlu mengoperasikan proses klinis.
             </p>
-            <h2 className="mt-3 text-3xl font-black tracking-[-0.03em]">
-              Data utama untuk memantau pertumbuhan.
-            </h2>
           </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {FEATURES.map((feature) => (
+
+          <div className="mt-9 grid gap-4 lg:grid-cols-3">
+            {ROLES.map((role, index) => (
               <article
-                key={feature.title}
-                className="rounded-2xl border border-[#dce9f4] bg-[#fbfdff] p-6"
+                key={role.title}
+                className="group rounded-[1.75rem] border border-[#dbe7f0] bg-[#fbfdff] p-6 transition hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(46,94,132,.10)]"
               >
-                <span className="grid h-12 w-12 place-items-center rounded-xl bg-[#e7f3fc] text-[#3475aa]">
-                  <feature.icon size={23} />
-                </span>
-                <h3 className="mt-5 text-lg font-extrabold">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[#64788a]">
-                  {feature.text}
+                <div className="flex items-start justify-between gap-4">
+                  <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e7f3fb] text-[#2f6f9f]">
+                    <role.icon size={23} />
+                  </span>
+                  <span className="text-sm font-black text-[#c7d5df]">0{index + 1}</span>
+                </div>
+                <p className="mt-8 text-[11px] font-extrabold tracking-[0.12em] text-[#6f8799]">
+                  {role.eyebrow}
                 </p>
+                <h3 className="mt-2 text-xl font-black">{role.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-[#647887]">{role.text}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
-        <div className="grid gap-10 md:grid-cols-[.8fr_1.2fr]">
-          <div>
-            <p className="text-xs font-extrabold tracking-[0.12em] text-[#3475aa]">
-              CARA KERJA
+      <section className="border-y border-[#dbe7f0] bg-[#f3f8fc]">
+        <div className="mx-auto max-w-7xl px-5 py-16 md:px-8 md:py-20">
+          <div className="text-center">
+            <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">
+              APA YANG DIPERIKSA
             </p>
-            <h2 className="mt-3 text-3xl font-black tracking-[-0.03em]">
-              Dari pemeriksaan sampai hasil orang tua.
+            <h2 className="mx-auto mt-3 max-w-2xl text-3xl font-black tracking-[-0.035em] md:text-4xl">
+              Fokus pada data yang dibutuhkan untuk pemantauan pertumbuhan.
             </h2>
-            <p className="mt-4 leading-7 text-[#64788a]">
-              Petugas mengoperasikan proses pemeriksaan, sedangkan orang tua
-              dapat fokus memantau hasil dan riwayat anak dari akun
-              masing-masing.
-            </p>
           </div>
-          <ol className="grid gap-3">
-            {STEPS.map((step, index) => (
-              <li
-                key={step}
-                className="flex items-start gap-4 rounded-2xl border border-[#dce9f4] bg-white p-5"
+          <div className="mt-9 grid gap-4 md:grid-cols-3">
+            {CHECKS.map((item) => (
+              <article
+                key={item.title}
+                className="rounded-[1.75rem] border border-[#d8e6f0] bg-white p-7 shadow-[0_12px_35px_rgba(49,94,129,.06)]"
               >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#17324d] text-sm font-black text-white">
-                  {index + 1}
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e8f4fc] text-[#2f6f9f]">
+                  <item.icon size={23} />
                 </span>
-                <p className="pt-1 leading-7 text-[#4f6679]">{step}</p>
-              </li>
+                <h3 className="mt-6 text-xl font-black">{item.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-[#637786]">{item.text}</p>
+              </article>
             ))}
-          </ol>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white">
+        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 md:px-8 md:py-20 lg:grid-cols-[.75fr_1.25fr]">
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">
+              ALUR PEMERIKSAAN
+            </p>
+            <h2 className="mt-3 text-3xl font-black tracking-[-0.035em] md:text-4xl">
+              Dari Puskesmas sampai hasil ada di tangan orang tua.
+            </h2>
+            <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#dbe7f0] bg-[#f7fbfe] p-4 text-sm leading-6 text-[#607585]">
+              <ShieldCheck className="mt-0.5 shrink-0 text-[#39755a]" size={20} />
+              <p>
+                Hasil StuntSpecula merupakan hasil skrining pertumbuhan dan bukan
+                pengganti diagnosis tenaga kesehatan.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            {FLOW.map((step) => (
+              <article
+                key={step.number}
+                className="grid gap-4 rounded-[1.5rem] border border-[#dbe7f0] bg-white p-5 sm:grid-cols-[72px_1fr_auto] sm:items-center"
+              >
+                <span className="text-2xl font-black tracking-[-0.04em] text-[#aec7d9]">
+                  {step.number}
+                </span>
+                <div>
+                  <h3 className="text-lg font-black">{step.title}</h3>
+                  <p className="mt-1 text-sm leading-6 text-[#647887]">{step.text}</p>
+                </div>
+                <ChevronRight className="hidden text-[#9ab4c6] sm:block" size={21} />
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
       <section className="bg-[#17324d] text-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-12 md:flex-row md:items-center md:justify-between md:px-8">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 md:px-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <div className="flex items-center gap-2 text-[#b9d9ef]">
-              <ChartNoAxesCombined size={20} />
+              <Stethoscope size={20} />
               <span className="text-sm font-bold">StuntSpecula</span>
             </div>
-            <h2 className="mt-2 text-2xl font-black">
-              Sudah memiliki akun orang tua?
+            <h2 className="mt-3 max-w-2xl text-3xl font-black tracking-[-0.035em]">
+              Hasil pemeriksaan tidak berhenti di layar alat.
             </h2>
-            <p className="mt-2 text-sm leading-6 text-[#c7d6e2]">
-              Masuk untuk melihat hasil pemeriksaan dan riwayat pertumbuhan
-              anak.
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[#c6d5e1]">
+              Riwayat pertumbuhan tersimpan dan dapat dipantau kembali oleh orang
+              tua serta fasilitas kesehatan untuk membantu tindak lanjut.
             </p>
           </div>
-          <Link
-            href="/ortu"
-            className="inline-flex w-fit items-center gap-2 rounded-xl bg-white px-6 py-3.5 font-extrabold text-[#17324d]"
-          >
-            Buka portal orang tua <ArrowRight size={18} />
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/ortu"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3.5 font-extrabold text-[#17324d]"
+            >
+              <Baby size={18} /> Portal orang tua
+            </Link>
+            <Link
+              href="/petugas"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/25 px-6 py-3.5 font-extrabold text-white"
+            >
+              <ClipboardCheck size={18} /> Dashboard petugas
+            </Link>
+          </div>
         </div>
       </section>
     </main>
