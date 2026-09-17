@@ -122,9 +122,9 @@ export function PublicLanding() {
               Pemeriksaan anak yang terhubung dari alat sampai orang tua.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-[#5b7082] md:text-lg">
-              StuntSpecula membantu Puskesmas menjalankan pemeriksaan pertumbuhan,
-              menyimpan riwayat anak, dan menyampaikan hasil skrining dengan bahasa
-              yang lebih mudah dipahami keluarga.
+              StuntSpecula membantu Puskesmas menjalankan pemeriksaan
+              pertumbuhan, menyimpan riwayat anak, dan menyampaikan hasil
+              skrining dengan bahasa yang lebih mudah dipahami keluarga.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -170,8 +170,12 @@ export function PublicLanding() {
                     <Activity size={20} />
                   </span>
                   <div>
-                    <strong className="block text-sm">Pemeriksaan StuntSpecula</strong>
-                    <span className="text-xs text-[#6d7f8d]">Panduan ramah anak</span>
+                    <strong className="block text-sm">
+                      Pemeriksaan StuntSpecula
+                    </strong>
+                    <span className="text-xs text-[#6d7f8d]">
+                      Panduan ramah anak
+                    </span>
                   </div>
                 </div>
                 <span className="rounded-full bg-[#edf8f1] px-3 py-1.5 text-[11px] font-extrabold text-[#39755a]">
@@ -205,7 +209,10 @@ export function PublicLanding() {
                         key={label as string}
                         className="rounded-2xl border border-[#dbe8f2] bg-white px-3 py-4 shadow-sm"
                       >
-                        <StepIcon className="mx-auto text-[#2f6f9f]" size={19} />
+                        <StepIcon
+                          className="mx-auto text-[#2f6f9f]"
+                          size={19}
+                        />
                         <span className="mt-2 block text-xs font-extrabold">
                           {label as string}
                         </span>
@@ -219,7 +226,9 @@ export function PublicLanding() {
             <div className="absolute right-0 top-4 z-20 hidden rounded-2xl border border-[#dce8f0] bg-white p-4 shadow-lg lg:block">
               <LineChart className="text-[#c54f80]" size={20} />
               <strong className="mt-3 block text-sm">Riwayat tersimpan</strong>
-              <span className="mt-1 block text-xs text-[#70818f]">Bisa dipantau kembali</span>
+              <span className="mt-1 block text-xs text-[#70818f]">
+                Bisa dipantau kembali
+              </span>
             </div>
           </div>
         </div>
@@ -237,8 +246,9 @@ export function PublicLanding() {
               </h2>
             </div>
             <p className="max-w-2xl leading-7 text-[#617585] lg:justify-self-end">
-              Pemeriksaan tetap berpusat pada alat dan petugas, sementara orang tua
-              memperoleh akses monitoring tanpa perlu mengoperasikan proses klinis.
+              Pemeriksaan tetap berpusat pada alat dan petugas, sementara orang
+              tua memperoleh akses monitoring tanpa perlu mengoperasikan proses
+              klinis.
             </p>
           </div>
 
@@ -252,13 +262,17 @@ export function PublicLanding() {
                   <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e7f3fb] text-[#2f6f9f]">
                     <role.icon size={23} />
                   </span>
-                  <span className="text-sm font-black text-[#c7d5df]">0{index + 1}</span>
+                  <span className="text-sm font-black text-[#c7d5df]">
+                    0{index + 1}
+                  </span>
                 </div>
                 <p className="mt-8 text-[11px] font-extrabold tracking-[0.12em] text-[#6f8799]">
                   {role.eyebrow}
                 </p>
                 <h3 className="mt-2 text-xl font-black">{role.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-[#647887]">{role.text}</p>
+                <p className="mt-3 text-sm leading-7 text-[#647887]">
+                  {role.text}
+                </p>
               </article>
             ))}
           </div>
@@ -285,7 +299,9 @@ export function PublicLanding() {
                   <item.icon size={23} />
                 </span>
                 <h3 className="mt-6 text-xl font-black">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-[#637786]">{item.text}</p>
+                <p className="mt-3 text-sm leading-7 text-[#637786]">
+                  {item.text}
+                </p>
               </article>
             ))}
           </div>
@@ -302,10 +318,13 @@ export function PublicLanding() {
               Dari Puskesmas sampai hasil ada di tangan orang tua.
             </h2>
             <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#dbe7f0] bg-[#f7fbfe] p-4 text-sm leading-6 text-[#607585]">
-              <ShieldCheck className="mt-0.5 shrink-0 text-[#39755a]" size={20} />
+              <ShieldCheck
+                className="mt-0.5 shrink-0 text-[#39755a]"
+                size={20}
+              />
               <p>
-                Hasil StuntSpecula merupakan hasil skrining pertumbuhan dan bukan
-                pengganti diagnosis tenaga kesehatan.
+                Hasil StuntSpecula merupakan hasil skrining pertumbuhan dan
+                bukan pengganti diagnosis tenaga kesehatan.
               </p>
             </div>
           </div>
@@ -321,9 +340,14 @@ export function PublicLanding() {
                 </span>
                 <div>
                   <h3 className="text-lg font-black">{step.title}</h3>
-                  <p className="mt-1 text-sm leading-6 text-[#647887]">{step.text}</p>
+                  <p className="mt-1 text-sm leading-6 text-[#647887]">
+                    {step.text}
+                  </p>
                 </div>
-                <ChevronRight className="hidden text-[#9ab4c6] sm:block" size={21} />
+                <ChevronRight
+                  className="hidden text-[#9ab4c6] sm:block"
+                  size={21}
+                />
               </article>
             ))}
           </div>
@@ -341,8 +365,8 @@ export function PublicLanding() {
               Hasil pemeriksaan tidak berhenti di layar alat.
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[#c6d5e1]">
-              Riwayat pertumbuhan tersimpan dan dapat dipantau kembali oleh orang
-              tua serta fasilitas kesehatan untuk membantu tindak lanjut.
+              Riwayat pertumbuhan tersimpan dan dapat dipantau kembali oleh
+              orang tua serta fasilitas kesehatan untuk membantu tindak lanjut.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">

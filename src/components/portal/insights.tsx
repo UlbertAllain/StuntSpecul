@@ -372,7 +372,8 @@ export function InsightsPanel() {
                 />
               </div>
               <div className="mt-5 rounded-2xl bg-[#f7fafc] p-4 text-sm leading-6 text-[var(--muted-foreground)]">
-                Total <strong className="text-[var(--foreground)]">{totalAge}</strong>{" "}
+                Total{" "}
+                <strong className="text-[var(--foreground)]">{totalAge}</strong>{" "}
                 pemeriksaan selesai masuk dalam rentang usia alat StuntSpecula.
               </div>
             </section>
@@ -385,14 +386,17 @@ export function InsightsPanel() {
             <div>
               <h3 className="!mb-1">Prioritas tindak lanjut</h3>
               <p className="text-sm leading-6 text-[var(--muted-foreground)]">
-                Terdapat <strong>{data.attention.currentRisk}</strong> hasil yang
-                masuk kategori indikasi stunting atau indikasi stunting berat dalam
-                30 hari terakhir. Gunakan angka ini sebagai daftar perhatian untuk
-                tindak lanjut tenaga kesehatan, bukan sebagai diagnosis otomatis.
+                Terdapat <strong>{data.attention.currentRisk}</strong> hasil
+                yang masuk kategori indikasi stunting atau indikasi stunting
+                berat dalam 30 hari terakhir. Gunakan angka ini sebagai daftar
+                perhatian untuk tindak lanjut tenaga kesehatan, bukan sebagai
+                diagnosis otomatis.
               </p>
             </div>
             <div className="rounded-2xl border border-[#ecdce3] bg-white px-5 py-4 text-center shadow-sm">
-              <strong className="block text-2xl font-black">{attentionRate}%</strong>
+              <strong className="block text-2xl font-black">
+                {attentionRate}%
+              </strong>
               <span className="text-[11px] font-extrabold text-[var(--muted-foreground)]">
                 PROPORSI PERHATIAN
               </span>

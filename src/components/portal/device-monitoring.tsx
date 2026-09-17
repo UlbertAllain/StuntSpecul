@@ -52,9 +52,11 @@ const STATUS_LABEL = {
 };
 
 const STATUS_NOTE = {
-  offline: "Layar alat tidak mengirim heartbeat dalam batas waktu yang ditentukan.",
+  offline:
+    "Layar alat tidak mengirim heartbeat dalam batas waktu yang ditentukan.",
   ready: "Layar alat terhubung dan siap menerima pemeriksaan berikutnya.",
-  assigned: "Petugas sudah mengirim pemeriksaan ke alat dan menunggu proses dimulai.",
+  assigned:
+    "Petugas sudah mengirim pemeriksaan ke alat dan menunggu proses dimulai.",
   in_use: "Alat sedang digunakan untuk pemeriksaan aktif.",
 };
 
@@ -158,8 +160,8 @@ export function DeviceMonitoringPanel() {
           </p>
           <h2>Monitoring alat</h2>
           <p className="portal-note max-w-3xl">
-            Pantau koneksi layar pemeriksaan, status sesi, dan kesiapan perangkat
-            sebelum digunakan di lapangan.
+            Pantau koneksi layar pemeriksaan, status sesi, dan kesiapan
+            perangkat sebelum digunakan di lapangan.
           </p>
         </div>
         <button
@@ -187,7 +189,9 @@ export function DeviceMonitoringPanel() {
                   {data.devices.length} alat terdaftar
                 </span>
               </div>
-              <strong className="mt-5 block text-3xl font-black">{online}</strong>
+              <strong className="mt-5 block text-3xl font-black">
+                {online}
+              </strong>
               <span className="mt-1 block text-sm font-bold">Alat online</span>
             </article>
             <article className="rounded-[1.5rem] border border-[var(--border)] bg-white p-5 shadow-sm">
@@ -199,8 +203,12 @@ export function DeviceMonitoringPanel() {
                   Siap pemeriksaan
                 </span>
               </div>
-              <strong className="mt-5 block text-3xl font-black">{ready}</strong>
-              <span className="mt-1 block text-sm font-bold">Dalam kondisi siap</span>
+              <strong className="mt-5 block text-3xl font-black">
+                {ready}
+              </strong>
+              <span className="mt-1 block text-sm font-bold">
+                Dalam kondisi siap
+              </span>
             </article>
             <article className="rounded-[1.5rem] border border-[var(--border)] bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between gap-4">
@@ -211,8 +219,12 @@ export function DeviceMonitoringPanel() {
                   Saat ini
                 </span>
               </div>
-              <strong className="mt-5 block text-3xl font-black">{active}</strong>
-              <span className="mt-1 block text-sm font-bold">Sedang digunakan</span>
+              <strong className="mt-5 block text-3xl font-black">
+                {active}
+              </strong>
+              <span className="mt-1 block text-sm font-bold">
+                Sedang digunakan
+              </span>
             </article>
           </div>
 
@@ -231,7 +243,11 @@ export function DeviceMonitoringPanel() {
                           : "bg-[#eef1f4] text-[#687985]"
                       }`}
                     >
-                      {device.online ? <Wifi size={24} /> : <WifiOff size={24} />}
+                      {device.online ? (
+                        <Wifi size={24} />
+                      ) : (
+                        <WifiOff size={24} />
+                      )}
                     </span>
                     <div>
                       <div className="flex flex-wrap items-center gap-3">
@@ -282,10 +298,12 @@ export function DeviceMonitoringPanel() {
                     ) : (
                       <div className="mt-3 rounded-2xl border border-dashed border-[#cfdde7] bg-[#fbfdfe] p-5">
                         <MonitorCheck className="text-[#80a2ba]" size={22} />
-                        <strong className="mt-3 block">Tidak ada sesi aktif</strong>
+                        <strong className="mt-3 block">
+                          Tidak ada sesi aktif
+                        </strong>
                         <p className="mt-1 text-sm leading-6 text-[var(--muted-foreground)]">
-                          Alat akan menerima pemeriksaan setelah petugas memilih anak
-                          dari menu Data anak.
+                          Alat akan menerima pemeriksaan setelah petugas memilih
+                          anak dari menu Data anak.
                         </p>
                       </div>
                     )}
@@ -337,9 +355,10 @@ export function DeviceMonitoringPanel() {
                 </div>
 
                 <div className="border-t border-[var(--border)] bg-[#fbfcfd] px-6 py-4 text-xs leading-5 text-[var(--muted-foreground)]">
-                  Status sensor tinggi dan berat akan berubah menjadi telemetry nyata
-                  setelah modul IoT terhubung. Selama hardware belum tersedia, sistem
-                  sengaja tidak menampilkan status normal palsu.
+                  Status sensor tinggi dan berat akan berubah menjadi telemetry
+                  nyata setelah modul IoT terhubung. Selama hardware belum
+                  tersedia, sistem sengaja tidak menampilkan status normal
+                  palsu.
                 </div>
               </section>
             ))}
