@@ -55,12 +55,24 @@ function StatCard({
       <Icon size={22} className="text-[var(--blue)]" />
       <p className="portal-note">{label}</p>
       <strong className="mt-2 block text-3xl font-black">{value}</strong>
-      {note && <small className="mt-2 block text-[var(--muted-foreground)]">{note}</small>}
+      {note && (
+        <small className="mt-2 block text-[var(--muted-foreground)]">
+          {note}
+        </small>
+      )}
     </article>
   );
 }
 
-function Bar({ label, value, total }: { label: string; value: number; total: number }) {
+function Bar({
+  label,
+  value,
+  total,
+}: {
+  label: string;
+  value: number;
+  total: number;
+}) {
   const width = total > 0 ? Math.max(4, Math.round((value / total) * 100)) : 0;
   return (
     <div className="py-2">
@@ -114,9 +126,7 @@ export function InsightsPanel() {
       data.growth.unavailable
     : 0;
   const totalAge = data
-    ? data.ageBands["24-35"] +
-      data.ageBands["36-47"] +
-      data.ageBands["48-59"]
+    ? data.ageBands["24-35"] + data.ageBands["36-47"] + data.ageBands["48-59"]
     : 0;
 
   return (
@@ -182,12 +192,32 @@ export function InsightsPanel() {
                 Berdasarkan pemeriksaan selesai selama 30 hari terakhir.
               </p>
               <div className="mt-4">
-                <Bar label="Tidak terindikasi" value={data.growth.normal} total={totalGrowth} />
-                <Bar label="Perlu dipantau" value={data.growth.watch} total={totalGrowth} />
-                <Bar label="Indikasi stunting" value={data.growth.stunted} total={totalGrowth} />
-                <Bar label="Indikasi stunting berat" value={data.growth.severe} total={totalGrowth} />
+                <Bar
+                  label="Tidak terindikasi"
+                  value={data.growth.normal}
+                  total={totalGrowth}
+                />
+                <Bar
+                  label="Perlu dipantau"
+                  value={data.growth.watch}
+                  total={totalGrowth}
+                />
+                <Bar
+                  label="Indikasi stunting"
+                  value={data.growth.stunted}
+                  total={totalGrowth}
+                />
+                <Bar
+                  label="Indikasi stunting berat"
+                  value={data.growth.severe}
+                  total={totalGrowth}
+                />
                 {data.growth.unavailable > 0 && (
-                  <Bar label="Data belum lengkap" value={data.growth.unavailable} total={totalGrowth} />
+                  <Bar
+                    label="Data belum lengkap"
+                    value={data.growth.unavailable}
+                    total={totalGrowth}
+                  />
                 )}
               </div>
             </section>
@@ -200,9 +230,21 @@ export function InsightsPanel() {
                 Distribusi pemeriksaan selesai berdasarkan usia anak.
               </p>
               <div className="mt-4">
-                <Bar label="24–35 bulan" value={data.ageBands["24-35"]} total={totalAge} />
-                <Bar label="36–47 bulan" value={data.ageBands["36-47"]} total={totalAge} />
-                <Bar label="48–59 bulan" value={data.ageBands["48-59"]} total={totalAge} />
+                <Bar
+                  label="24–35 bulan"
+                  value={data.ageBands["24-35"]}
+                  total={totalAge}
+                />
+                <Bar
+                  label="36–47 bulan"
+                  value={data.ageBands["36-47"]}
+                  total={totalAge}
+                />
+                <Bar
+                  label="48–59 bulan"
+                  value={data.ageBands["48-59"]}
+                  total={totalAge}
+                />
               </div>
             </section>
           </div>
@@ -218,8 +260,8 @@ export function InsightsPanel() {
               perlu ditindaklanjuti sesuai prosedur fasilitas kesehatan.
             </p>
             <p className="portal-note">
-              Insight ini tidak menggantikan penilaian tenaga kesehatan dan tidak
-              digunakan sebagai diagnosis otomatis.
+              Insight ini tidak menggantikan penilaian tenaga kesehatan dan
+              tidak digunakan sebagai diagnosis otomatis.
             </p>
           </section>
         </>

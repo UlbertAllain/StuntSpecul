@@ -172,7 +172,13 @@ export async function adminInsights(request: Request, env: Env) {
      FROM examinations
      WHERE created_at>=?`,
   )
-    .bind(currentStart, previousStart, currentStart, currentStart, previousStart)
+    .bind(
+      currentStart,
+      previousStart,
+      currentStart,
+      currentStart,
+      previousStart,
+    )
     .first<{
       currentTotal: number;
       previousTotal: number;

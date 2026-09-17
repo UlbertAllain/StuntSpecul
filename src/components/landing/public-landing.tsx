@@ -115,7 +115,9 @@ export function PublicLanding() {
               className="mx-auto h-64 w-64 object-contain"
             />
             <div className="rounded-2xl bg-white/90 px-5 py-4 shadow-sm backdrop-blur">
-              <strong className="block text-lg">Pemeriksaan yang ramah anak</strong>
+              <strong className="block text-lg">
+                Pemeriksaan yang ramah anak
+              </strong>
               <p className="mt-1 text-sm leading-6 text-[#64788a]">
                 Panduan pada layar membantu anak mengikuti setiap tahap dengan
                 sederhana.
@@ -165,7 +167,8 @@ export function PublicLanding() {
             </h2>
             <p className="mt-4 leading-7 text-[#64788a]">
               Petugas mengoperasikan proses pemeriksaan, sedangkan orang tua
-              dapat fokus memantau hasil dan riwayat anak dari akun masing-masing.
+              dapat fokus memantau hasil dan riwayat anak dari akun
+              masing-masing.
             </p>
           </div>
           <ol className="grid gap-3">
@@ -195,7 +198,8 @@ export function PublicLanding() {
               Sudah memiliki akun orang tua?
             </h2>
             <p className="mt-2 text-sm leading-6 text-[#c7d6e2]">
-              Masuk untuk melihat hasil pemeriksaan dan riwayat pertumbuhan anak.
+              Masuk untuk melihat hasil pemeriksaan dan riwayat pertumbuhan
+              anak.
             </p>
           </div>
           <Link

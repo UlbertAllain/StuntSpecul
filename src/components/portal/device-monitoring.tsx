@@ -14,11 +14,7 @@ import {
 import { api, errorMessage } from "@/lib/api-client";
 import { Message } from "./shell";
 
-type DeviceCheck =
-  | "normal"
-  | "offline"
-  | "pending_hardware"
-  | "app_ready";
+type DeviceCheck = "normal" | "offline" | "pending_hardware" | "app_ready";
 
 type DeviceState = {
   id: string;
@@ -94,9 +90,12 @@ export function DeviceMonitoringPanel() {
     async function load(silent = false) {
       if (!silent) setRefreshing(true);
       try {
-        const value = await api<DeviceMonitoringResponse>("/device-monitoring", {
-          signal: controller.signal,
-        });
+        const value = await api<DeviceMonitoringResponse>(
+          "/device-monitoring",
+          {
+            signal: controller.signal,
+          },
+        );
         if (controller.signal.aborted) return;
         setData(value);
         setError("");
@@ -123,7 +122,8 @@ export function DeviceMonitoringPanel() {
         <div>
           <h2>Monitoring alat</h2>
           <p className="portal-note">
-            Pantau koneksi layar pemeriksaan dan kesiapan integrasi perangkat IoT.
+            Pantau koneksi layar pemeriksaan dan kesiapan integrasi perangkat
+            IoT.
           </p>
         </div>
         <button
