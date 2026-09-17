@@ -83,9 +83,21 @@ const ROLES = [
 ] as const;
 
 const PRODUCT_POINTS = [
-  [UserRoundCheck, "Data anak terhubung", "Riwayat tersimpan pada profil yang sama."],
-  [Wifi, "Status alat terlihat", "Petugas dapat melihat apakah layar alat masih terhubung."],
-  [BarChart3, "Insight fasilitas", "Admin melihat pola hasil pemeriksaan tanpa rekap manual."],
+  [
+    UserRoundCheck,
+    "Data anak terhubung",
+    "Riwayat tersimpan pada profil yang sama.",
+  ],
+  [
+    Wifi,
+    "Status alat terlihat",
+    "Petugas dapat melihat apakah layar alat masih terhubung.",
+  ],
+  [
+    BarChart3,
+    "Insight fasilitas",
+    "Admin melihat pola hasil pemeriksaan tanpa rekap manual.",
+  ],
 ] as const;
 
 export function PublicLanding() {
@@ -131,9 +143,9 @@ export function PublicLanding() {
               Pemeriksaan anak yang terhubung dari alat sampai orang tua.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-[#5b7082] md:text-lg">
-              StuntSpecula membantu Puskesmas menjalankan pemeriksaan pertumbuhan,
-              menyimpan riwayat anak, dan menyampaikan hasil skrining dengan bahasa
-              yang lebih mudah dipahami keluarga.
+              StuntSpecula membantu Puskesmas menjalankan pemeriksaan
+              pertumbuhan, menyimpan riwayat anak, dan menyampaikan hasil
+              skrining dengan bahasa yang lebih mudah dipahami keluarga.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -179,8 +191,12 @@ export function PublicLanding() {
                     <Activity size={20} />
                   </span>
                   <div>
-                    <strong className="block text-sm">Pemeriksaan StuntSpecula</strong>
-                    <span className="text-xs text-[#6d7f8d]">Panduan ramah anak</span>
+                    <strong className="block text-sm">
+                      Pemeriksaan StuntSpecula
+                    </strong>
+                    <span className="text-xs text-[#6d7f8d]">
+                      Panduan ramah anak
+                    </span>
                   </div>
                 </div>
                 <span className="rounded-full bg-[#edf8f1] px-3 py-1.5 text-[11px] font-extrabold text-[#39755a]">
@@ -189,7 +205,9 @@ export function PublicLanding() {
               </div>
 
               <div className="relative bg-[linear-gradient(180deg,#edf8ff_0%,#ffffff_58%,#fff0f5_100%)] px-7 pt-8 text-center">
-                <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">BARENG MIMO</p>
+                <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">
+                  BARENG MIMO
+                </p>
                 <h2 className="mx-auto mt-2 max-w-sm text-3xl font-black tracking-[-0.035em]">
                   Tiga langkah sederhana untuk cek pertumbuhan
                 </h2>
@@ -212,7 +230,10 @@ export function PublicLanding() {
                         key={label as string}
                         className="rounded-2xl border border-[#dbe8f2] bg-white px-3 py-4 shadow-sm"
                       >
-                        <StepIcon className="mx-auto text-[#2f6f9f]" size={19} />
+                        <StepIcon
+                          className="mx-auto text-[#2f6f9f]"
+                          size={19}
+                        />
                         <span className="mt-2 block text-xs font-extrabold">
                           {label as string}
                         </span>
@@ -226,12 +247,16 @@ export function PublicLanding() {
             <div className="absolute right-0 top-4 z-20 hidden rounded-2xl border border-[#dce8f0] bg-white p-4 shadow-lg lg:block">
               <LineChart className="text-[#c54f80]" size={20} />
               <strong className="mt-3 block text-sm">Riwayat tersimpan</strong>
-              <span className="mt-1 block text-xs text-[#70818f]">Bisa dipantau kembali</span>
+              <span className="mt-1 block text-xs text-[#70818f]">
+                Bisa dipantau kembali
+              </span>
             </div>
             <div className="absolute bottom-0 left-0 z-20 hidden rounded-2xl border border-[#dce8f0] bg-white p-4 shadow-lg lg:block">
               <Wifi className="text-[#39755a]" size={20} />
               <strong className="mt-3 block text-sm">Alat terhubung</strong>
-              <span className="mt-1 block text-xs text-[#70818f]">Status terlihat petugas</span>
+              <span className="mt-1 block text-xs text-[#70818f]">
+                Status terlihat petugas
+              </span>
             </div>
           </div>
         </div>
@@ -241,14 +266,17 @@ export function PublicLanding() {
         <div className="mx-auto max-w-7xl px-5 py-16 md:px-8 md:py-20">
           <div className="grid gap-8 lg:grid-cols-[.72fr_1.28fr] lg:items-end">
             <div>
-              <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">SATU EKOSISTEM</p>
+              <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">
+                SATU EKOSISTEM
+              </p>
               <h2 className="mt-3 max-w-xl text-3xl font-black tracking-[-0.035em] md:text-4xl">
                 Setiap pengguna punya peran yang jelas.
               </h2>
             </div>
             <p className="max-w-2xl leading-7 text-[#617585] lg:justify-self-end">
-              Pemeriksaan tetap berpusat pada alat dan petugas, sementara orang tua
-              memperoleh akses monitoring tanpa perlu mengoperasikan proses klinis.
+              Pemeriksaan tetap berpusat pada alat dan petugas, sementara orang
+              tua memperoleh akses monitoring tanpa perlu mengoperasikan proses
+              klinis.
             </p>
           </div>
 
@@ -262,13 +290,17 @@ export function PublicLanding() {
                   <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#e7f3fb] text-[#2f6f9f]">
                     <role.icon size={23} />
                   </span>
-                  <span className="text-sm font-black text-[#c7d5df]">0{index + 1}</span>
+                  <span className="text-sm font-black text-[#c7d5df]">
+                    0{index + 1}
+                  </span>
                 </div>
                 <p className="mt-8 text-[11px] font-extrabold tracking-[0.12em] text-[#6f8799]">
                   {role.eyebrow}
                 </p>
                 <h3 className="mt-2 text-xl font-black">{role.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-[#647887]">{role.text}</p>
+                <p className="mt-3 text-sm leading-7 text-[#647887]">
+                  {role.text}
+                </p>
               </article>
             ))}
           </div>
@@ -279,22 +311,31 @@ export function PublicLanding() {
         <div className="mx-auto max-w-7xl px-5 py-16 md:px-8 md:py-20">
           <div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
             <div>
-              <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">BUKAN SEKADAR HASIL SEKALI LIHAT</p>
+              <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">
+                BUKAN SEKADAR HASIL SEKALI LIHAT
+              </p>
               <h2 className="mt-3 max-w-xl text-3xl font-black tracking-[-0.035em] md:text-4xl">
                 Data pemeriksaan ikut hidup di dalam sistem.
               </h2>
               <p className="mt-5 max-w-xl leading-7 text-[#617585]">
-                Setelah pemeriksaan selesai, hasil tidak berhenti di alat. Data masuk ke riwayat anak, bisa dipantau orang tua, dan menjadi insight operasional untuk Puskesmas.
+                Setelah pemeriksaan selesai, hasil tidak berhenti di alat. Data
+                masuk ke riwayat anak, bisa dipantau orang tua, dan menjadi
+                insight operasional untuk Puskesmas.
               </p>
               <div className="mt-7 grid gap-3">
                 {PRODUCT_POINTS.map(([Icon, title, text]) => (
-                  <div key={title} className="flex gap-4 rounded-2xl border border-[#d9e6ef] bg-white p-4">
+                  <div
+                    key={title}
+                    className="flex gap-4 rounded-2xl border border-[#d9e6ef] bg-white p-4"
+                  >
                     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e7f3fb] text-[#2f6f9f]">
                       <Icon size={19} />
                     </span>
                     <div>
                       <strong className="block text-sm">{title}</strong>
-                      <p className="mt-1 text-sm leading-6 text-[#6a7d8c]">{text}</p>
+                      <p className="mt-1 text-sm leading-6 text-[#6a7d8c]">
+                        {text}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -304,17 +345,25 @@ export function PublicLanding() {
             <div className="grid gap-4 md:grid-cols-2">
               <article className="overflow-hidden rounded-[2rem] border border-[#d9e6ef] bg-white shadow-[0_18px_55px_rgba(47,98,137,.10)]">
                 <div className="border-b border-[#e2ebf2] px-5 py-4">
-                  <span className="text-[11px] font-extrabold tracking-[0.12em] text-[#6d8799]">PORTAL ORANG TUA</span>
+                  <span className="text-[11px] font-extrabold tracking-[0.12em] text-[#6d8799]">
+                    PORTAL ORANG TUA
+                  </span>
                   <h3 className="mt-1 text-lg font-black">Pertumbuhan anak</h3>
                 </div>
                 <div className="p-5">
                   <div className="rounded-2xl bg-[#f3f8fc] p-4">
                     <div className="flex items-end justify-between gap-4">
                       <div>
-                        <span className="text-xs font-bold text-[#718493]">TB/U terakhir</span>
-                        <strong className="mt-1 block text-2xl font-black">-1.42 SD</strong>
+                        <span className="text-xs font-bold text-[#718493]">
+                          TB/U terakhir
+                        </span>
+                        <strong className="mt-1 block text-2xl font-black">
+                          -1.42 SD
+                        </strong>
                       </div>
-                      <span className="rounded-full bg-[#fff4dd] px-3 py-1.5 text-[11px] font-extrabold text-[#916821]">Perlu dipantau</span>
+                      <span className="rounded-full bg-[#fff4dd] px-3 py-1.5 text-[11px] font-extrabold text-[#916821]">
+                        Perlu dipantau
+                      </span>
                     </div>
                     <div className="mt-5 flex h-24 items-end gap-2">
                       {[42, 55, 50, 68, 63, 79, 86].map((height, index) => (
@@ -341,8 +390,12 @@ export function PublicLanding() {
 
               <article className="overflow-hidden rounded-[2rem] border border-[#d9e6ef] bg-[#17324d] text-white shadow-[0_18px_55px_rgba(36,75,104,.18)]">
                 <div className="border-b border-white/10 px-5 py-4">
-                  <span className="text-[11px] font-extrabold tracking-[0.12em] text-[#a8c8df]">DASHBOARD PUSKESMAS</span>
-                  <h3 className="mt-1 text-lg font-black">Monitoring hari ini</h3>
+                  <span className="text-[11px] font-extrabold tracking-[0.12em] text-[#a8c8df]">
+                    DASHBOARD PUSKESMAS
+                  </span>
+                  <h3 className="mt-1 text-lg font-black">
+                    Monitoring hari ini
+                  </h3>
                 </div>
                 <div className="p-5">
                   <div className="grid grid-cols-2 gap-3">
@@ -353,20 +406,30 @@ export function PublicLanding() {
                       ["1", "Perlu tindak lanjut"],
                     ].map(([value, label]) => (
                       <div key={label} className="rounded-2xl bg-white/10 p-4">
-                        <strong className="block text-2xl font-black">{value}</strong>
-                        <span className="mt-1 block text-xs leading-5 text-[#bfd1df]">{label}</span>
+                        <strong className="block text-2xl font-black">
+                          {value}
+                        </strong>
+                        <span className="mt-1 block text-xs leading-5 text-[#bfd1df]">
+                          {label}
+                        </span>
                       </div>
                     ))}
                   </div>
                   <div className="mt-4 rounded-2xl bg-white/10 p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="flex items-center gap-2 text-sm font-bold"><Wifi size={16} /> StuntSpecula Station</span>
-                      <span className="rounded-full bg-[#2f7657] px-2.5 py-1 text-[10px] font-extrabold">ONLINE</span>
+                      <span className="flex items-center gap-2 text-sm font-bold">
+                        <Wifi size={16} /> StuntSpecula Station
+                      </span>
+                      <span className="rounded-full bg-[#2f7657] px-2.5 py-1 text-[10px] font-extrabold">
+                        ONLINE
+                      </span>
                     </div>
                     <div className="mt-4 h-2 rounded-full bg-white/10">
                       <div className="h-2 w-[82%] rounded-full bg-[#8bc6ea]" />
                     </div>
-                    <p className="mt-2 text-xs text-[#bcd0df]">Status aplikasi alat terhubung dengan dashboard.</p>
+                    <p className="mt-2 text-xs text-[#bcd0df]">
+                      Status aplikasi alat terhubung dengan dashboard.
+                    </p>
                   </div>
                 </div>
               </article>
@@ -378,7 +441,9 @@ export function PublicLanding() {
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-5 py-16 md:px-8 md:py-20">
           <div className="text-center">
-            <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">APA YANG DIPERIKSA</p>
+            <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">
+              APA YANG DIPERIKSA
+            </p>
             <h2 className="mx-auto mt-3 max-w-2xl text-3xl font-black tracking-[-0.035em] md:text-4xl">
               Fokus pada data yang dibutuhkan untuk pemantauan pertumbuhan.
             </h2>
@@ -393,7 +458,9 @@ export function PublicLanding() {
                   <item.icon size={23} />
                 </span>
                 <h3 className="mt-6 text-xl font-black">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-[#637786]">{item.text}</p>
+                <p className="mt-3 text-sm leading-7 text-[#637786]">
+                  {item.text}
+                </p>
               </article>
             ))}
           </div>
@@ -403,14 +470,20 @@ export function PublicLanding() {
       <section className="border-y border-[#dbe7f0] bg-[#f6f9fc]">
         <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 md:px-8 md:py-20 lg:grid-cols-[.75fr_1.25fr]">
           <div className="lg:sticky lg:top-28 lg:self-start">
-            <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">ALUR PEMERIKSAAN</p>
+            <p className="text-xs font-extrabold tracking-[0.12em] text-[#2f6f9f]">
+              ALUR PEMERIKSAAN
+            </p>
             <h2 className="mt-3 text-3xl font-black tracking-[-0.035em] md:text-4xl">
               Dari Puskesmas sampai hasil ada di tangan orang tua.
             </h2>
             <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#dbe7f0] bg-white p-4 text-sm leading-6 text-[#607585]">
-              <ShieldCheck className="mt-0.5 shrink-0 text-[#39755a]" size={20} />
+              <ShieldCheck
+                className="mt-0.5 shrink-0 text-[#39755a]"
+                size={20}
+              />
               <p>
-                Hasil StuntSpecula merupakan hasil skrining pertumbuhan dan bukan pengganti diagnosis tenaga kesehatan.
+                Hasil StuntSpecula merupakan hasil skrining pertumbuhan dan
+                bukan pengganti diagnosis tenaga kesehatan.
               </p>
             </div>
           </div>
@@ -421,12 +494,19 @@ export function PublicLanding() {
                 key={step.number}
                 className="grid gap-4 rounded-[1.5rem] border border-[#dbe7f0] bg-white p-5 sm:grid-cols-[72px_1fr_auto] sm:items-center"
               >
-                <span className="text-2xl font-black tracking-[-0.04em] text-[#aec7d9]">{step.number}</span>
+                <span className="text-2xl font-black tracking-[-0.04em] text-[#aec7d9]">
+                  {step.number}
+                </span>
                 <div>
                   <h3 className="text-lg font-black">{step.title}</h3>
-                  <p className="mt-1 text-sm leading-6 text-[#647887]">{step.text}</p>
+                  <p className="mt-1 text-sm leading-6 text-[#647887]">
+                    {step.text}
+                  </p>
                 </div>
-                <ChevronRight className="hidden text-[#9ab4c6] sm:block" size={21} />
+                <ChevronRight
+                  className="hidden text-[#9ab4c6] sm:block"
+                  size={21}
+                />
               </article>
             ))}
           </div>
@@ -444,7 +524,8 @@ export function PublicLanding() {
               Hasil pemeriksaan tidak berhenti di layar alat.
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[#c6d5e1]">
-              Riwayat pertumbuhan tersimpan dan dapat dipantau kembali oleh orang tua serta fasilitas kesehatan untuk membantu tindak lanjut.
+              Riwayat pertumbuhan tersimpan dan dapat dipantau kembali oleh
+              orang tua serta fasilitas kesehatan untuk membantu tindak lanjut.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
