@@ -33,6 +33,10 @@ export async function route(request: Request, env: Env): Promise<Response> {
       return auth.createStaff(request, env);
     case "GET /api/monitoring":
       return monitoring.monitoringOverview(request, env);
+    case "GET /api/device-monitoring":
+      return monitoring.deviceMonitoring(request, env);
+    case "GET /api/insights":
+      return monitoring.adminInsights(request, env);
     case "GET /api/children":
       return children.listChildren(request, env);
     case "POST /api/children":
