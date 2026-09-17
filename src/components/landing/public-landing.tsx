@@ -231,7 +231,9 @@ function StaffPreview() {
             </span>
             <Wifi size={18} className="text-[#78d6b0]" />
           </div>
-          <strong className="mt-4 block text-xl font-black">Siap digunakan</strong>
+          <strong className="mt-4 block text-xl font-black">
+            Siap digunakan
+          </strong>
           <p className="mt-2 text-xs leading-5 text-[#b9cbd7]">
             Heartbeat terakhir diterima beberapa detik lalu.
           </p>
@@ -337,20 +339,32 @@ function HeroDevice() {
 
       <div className="absolute left-0 top-36 z-20 hidden rotate-[-4deg] rounded-2xl border border-[#d8e7f1] bg-white p-4 shadow-xl md:block">
         <Ruler className="text-[#2f6f9f]" size={21} />
-        <strong className="mt-2 block text-sm text-[#17324d]">Tinggi tersimpan</strong>
-        <span className="mt-1 block text-xs text-[#718391]">Riwayat terhubung</span>
+        <strong className="mt-2 block text-sm text-[#17324d]">
+          Tinggi tersimpan
+        </strong>
+        <span className="mt-1 block text-xs text-[#718391]">
+          Riwayat terhubung
+        </span>
       </div>
 
       <div className="absolute right-0 top-24 z-20 hidden rotate-[3deg] rounded-2xl border border-[#ead9e1] bg-white p-4 shadow-xl md:block">
         <LineChart className="text-[#b43e70]" size={21} />
-        <strong className="mt-2 block text-sm text-[#17324d]">Grafik perkembangan</strong>
-        <span className="mt-1 block text-xs text-[#718391]">Untuk orang tua</span>
+        <strong className="mt-2 block text-sm text-[#17324d]">
+          Grafik perkembangan
+        </strong>
+        <span className="mt-1 block text-xs text-[#718391]">
+          Untuk orang tua
+        </span>
       </div>
 
       <div className="absolute bottom-3 right-[4%] z-20 hidden rounded-2xl border border-[#d9e8e1] bg-white p-4 shadow-xl md:block">
         <Wifi className="text-[#39765f]" size={21} />
-        <strong className="mt-2 block text-sm text-[#17324d]">Status alat online</strong>
-        <span className="mt-1 block text-xs text-[#718391]">Dipantau petugas</span>
+        <strong className="mt-2 block text-sm text-[#17324d]">
+          Status alat online
+        </strong>
+        <span className="mt-1 block text-xs text-[#718391]">
+          Dipantau petugas
+        </span>
       </div>
     </div>
   );
@@ -473,8 +487,8 @@ export function PublicLanding() {
             </div>
             <p className="max-w-2xl leading-8 text-[#617585] lg:justify-self-end">
               Setiap pengguna hanya melihat hal yang memang dibutuhkan. Petugas
-              mengontrol operasional, alat memandu anak, dan orang tua fokus pada
-              monitoring perkembangan.
+              mengontrol operasional, alat memandu anak, dan orang tua fokus
+              pada monitoring perkembangan.
             </p>
           </div>
 
@@ -534,7 +548,9 @@ export function PublicLanding() {
                   <span className="text-[10px] font-black tracking-[0.12em] text-[#718695]">
                     ORANG TUA
                   </span>
-                  <h3 className="text-xl font-black">Melihat arah perkembangan</h3>
+                  <h3 className="text-xl font-black">
+                    Melihat arah perkembangan
+                  </h3>
                 </div>
               </div>
               <ParentPreview />
@@ -549,7 +565,9 @@ export function PublicLanding() {
                   <span className="text-[10px] font-black tracking-[0.12em] text-[#718695]">
                     PETUGAS / ADMIN
                   </span>
-                  <h3 className="text-xl font-black">Melihat kondisi operasional</h3>
+                  <h3 className="text-xl font-black">
+                    Melihat kondisi operasional
+                  </h3>
                 </div>
               </div>
               <StaffPreview />
@@ -603,9 +621,9 @@ export function PublicLanding() {
             </h2>
             <p className="mt-5 max-w-xl leading-8 text-[#617585]">
               Perangkat menjalankan alur pemeriksaan yang ringkas. Fokusnya
-              adalah pengukuran dan panduan visual, sementara keputusan screening
-              pertumbuhan tetap berasal dari data tubuh dan standar yang dipakai
-              sistem.
+              adalah pengukuran dan panduan visual, sementara keputusan
+              screening pertumbuhan tetap berasal dari data tubuh dan standar
+              yang dipakai sistem.
             </p>
 
             <div className="mt-8 grid gap-3">
@@ -635,7 +653,10 @@ export function PublicLanding() {
         </div>
       </section>
 
-      <section id="cara-kerja" className="border-y border-[#dce8f1] bg-[#f5f9fc]">
+      <section
+        id="cara-kerja"
+        className="border-y border-[#dce8f1] bg-[#f5f9fc]"
+      >
         <div className="mx-auto max-w-7xl px-5 py-16 md:px-8 md:py-24">
           <div className="grid gap-12 lg:grid-cols-[.72fr_1.28fr]">
             <div className="lg:sticky lg:top-28 lg:self-start">
@@ -730,7 +751,9 @@ export function PublicLanding() {
                   <span className="text-[10px] font-black tracking-[0.12em] text-[#a9bfce]">
                     STUNTSPECULA
                   </span>
-                  <h3 className="text-xl font-black">Satu alur yang tersambung</h3>
+                  <h3 className="text-xl font-black">
+                    Satu alur yang tersambung
+                  </h3>
                 </div>
               </div>
 

@@ -40,8 +40,7 @@ function sameChildExams(examinations: Examination[]) {
 function chronological(examinations: Examination[]) {
   return [...examinations]
     .sort(
-      (a, b) =>
-        (a.completedAt || a.createdAt) - (b.completedAt || b.createdAt),
+      (a, b) => (a.completedAt || a.createdAt) - (b.completedAt || b.createdAt),
     )
     .slice(-MAX_POINTS);
 }
@@ -300,7 +299,9 @@ function GrowthLineChart({
                 <path
                   d={`M ${points[0].x} ${chartHeight - paddingBottom} L ${points
                     .map((point) => `${point.x} ${point.y}`)
-                    .join(" L ")} L ${points[points.length - 1].x} ${chartHeight - paddingBottom} Z`}
+                    .join(
+                      " L ",
+                    )} L ${points[points.length - 1].x} ${chartHeight - paddingBottom} Z`}
                   fill={`url(#${gradientId})`}
                 />
                 <polyline
@@ -455,7 +456,9 @@ export function ParentGrowthInsights({
           <article className="rounded-2xl border border-[var(--border)] bg-white p-4">
             <div className="flex items-center gap-2 text-[var(--blue)]">
               <Activity size={18} />
-              <span className="text-xs font-extrabold">PEMERIKSAAN TERAKHIR</span>
+              <span className="text-xs font-extrabold">
+                PEMERIKSAAN TERAKHIR
+              </span>
             </div>
             <strong className="mt-3 block text-lg font-black">
               {new Date(

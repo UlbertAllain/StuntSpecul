@@ -107,7 +107,9 @@ export function StationIdleScreen({
                   </span>
                 </h1>
                 <div className="mx-auto mt-3 flex w-full max-w-sm flex-col items-center justify-center text-center text-sm leading-6 text-[var(--muted-foreground)] sm:text-base">
-                  <span className="block w-full text-center">Santai saja, ya.</span>
+                  <span className="block w-full text-center">
+                    Santai saja, ya.
+                  </span>
                   <span className="block w-full text-center">
                     Tiga langkah sederhana bersama Mimo.
                   </span>
