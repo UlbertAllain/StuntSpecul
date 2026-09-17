@@ -86,12 +86,6 @@ function zTrend(latest: Examination, previous: Examination | undefined) {
   };
 }
 
-function trendIcon(tone: TrendTone) {
-  if (tone === "improving") return ArrowUpRight;
-  if (tone === "attention") return ArrowDownRight;
-  return ArrowRight;
-}
-
 function MiniLineChart({
   title,
   unit,
@@ -218,7 +212,6 @@ export function ParentGrowthInsights({
   const heightChange = delta(latest.heightCm, previous?.heightCm ?? null);
   const weightChange = delta(latest.weightKg, previous?.weightKg ?? null);
   const trend = zTrend(latest, previous);
-  const TrendIcon = trendIcon(trend.tone);
   const heightValues = metricValues(childExams, "heightCm");
   const weightValues = metricValues(childExams, "weightKg");
   const zValues = metricValues(childExams, "heightForAgeZ");
@@ -315,7 +308,13 @@ export function ParentGrowthInsights({
         <article className="rounded-2xl border border-[var(--border)] bg-white p-5">
           <div className="flex items-start gap-4">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[var(--blue-soft)] text-[var(--blue)]">
-              <TrendIcon size={21} />
+              {trend.tone === "improving" ? (
+                <ArrowUpRight size={21} />
+              ) : trend.tone === "attention" ? (
+                <ArrowDownRight size={21} />
+              ) : (
+                <ArrowRight size={21} />
+              )}
             </span>
             <div>
               <p className="text-xs font-extrabold tracking-[0.08em] text-[var(--muted-foreground)]">
