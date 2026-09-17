@@ -17,7 +17,7 @@ const MAX_POINTS = 6;
 
 type MetricKey = "heightCm" | "weightKg" | "heightForAgeZ";
 
-type TrendTone = "improving" | "stable" | "attention" | "unavailable";
+type TrendTone = "up" | "stable" | "down" | "unavailable";
 
 function sameChildExams(examinations: Examination[]) {
   const latest = examinations[0];
@@ -67,22 +67,22 @@ function zTrend(latest: Examination, previous: Examination | undefined) {
     };
 
   const change = latest.heightForAgeZ - previous.heightForAgeZ;
-  if (change >= 0.15)
+  if (change > 0)
     return {
-      tone: "improving" as TrendTone,
-      title: "Tren TB/U bergerak ke arah yang lebih baik",
-      text: `Nilai TB/U berubah ${signed(change, 2)} SD dibanding pemeriksaan sebelumnya.`,
+      tone: "up" as TrendTone,
+      title: "Nilai TB/U meningkat dari pemeriksaan sebelumnya",
+      text: `Perubahan tercatat ${signed(change, 2)} SD. Lihat bersama status skrining terbaru untuk memahami hasilnya.`,
     };
-  if (change <= -0.15)
+  if (change < 0)
     return {
-      tone: "attention" as TrendTone,
-      title: "Tren TB/U perlu diperhatikan",
-      text: `Nilai TB/U berubah ${signed(change, 2)} SD dibanding pemeriksaan sebelumnya. Pantau pemeriksaan berikutnya dan ikuti arahan petugas kesehatan.`,
+      tone: "down" as TrendTone,
+      title: "Nilai TB/U menurun dari pemeriksaan sebelumnya",
+      text: `Perubahan tercatat ${signed(change, 2)} SD. Lihat bersama status skrining terbaru dan ikuti arahan petugas kesehatan bila diperlukan.`,
     };
   return {
     tone: "stable" as TrendTone,
-    title: "Tren TB/U relatif stabil",
-    text: `Perubahan ${signed(change, 2)} SD dari pemeriksaan sebelumnya masih kecil.`,
+    title: "Nilai TB/U sama dengan pemeriksaan sebelumnya",
+    text: "Belum ada perubahan nilai TB/U dibanding pemeriksaan sebelumnya.",
   };
 }
 
@@ -308,9 +308,9 @@ export function ParentGrowthInsights({
         <article className="rounded-2xl border border-[var(--border)] bg-white p-5">
           <div className="flex items-start gap-4">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[var(--blue-soft)] text-[var(--blue)]">
-              {trend.tone === "improving" ? (
+              {trend.tone === "up" ? (
                 <ArrowUpRight size={21} />
-              ) : trend.tone === "attention" ? (
+              ) : trend.tone === "down" ? (
                 <ArrowDownRight size={21} />
               ) : (
                 <ArrowRight size={21} />
