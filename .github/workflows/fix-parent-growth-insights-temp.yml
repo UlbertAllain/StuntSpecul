@@ -1,0 +1,42 @@
+name: Fix Parent Growth Insight Temp
+on:
+  push:
+    branches: [feature/public-landing-device-monitoring-insights]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/public-landing-device-monitoring-insights
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Fix static component lint
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/components/portal/parent-growth-insights.tsx')
+          text = path.read_text()
+          old_helper = '''function trendIcon(tone: TrendTone) {\n  if (tone === "improving") return ArrowUpRight;\n  if (tone === "attention") return ArrowDownRight;\n  return ArrowRight;\n}\n\n'''
+          text = text.replace(old_helper, '')
+          text = text.replace('  const TrendIcon = trendIcon(trend.tone);\n', '')
+          text = text.replace(
+              '              <TrendIcon size={21} />',
+              '''              {trend.tone === "improving" ? (\n                <ArrowUpRight size={21} />\n              ) : trend.tone === "attention" ? (\n                <ArrowDownRight size={21} />\n              ) : (\n                <ArrowRight size={21} />\n              )}''',
+          )
+          path.write_text(text)
+          PY
+      - run: npx prettier --write src/components/portal/parent-growth-insights.tsx
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/portal/parent-growth-insights.tsx
+          git diff --cached --quiet || git commit -m "fix(parent): render growth trend icons statically"
+          git push origin HEAD:feature/public-landing-device-monitoring-insights
