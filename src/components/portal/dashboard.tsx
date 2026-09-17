@@ -1,9 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import {
+  BarChart3,
   History,
   LayoutDashboard,
   LogOut,
+  MonitorCog,
   Settings,
   UsersRound,
 } from "lucide-react";
@@ -14,9 +16,17 @@ import { PortalShell, Message } from "./shell";
 import { ChildrenPanel } from "./children";
 import { ExaminationHistory } from "./history";
 import { MonitoringPanel } from "./monitoring";
+import { DeviceMonitoringPanel } from "./device-monitoring";
+import { InsightsPanel } from "./insights";
 import { SettingsPanel } from "./settings";
 
-type DashboardTab = "monitoring" | "children" | "history" | "settings";
+type DashboardTab =
+  | "monitoring"
+  | "children"
+  | "history"
+  | "devices"
+  | "insights"
+  | "settings";
 
 export function StaffDashboard() {
   const [user, setUser] = useState<Staff | null>(null);
@@ -66,7 +76,7 @@ export function StaffDashboard() {
   return (
     <PortalShell
       heading={facility}
-      subtitle={`Halo, ${user.name}. Pilih anak untuk pemeriksaan, lalu pantau proses dan riwayat pertumbuhannya.`}
+      subtitle={`Halo, ${user.name}. Kelola pemeriksaan, pantau alat, dan lihat perkembangan layanan dari satu dashboard.`}
       actions={
         <button className="portal-text" onClick={logout}>
           <LogOut size={18} />
@@ -96,14 +106,30 @@ export function StaffDashboard() {
           <History />
           Riwayat
         </button>
+        <button
+          aria-current={tab === "devices" ? "page" : undefined}
+          onClick={() => setTab("devices")}
+        >
+          <MonitorCog />
+          Monitoring alat
+        </button>
         {user.role === "admin" && (
-          <button
-            aria-current={tab === "settings" ? "page" : undefined}
-            onClick={() => setTab("settings")}
-          >
-            <Settings />
-            Kelola petugas
-          </button>
+          <>
+            <button
+              aria-current={tab === "insights" ? "page" : undefined}
+              onClick={() => setTab("insights")}
+            >
+              <BarChart3 />
+              Insight
+            </button>
+            <button
+              aria-current={tab === "settings" ? "page" : undefined}
+              onClick={() => setTab("settings")}
+            >
+              <Settings />
+              Kelola petugas
+            </button>
+          </>
         )}
       </nav>
 
@@ -115,6 +141,10 @@ export function StaffDashboard() {
           <ChildrenPanel />
         ) : tab === "history" ? (
           <ExaminationHistory />
+        ) : tab === "devices" ? (
+          <DeviceMonitoringPanel />
+        ) : tab === "insights" ? (
+          <InsightsPanel />
         ) : (
           <SettingsPanel user={user} />
         )}
