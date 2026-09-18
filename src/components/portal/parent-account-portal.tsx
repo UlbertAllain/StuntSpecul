@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Baby,
@@ -284,118 +285,141 @@ function ParentAccountAuth({
       heading="StuntSpecula untuk Orang Tua"
       subtitle="Akun ini digunakan untuk memantau hasil dan riwayat pertumbuhan anak. Pemeriksaan tetap dilakukan melalui alat di fasilitas kesehatan."
     >
-      <form
-        className="portal-card profile-form mx-auto max-w-xl"
-        onSubmit={submit}
-      >
-        <div className="section-heading">
-          <div>
-            <h2>{mode === "login" ? "Masuk" : "Buat akun orang tua"}</h2>
-            <p className="portal-note">
-              {mode === "login"
-                ? "Gunakan akun yang terhubung dengan profil anak."
-                : "Pendaftaran awal membuat satu profil anak. Pengukuran tidak dapat diubah dari akun orang tua."}
-            </p>
+      <div className="parent-auth-layout">
+        <aside className="parent-auth-visual" aria-hidden="true">
+          <span className="parent-auth-bubble">
+            {mode === "login" ? "Hai, ketemu lagi! 👋" : "Yuk, mulai pantau!"}
+          </span>
+          <div className="parent-auth-mascot">
+            <Image
+              src="/images/mimo-cheer.png"
+              alt=""
+              width={800}
+              height={800}
+              className="h-full w-full object-contain"
+            />
           </div>
-        </div>
+          <strong>
+            {mode === "login"
+              ? "Lihat bagaimana si kecil tumbuh dari waktu ke waktu."
+              : "Satu akun untuk melihat riwayat pertumbuhan si kecil."}
+          </strong>
+          <p>
+            Pemeriksaan tetap dilakukan bersama petugas. Di sini orang tua cukup
+            memantau hasil dan perkembangannya.
+          </p>
+        </aside>
 
-        {mode === "register" && (
-          <>
-            <label>
-              Nama orang tua / wali
-              <input
-                required
-                minLength={2}
-                maxLength={80}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </label>
-            <div className="portal-card !mb-2">
-              <h3>
-                <Baby size={18} /> Profil anak
-              </h3>
+        <form className="portal-card profile-form parent-auth-form" onSubmit={submit}>
+          <div className="section-heading">
+            <div>
+              <h2>{mode === "login" ? "Masuk" : "Buat akun orang tua"}</h2>
+              <p className="portal-note">
+                {mode === "login"
+                  ? "Gunakan akun yang terhubung dengan profil anak."
+                  : "Pendaftaran awal membuat satu profil anak. Pengukuran tidak dapat diubah dari akun orang tua."}
+              </p>
+            </div>
+          </div>
+
+          {mode === "register" && (
+            <>
               <label>
-                Nama anak
+                Nama orang tua / wali
                 <input
                   required
                   minLength={2}
                   maxLength={80}
-                  value={childName}
-                  onChange={(e) => setChildName(e.target.value)}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </label>
-              <label>
-                Tanggal lahir
-                <input
-                  required
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                />
-              </label>
-              <label>
-                Jenis kelamin
-                <select
-                  required
-                  value={sex}
-                  onChange={(e) =>
-                    setSex(e.target.value as "male" | "female" | "")
-                  }
-                >
-                  <option value="">Pilih jenis kelamin</option>
-                  <option value="male">Laki-laki</option>
-                  <option value="female">Perempuan</option>
-                </select>
-              </label>
-            </div>
-          </>
-        )}
+              <div className="portal-card parent-child-register !mb-2">
+                <h3>
+                  <Baby size={18} /> Profil anak
+                </h3>
+                <label>
+                  Nama anak
+                  <input
+                    required
+                    minLength={2}
+                    maxLength={80}
+                    value={childName}
+                    onChange={(e) => setChildName(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Tanggal lahir
+                  <input
+                    required
+                    type="date"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Jenis kelamin
+                  <select
+                    required
+                    value={sex}
+                    onChange={(e) =>
+                      setSex(e.target.value as "male" | "female" | "")
+                    }
+                  >
+                    <option value="">Pilih jenis kelamin</option>
+                    <option value="male">Laki-laki</option>
+                    <option value="female">Perempuan</option>
+                  </select>
+                </label>
+              </div>
+            </>
+          )}
 
-        <label>
-          Email
-          <input
-            required
-            type="email"
-            maxLength={160}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-          />
-        </label>
-        <label>
-          Password
-          <PasswordInput
-            required
-            minLength={12}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete={
-              mode === "login" ? "current-password" : "new-password"
-            }
-          />
-          {mode === "register" && <small>Minimal 12 karakter.</small>}
-        </label>
-        <button
-          className="portal-primary w-full"
-          disabled={busy || (mode === "register" && !sex)}
-        >
-          {busy ? "Memproses…" : mode === "login" ? "Masuk" : "Buat akun"}
-        </button>
-        <button
-          type="button"
-          className="portal-text justify-center"
-          onClick={() => {
-            onMode(mode === "login" ? "register" : "login");
-            onError("");
-          }}
-        >
-          {mode === "login"
-            ? "Belum punya akun? Buat akun"
-            : "Sudah punya akun? Masuk"}
-        </button>
-        {error && <Message error>{error}</Message>}
-      </form>
+          <label>
+            Email
+            <input
+              required
+              type="email"
+              maxLength={160}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+          </label>
+          <label>
+            Password
+            <PasswordInput
+              required
+              minLength={12}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={
+                mode === "login" ? "current-password" : "new-password"
+              }
+            />
+            {mode === "register" && <small>Minimal 12 karakter.</small>}
+          </label>
+          <button
+            className="portal-primary w-full"
+            disabled={busy || (mode === "register" && !sex)}
+          >
+            {busy ? "Memproses…" : mode === "login" ? "Masuk" : "Buat akun"}
+          </button>
+          <button
+            type="button"
+            className="portal-text justify-center"
+            onClick={() => {
+              onMode(mode === "login" ? "register" : "login");
+              onError("");
+            }}
+          >
+            {mode === "login"
+              ? "Belum punya akun? Buat akun"
+              : "Sudah punya akun? Masuk"}
+          </button>
+          {error && <Message error>{error}</Message>}
+        </form>
+      </div>
     </PortalShell>
   );
 }
@@ -412,8 +436,8 @@ function ParentHome({
   const child = view.children[0];
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-3">
-        <article className="portal-card !mb-0 md:col-span-2">
+      <div className="parent-home-overview grid gap-4 md:grid-cols-3">
+        <article className="portal-card parent-child-summary !mb-0 md:col-span-2">
           <p className="portal-note">Profil pertumbuhan</p>
           <h2>{child?.name || "Anak"}</h2>
           <p>
@@ -425,7 +449,7 @@ function ParentHome({
               : ""}
           </p>
         </article>
-        <article className="portal-card !mb-0">
+        <article className="portal-card parent-count-summary !mb-0">
           <p className="portal-note">Pemeriksaan tersimpan</p>
           <strong className="mt-2 block text-3xl font-black">
             {completed(view.examinations).length}
