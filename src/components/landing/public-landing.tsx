@@ -95,8 +95,14 @@ export function PublicLanding() {
       </header>
 
       <section className="relative bg-[#CDEBFF]">
-        <DoodleStar className="pointer-events-none left-[4%] top-12 hidden rotate-12 md:block" color="#FFD55E" />
-        <DoodleStar className="pointer-events-none right-[5%] top-28 hidden -rotate-12 lg:block" color="#FF8EB8" />
+        <DoodleStar
+          className="pointer-events-none left-[4%] top-12 hidden rotate-12 md:block"
+          color="#FFD55E"
+        />
+        <DoodleStar
+          className="pointer-events-none right-[5%] top-28 hidden -rotate-12 lg:block"
+          color="#FF8EB8"
+        />
 
         <div
           className="absolute left-[8%] top-[45%] hidden h-12 w-12 rounded-full border-[6px] border-[#4E8BC4] md:block"
@@ -287,7 +293,10 @@ export function PublicLanding() {
       </section>
 
       <section className="relative bg-[#DDF2FF]">
-        <DoodleStar className="pointer-events-none left-[5%] top-20 hidden -rotate-12 lg:block" color="#FF8EB8" />
+        <DoodleStar
+          className="pointer-events-none left-[5%] top-20 hidden -rotate-12 lg:block"
+          color="#FF8EB8"
+        />
         <div className="mx-auto max-w-7xl px-5 py-20 md:px-8 md:py-28">
           <div className="grid gap-8 lg:grid-cols-[.72fr_1.28fr] lg:items-end">
             <div>
