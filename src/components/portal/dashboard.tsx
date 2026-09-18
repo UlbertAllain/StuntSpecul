@@ -67,7 +67,7 @@ export function StaffDashboard() {
 
   if (loading)
     return (
-      <PortalShell heading="Menyiapkan ruang petugas">
+      <PortalShell tone="staff" heading="Menyiapkan ruang petugas">
         <Message>Memeriksa sesi…</Message>
       </PortalShell>
     );
@@ -75,6 +75,7 @@ export function StaffDashboard() {
 
   return (
     <PortalShell
+      tone="staff"
       heading={facility}
       subtitle={`Halo, ${user.name}. Kelola pemeriksaan, pantau alat, dan lihat perkembangan layanan dari satu dashboard.`}
       actions={
