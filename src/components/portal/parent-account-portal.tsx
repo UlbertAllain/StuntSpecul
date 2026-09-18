@@ -310,7 +310,10 @@ function ParentAccountAuth({
           </p>
         </aside>
 
-        <form className="portal-card profile-form parent-auth-form" onSubmit={submit}>
+        <form
+          className="portal-card profile-form parent-auth-form"
+          onSubmit={submit}
+        >
           <div className="section-heading">
             <div>
               <h2>{mode === "login" ? "Masuk" : "Buat akun orang tua"}</h2>

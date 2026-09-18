@@ -792,7 +792,6 @@
   max-width: 680px;
 }
 
-
 /* 2026 visual-system pass: shared with the public landing without turning
    staff operations into a child-facing interface. */
 .portal-shell {
@@ -814,9 +813,7 @@
 }
 
 .portal-shell--staff {
-  background:
-    linear-gradient(180deg, #f5f9fc 0, #ffffff 260px),
-    #f7fafc;
+  background: linear-gradient(180deg, #f5f9fc 0, #ffffff 260px), #f7fafc;
 }
 
 .portal-header {
@@ -864,7 +861,16 @@
   width: 42px;
   height: 42px;
   background: var(--portal-yellow);
-  clip-path: polygon(50% 0, 61% 36%, 100% 50%, 61% 64%, 50% 100%, 39% 64%, 0 50%, 39% 36%);
+  clip-path: polygon(
+    50% 0,
+    61% 36%,
+    100% 50%,
+    61% 64%,
+    50% 100%,
+    39% 64%,
+    0 50%,
+    39% 36%
+  );
   transform: rotate(12deg);
   pointer-events: none;
 }
@@ -1309,7 +1315,6 @@
   }
 }
 
-
 .parent-auth-layout {
   display: grid;
   gap: 28px;
@@ -1434,7 +1439,7 @@
 
 @media (min-width: 900px) {
   .parent-auth-layout {
-    grid-template-columns: minmax(0, .88fr) minmax(0, 1.12fr);
+    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
   }
 }
 

@@ -1461,7 +1461,6 @@
   text-underline-offset: 4px;
 }
 
-
 /* Child-facing visual-system pass. Logic stays untouched; these rules align
    active examination stages with the playful public/device identity. */
 .mirror-shell {

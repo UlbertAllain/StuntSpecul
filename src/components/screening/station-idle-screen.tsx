@@ -90,7 +90,9 @@ export function StationIdleScreen({
               <span className="mx-auto grid h-16 w-16 place-items-center rounded-full border-[3px] border-[#18334d] bg-[#FFE3EE] shadow-[3px_4px_0_#18334d]">
                 <Activity size={30} />
               </span>
-              <h1 className="mt-6 text-3xl font-black">Koneksi alat terganggu</h1>
+              <h1 className="mt-6 text-3xl font-black">
+                Koneksi alat terganggu
+              </h1>
               <p className="mt-4 font-semibold leading-7 text-[#5d7384]">
                 {error}. Sistem akan mencoba terhubung kembali otomatis.
               </p>
