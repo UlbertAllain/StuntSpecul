@@ -59,21 +59,21 @@ export function KidMissionPlayground() {
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-[620px]">
+    <div className="relative isolate mx-auto w-full max-w-[620px] px-1 pb-3 sm:px-0">
       <div
-        className="absolute -left-3 top-20 h-16 w-16 rotate-12 rounded-[35%_65%_58%_42%] bg-[#ffd55e] opacity-90"
+        className="pointer-events-none absolute -left-3 top-20 z-0 hidden h-16 w-16 rotate-12 sm:block rounded-[35%_65%_58%_42%] bg-[#ffd55e] opacity-90"
         aria-hidden="true"
       />
       <div
-        className="absolute -right-4 top-8 h-20 w-20 -rotate-12 rounded-[62%_38%_47%_53%] bg-[#ffb4d0] opacity-90"
+        className="pointer-events-none absolute -right-4 top-8 z-0 hidden h-20 w-20 -rotate-12 sm:block rounded-[62%_38%_47%_53%] bg-[#ffb4d0] opacity-90"
         aria-hidden="true"
       />
       <div
-        className="absolute -right-1 bottom-24 h-14 w-14 rotate-6 rounded-full border-[5px] border-[#80c7ec]"
+        className="pointer-events-none absolute -right-1 bottom-24 z-0 hidden h-14 w-14 rotate-6 sm:block rounded-full border-[5px] border-[#80c7ec]"
         aria-hidden="true"
       />
 
-      <div className="relative overflow-hidden rounded-[3rem_3rem_2rem_2rem] border-[4px] border-[#18334d] bg-[#fffdf5] shadow-[10px_12px_0_#18334d]">
+      <div className="relative z-10 overflow-hidden rounded-[3rem_3rem_2rem_2rem] border-[4px] border-[#18334d] bg-[#fffdf5] shadow-[10px_12px_0_#18334d]">
         <div className="flex items-center justify-between border-b-[3px] border-[#18334d] bg-[#bfe7ff] px-5 py-4">
           <div>
             <span className="block text-[11px] font-black uppercase tracking-[0.15em] text-[#32688f]">
@@ -116,7 +116,7 @@ export function KidMissionPlayground() {
             aria-hidden="true"
           />
 
-          <div className="mx-auto w-fit -rotate-2 rounded-[1.4rem_1.4rem_1.4rem_.4rem] border-[3px] border-[#18334d] bg-white px-5 py-3 shadow-[4px_5px_0_#18334d]">
+          <div className="relative z-10 mx-auto w-fit -rotate-2 rounded-[1.4rem_1.4rem_1.4rem_.4rem] border-[3px] border-[#18334d] bg-white px-5 py-3 shadow-[4px_5px_0_#18334d]">
             <p className="text-sm font-black text-[#18334d]">
               {activeMission.cheer}
             </p>
@@ -125,7 +125,7 @@ export function KidMissionPlayground() {
           <button
             type="button"
             onClick={reactToTap}
-            className="group relative mx-auto mt-4 block"
+            className="group relative z-10 mx-auto mt-4 block"
             aria-label="Sapa Mimo"
           >
             <span
@@ -148,7 +148,7 @@ export function KidMissionPlayground() {
 
           <p
             key={reactionIndex}
-            className="mx-auto mt-1 min-h-6 text-sm font-black text-[#b43e70]"
+            className="relative z-10 mx-auto mt-1 min-h-6 text-sm font-black text-[#b43e70]"
           >
             {MIMO_REACTIONS[reactionIndex]}
           </p>
