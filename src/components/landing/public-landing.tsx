@@ -12,7 +12,7 @@ const JOURNEY = [
     text: "Data anak dipilih dulu dari dashboard.",
     color: "#DDF2FF",
     accent: "#72B8E6",
-    rotate: "-rotate-1",
+    rotate: "lg:-rotate-1",
   },
   {
     number: "2",
@@ -20,7 +20,7 @@ const JOURNEY = [
     text: "Anak mengikuti tiga langkah sederhana.",
     color: "#FFE3EE",
     accent: "#FF8EB8",
-    rotate: "rotate-1",
+    rotate: "lg:rotate-1",
   },
   {
     number: "3",
@@ -28,7 +28,7 @@ const JOURNEY = [
     text: "Pemeriksaan masuk ke riwayat anak.",
     color: "#FFF0C8",
     accent: "#F2B84B",
-    rotate: "-rotate-1",
+    rotate: "lg:-rotate-1",
   },
   {
     number: "4",
@@ -36,7 +36,7 @@ const JOURNEY = [
     text: "Perkembangan bisa dilihat lagi dari rumah.",
     color: "#DFF3E8",
     accent: "#79C89B",
-    rotate: "rotate-1",
+    rotate: "lg:rotate-1",
   },
 ] as const;
 
