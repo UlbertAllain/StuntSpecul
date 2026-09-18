@@ -1,12 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Building2,
-  Check,
-  ShieldCheck,
-  Star,
-} from "lucide-react";
+import { ArrowRight, Building2, Check, ShieldCheck, Star } from "lucide-react";
 
 import { KidMissionPlayground } from "./kid-mission-playground";
 
@@ -118,8 +112,8 @@ function GrowthPreview() {
               Grafik TB/U
             </span>
             <p className="mt-2 max-w-md text-sm font-semibold leading-6 text-[#5d7485]">
-              Supaya ibu tidak cuma melihat satu angka, tapi bisa melihat arahnya
-              dari beberapa pemeriksaan.
+              Supaya ibu tidak cuma melihat satu angka, tapi bisa melihat
+              arahnya dari beberapa pemeriksaan.
             </p>
           </div>
 
@@ -336,13 +330,22 @@ export function PublicLanding() {
           </Link>
 
           <nav className="hidden items-center gap-7 text-sm font-black text-[#536c7f] lg:flex">
-            <a href="#kenalan" className="transition hover:-rotate-1 hover:text-[#18334d]">
+            <a
+              href="#kenalan"
+              className="transition hover:-rotate-1 hover:text-[#18334d]"
+            >
               Kenalan
             </a>
-            <a href="#cara-kerja" className="transition hover:rotate-1 hover:text-[#18334d]">
+            <a
+              href="#cara-kerja"
+              className="transition hover:rotate-1 hover:text-[#18334d]"
+            >
               Cara kerja
             </a>
-            <a href="#orang-tua" className="transition hover:-rotate-1 hover:text-[#18334d]">
+            <a
+              href="#orang-tua"
+              className="transition hover:-rotate-1 hover:text-[#18334d]"
+            >
               Untuk orang tua
             </a>
           </nav>
@@ -469,11 +472,9 @@ export function PublicLanding() {
                   (item, index) => (
                     <span
                       key={item}
-                      className={`rounded-full border-2 border-[#18334d] px-4 py-2 text-sm font-black ${[
-                        "bg-[#DDF2FF]",
-                        "bg-[#FFF0C8]",
-                        "bg-[#DFF3E8]",
-                      ][index]}`}
+                      className={`rounded-full border-2 border-[#18334d] px-4 py-2 text-sm font-black ${
+                        ["bg-[#DDF2FF]", "bg-[#FFF0C8]", "bg-[#DFF3E8]"][index]
+                      }`}
                     >
                       {item}
                     </span>

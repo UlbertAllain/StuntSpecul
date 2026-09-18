@@ -102,7 +102,10 @@ export function KidMissionPlayground() {
           <div
             className="absolute left-8 top-9 h-5 w-5 rotate-12 bg-[#ffd55e]"
             aria-hidden="true"
-            style={{ clipPath: "polygon(50% 0,61% 36%,100% 50%,61% 64%,50% 100%,39% 64%,0 50%,39% 36%)" }}
+            style={{
+              clipPath:
+                "polygon(50% 0,61% 36%,100% 50%,61% 64%,50% 100%,39% 64%,0 50%,39% 36%)",
+            }}
           />
           <div
             className="absolute right-9 top-28 h-4 w-16 rotate-[-12deg] rounded-full bg-[#9edaf8]"
@@ -113,9 +116,7 @@ export function KidMissionPlayground() {
             aria-hidden="true"
           />
 
-          <div
-            className="mx-auto w-fit -rotate-2 rounded-[1.4rem_1.4rem_1.4rem_.4rem] border-[3px] border-[#18334d] bg-white px-5 py-3 shadow-[4px_5px_0_#18334d]"
-          >
+          <div className="mx-auto w-fit -rotate-2 rounded-[1.4rem_1.4rem_1.4rem_.4rem] border-[3px] border-[#18334d] bg-white px-5 py-3 shadow-[4px_5px_0_#18334d]">
             <p className="text-sm font-black text-[#18334d]">
               {activeMission.cheer}
             </p>
