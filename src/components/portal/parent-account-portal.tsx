@@ -20,6 +20,7 @@ import type {
 import { formatAge, formatReading } from "@/lib/screening";
 import { growthStatusLabel } from "@/lib/growth";
 import { Message, PortalShell } from "./shell";
+import { PasswordInput } from "./password-input";
 import { ResultSummary } from "./result-summary";
 import { ParentGrowthInsights } from "./parent-growth-insights";
 
@@ -127,6 +128,7 @@ export function ParentAccountPortal() {
   if (loading)
     return (
       <PortalShell
+        tone="parent"
         heading="StuntSpecula untuk Orang Tua"
         subtitle="Menyiapkan data pertumbuhan anak Anda."
       >
@@ -153,6 +155,7 @@ export function ParentAccountPortal() {
 
   return (
     <PortalShell
+      tone="parent"
       heading={`Halo, ${view.parent.name}`}
       subtitle="Pantau pertumbuhan anak dan pahami hasil pemeriksaan dari satu tempat."
       actions={
@@ -277,6 +280,7 @@ function ParentAccountAuth({
 
   return (
     <PortalShell
+      tone="parent"
       heading="StuntSpecula untuk Orang Tua"
       subtitle="Akun ini digunakan untuk memantau hasil dan riwayat pertumbuhan anak. Pemeriksaan tetap dilakukan melalui alat di fasilitas kesehatan."
     >
@@ -361,9 +365,8 @@ function ParentAccountAuth({
         </label>
         <label>
           Password
-          <input
+          <PasswordInput
             required
-            type="password"
             minLength={12}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
