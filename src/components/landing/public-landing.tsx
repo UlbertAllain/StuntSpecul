@@ -92,11 +92,7 @@ function GrowthPreview() {
           ].map(([value, label, note], index) => (
             <div
               key={label}
-              className={
-                index === 2
-                  ? "p-6"
-                  : "border-b border-[#d7e3ec] p-6"
-              }
+              className={index === 2 ? "p-6" : "border-b border-[#d7e3ec] p-6"}
             >
               <span className="text-xs font-bold uppercase tracking-[0.12em] text-[#6e8190]">
                 {label}
@@ -120,7 +116,9 @@ function GrowthPreview() {
                 saja.
               </p>
             </div>
-            <strong className="text-sm font-black text-[#2f6f9f]">6 data</strong>
+            <strong className="text-sm font-black text-[#2f6f9f]">
+              6 data
+            </strong>
           </div>
 
           <svg
@@ -304,10 +302,7 @@ function StaffPreview() {
                       <strong>{value}</strong>
                     </div>
                     <div className="mt-2 h-1.5 bg-white/10">
-                      <div
-                        className="h-full bg-[#75b8df]"
-                        style={{ width }}
-                      />
+                      <div className="h-full bg-[#75b8df]" style={{ width }} />
                     </div>
                   </div>
                 ))}
@@ -493,7 +488,9 @@ export function PublicLanding() {
       <section id="tentang" className="bg-white">
         <div className="mx-auto grid max-w-7xl gap-12 px-5 py-20 md:px-8 md:py-28 lg:grid-cols-[.72fr_1.28fr]">
           <div>
-            <span className="text-sm font-bold text-[#2f6f9f]">Tentang sistem</span>
+            <span className="text-sm font-bold text-[#2f6f9f]">
+              Tentang sistem
+            </span>
           </div>
 
           <div>
@@ -523,7 +520,9 @@ export function PublicLanding() {
             {JOURNEY.map((item, index) => (
               <div
                 key={item.number}
-                className={index === 3 ? "" : "md:border-r md:border-[#bcd3e1] md:pr-7"}
+                className={
+                  index === 3 ? "" : "md:border-r md:border-[#bcd3e1] md:pr-7"
+                }
               >
                 <span className="text-sm font-black text-[#2f6f9f]">
                   {item.number}
@@ -684,7 +683,9 @@ export function PublicLanding() {
       <section className="bg-[#b43e70] text-white">
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 md:px-8 md:py-20 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <span className="text-sm font-bold text-[#ffd9e7]">StuntSpecula</span>
+            <span className="text-sm font-bold text-[#ffd9e7]">
+              StuntSpecula
+            </span>
             <h2 className="mt-4 max-w-3xl text-3xl font-black leading-[1.08] tracking-[-0.04em] md:text-5xl">
               Sudah punya akun? Lanjutkan pemantauan perkembangan anak.
             </h2>
