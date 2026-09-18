@@ -1,35 +1,44 @@
 "use client";
 
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Star } from "lucide-react";
 import { Mascot } from "./mascot";
 
 export function StationCompleteScreen() {
   return (
-    <main className="relative grid min-h-svh place-items-center overflow-hidden bg-[linear-gradient(180deg,#d9efff_0%,#c7e5ff_48%,#ffe6ef_100%)] p-5 text-[var(--ink)]">
-      <div className="pointer-events-none absolute -left-16 top-16 h-44 w-44 rounded-full bg-white/45 blur-2xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-8 h-56 w-56 rounded-full bg-white/55 blur-2xl" />
+    <main className="relative grid min-h-svh place-items-center overflow-hidden bg-[#CDEBFF] p-5 text-[#18334d]">
+      <span className="pointer-events-none absolute left-[8%] top-[12%] h-16 w-16 rotate-12 rounded-[60%_40%_55%_45%] bg-[#FFB4D0]" />
+      <span className="pointer-events-none absolute right-[8%] top-[15%] h-12 w-12 rounded-full bg-[#FFD55E]" />
+      <Star
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-[10%] left-[10%] rotate-[-10deg] fill-[#FFF0A8] text-[#18334d]"
+        size={42}
+        strokeWidth={2.5}
+      />
 
-      <section className="relative w-full max-w-[550px] overflow-hidden rounded-[2.4rem] border border-white/80 bg-white/95 px-7 py-7 text-center shadow-[0_24px_70px_rgba(48,107,159,0.16)] backdrop-blur sm:px-9">
-        <span className="mx-auto inline-flex items-center gap-2 rounded-full bg-[#eef8f4] px-4 py-2 text-xs font-extrabold tracking-[0.1em] text-[#27644f]">
-          <CheckCircle2 size={16} /> PEMERIKSAAN SELESAI
+      <section className="relative w-full max-w-[560px] overflow-hidden rounded-[3rem_3rem_2rem_2rem] border-[4px] border-[#18334d] bg-[#FFFDF7] px-7 py-7 text-center shadow-[9px_11px_0_#18334d] sm:px-9">
+        <span className="mx-auto inline-flex -rotate-1 items-center gap-2 rounded-full border-[2.5px] border-[#18334d] bg-[#DFF3E8] px-4 py-2 text-xs font-black tracking-[0.08em] shadow-[3px_3px_0_#18334d]">
+          <CheckCircle2 size={16} strokeWidth={3} /> PEMERIKSAAN SELESAI
         </span>
 
-        <div className="mx-auto mt-4 w-[210px] sm:w-[230px]">
-          <Mascot pose="cheer" interactive interaction="high-five" />
+        <div className="relative mx-auto mt-3 w-[220px] sm:w-[240px]">
+          <span className="pointer-events-none absolute inset-[18%] rounded-full bg-[#FFE3EE]" />
+          <div className="relative">
+            <Mascot pose="cheer" interactive interaction="high-five" />
+          </div>
         </div>
 
-        <h1 className="mx-auto mt-2 max-w-md text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl">
+        <h1 className="mx-auto mt-1 max-w-md text-4xl font-black leading-[.98] tracking-[-0.045em] sm:text-5xl">
           Yeay, kamu hebat!
         </h1>
-        <p className="mx-auto mt-3 max-w-md text-base leading-7 text-[var(--muted-foreground)] sm:text-lg">
-          Semua tahap sudah selesai. Sekarang kamu boleh turun dari alat dan
-          istirahat sebentar.
+        <p className="mx-auto mt-4 max-w-md text-base font-semibold leading-7 text-[#5c7384] sm:text-lg">
+          Semua misi sudah selesai. Sekarang boleh turun dari alat dan istirahat
+          sebentar.
         </p>
 
-        <div className="mx-auto mt-5 flex max-w-md items-center justify-center gap-3 rounded-2xl border border-[#cfe1f1] bg-[#f4f9fd] px-4 py-3 text-sm font-extrabold text-[#365a78]">
+        <div className="mx-auto mt-6 flex max-w-md items-center justify-center gap-3 rounded-[1.4rem] border-[2.5px] border-[#18334d] bg-[#FFF0C8] px-4 py-3 text-sm font-black shadow-[3px_4px_0_#18334d]">
           <span className="relative flex h-3 w-3 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--blue)] opacity-45" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-[var(--blue)]" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#4E8BC4] opacity-45" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-[#4E8BC4]" />
           </span>
           Menunggu petugas menyelesaikan sesi
         </div>

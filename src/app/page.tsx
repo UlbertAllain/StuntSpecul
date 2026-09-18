@@ -1,5 +1,5 @@
-import { ParentAccountPortal } from "@/components/portal/parent-account-portal";
+import { PublicLanding } from "@/components/landing/public-landing";
 
 export default function Home() {
-  return <ParentAccountPortal />;
+  return <PublicLanding />;
 }

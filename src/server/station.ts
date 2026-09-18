@@ -2,6 +2,9 @@ import { z } from "zod";
 import type { Env } from "./env";
 import { ApiError, body, ok } from "./http";
 
+const STATION_ID = "single-station";
+const STATION_NAME = "StuntSpecula Station 01";
+
 type ActiveStationExam = {
   id: string;
   ageMonths: number;
@@ -11,6 +14,15 @@ type ActiveStationExam = {
   createdAt: number;
 };
 
+async function touchStation(env: Env) {
+  const now = Date.now();
+  await env.DB.prepare(
+    "INSERT INTO devices (id,name,active,last_seen,created_at) VALUES (?,?,1,?,?) ON CONFLICT(id) DO UPDATE SET active=1,last_seen=excluded.last_seen,name=excluded.name",
+  )
+    .bind(STATION_ID, STATION_NAME, now, now)
+    .run();
+}
+
 async function findActiveStationExam(env: Env) {
   return env.DB.prepare(
     "SELECT e.id,e.age_months AS ageMonths,e.sex,e.status,e.capture_status IS NULL AS cameraEnabled,e.created_at AS createdAt FROM examinations e WHERE e.status IN ('queued','running') OR (e.status='completed' AND EXISTS (SELECT 1 FROM examination_workflow ew WHERE ew.exam_id=e.id AND ew.finalized_at IS NULL)) ORDER BY e.created_at ASC LIMIT 1",
@@ -18,6 +30,7 @@ async function findActiveStationExam(env: Env) {
 }
 
 export async function stationStatus(_request: Request, env: Env) {
+  await touchStation(env);
   const active = await findActiveStationExam(env);
 
   return ok({
@@ -32,6 +45,7 @@ export async function stationStatus(_request: Request, env: Env) {
 }
 
 export async function claimStationExamination(_request: Request, env: Env) {
+  await touchStation(env);
   const active = await findActiveStationExam(env);
   if (!active)
     throw new ApiError(409, "Belum ada pemeriksaan yang dikirim ke alat.");
@@ -69,6 +83,7 @@ const completionSchema = z
   .strict();
 
 export async function completeStationExamination(request: Request, env: Env) {
+  await touchStation(env);
   const input = await body(request, completionSchema);
   const exam = await env.DB.prepare(
     "SELECT e.id,e.status FROM examinations e WHERE e.status='running' OR (e.status='completed' AND EXISTS (SELECT 1 FROM examination_workflow ew WHERE ew.exam_id=e.id AND ew.finalized_at IS NULL)) ORDER BY e.created_at DESC LIMIT 1",
@@ -100,6 +115,7 @@ export async function completeStationExamination(request: Request, env: Env) {
 }
 
 export async function cancelStationExamination(_request: Request, env: Env) {
+  await touchStation(env);
   const active = await env.DB.prepare(
     "SELECT id FROM examinations WHERE status IN ('queued','running') ORDER BY created_at ASC LIMIT 1",
   ).first<{ id: string }>();

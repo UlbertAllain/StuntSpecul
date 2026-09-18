@@ -44,6 +44,7 @@ export function StaffLogin({ onLogin }: { onLogin: (staff: Staff) => void }) {
   }
   return (
     <PortalShell
+      tone="staff"
       heading={
         config?.needsSetup
           ? "Siapkan fasilitas Anda"
