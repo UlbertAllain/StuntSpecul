@@ -22,6 +22,10 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - name: Temporary formatting diff
+        run: |
+          npx prettier --write src/components/screening/results.tsx src/hooks/use-camera.ts
+          git diff -- src/components/screening/results.tsx src/hooks/use-camera.ts
       - run: npm run check
       - run: npm run build
       - run: node tests/deployment-smoke.mjs
