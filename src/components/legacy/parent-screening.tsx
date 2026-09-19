@@ -8,7 +8,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api-client";
-import { Message, PortalShell } from "./shell";
+import { Message, PortalShell } from "@/components/portal/shell";
 
 type ScreeningStatus =
   | "waiting_parent"
