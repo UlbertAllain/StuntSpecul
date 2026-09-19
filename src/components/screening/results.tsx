@@ -114,11 +114,11 @@ export function Results({
         className={`growth-result ${report.growthStatus === "unavailable" ? "unavailable-result" : ""}`}
       >
         <div>
-          <span>Status pertumbuhan</span>
+          <span>Hasil utama — pertumbuhan WHO</span>
           <strong>{growthStatusLabel(report.growthStatus)}</strong>
         </div>
         <div>
-          <span>Skrining stunting</span>
+          <span>Status TB/U</span>
           <strong>{stuntingScreeningLabel(report.stuntingScreening)}</strong>
         </div>
         <p>
@@ -131,7 +131,7 @@ export function Results({
       <div className="facial-results">
         <h2>
           <ScanFace size={22} />
-          Skrining wajah AI
+          Analisis wajah — pendukung
         </h2>
         <div>
           <span>Model A V2.1</span>
@@ -147,8 +147,8 @@ export function Results({
           <p>{facialReasonLabel(facial.reason)}</p>
         )}
         <p>
-          Analisis wajah adalah indikator eksperimental tambahan. Status
-          pertumbuhan berdasarkan TB/U WHO tetap menjadi hasil utama.
+          Analisis wajah hanya menjadi informasi pendukung dan tidak
+          menentukan status stunting. Hasil utama tetap berasal dari TB/U WHO.
         </p>
       </div>
 
@@ -173,7 +173,7 @@ export function Results({
                 <dd>{growthStatusLabel(report.growthStatus)}</dd>
               </div>
               <div>
-                <dt>Skrining wajah AI</dt>
+                <dt>Analisis wajah pendukung</dt>
                 <dd>{facialAnalysisLabel(facial.status)}</dd>
               </div>
               <div>
