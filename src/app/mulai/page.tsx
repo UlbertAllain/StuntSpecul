@@ -1,5 +1,5 @@
-import { ParentScreening } from "@/components/portal/parent-screening";
+import { LegacyParentScreening } from "@/components/legacy/parent-screening";
 
 export default function Page() {
-  return <ParentScreening />;
+  return <LegacyParentScreening />;
 }
