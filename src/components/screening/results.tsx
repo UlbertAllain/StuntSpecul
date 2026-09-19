@@ -6,7 +6,7 @@ import {
   ArrowRight,
   Check,
   Download,
-  Eye,
+  Info,
   Ruler,
   Scale,
   ScanFace,
@@ -19,13 +19,14 @@ import {
   stuntingScreeningLabel,
 } from "@/lib/growth";
 import {
+  facialAnalysisLabel,
+  facialReasonLabel,
   formatAge,
   formatReading,
   type ScreeningReport,
 } from "@/lib/screening";
 import { Mascot } from "./mascot";
 
-const FACIAL_AREAS = ["Area mata", "Kantong mata", "Kondisi bibir"];
 const CAPTURE_LABELS = {
   captured: "Kamera perangkat",
   skipped: "Kamera dinonaktifkan",
@@ -45,6 +46,7 @@ export function Results({
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const followUp = followUpForGrowthStatus(report.growthStatus);
+  const facial = report.facialAnalysis;
 
   function save() {
     try {
@@ -88,6 +90,7 @@ export function Results({
         <span>{report.child.sex === "male" ? "Laki-laki" : "Perempuan"}</span>
         <span>{new Date(report.completedAt).toLocaleDateString("id-ID")}</span>
       </div>
+
       <div className="body-results">
         <div>
           <Ruler size={21} />
@@ -106,6 +109,7 @@ export function Results({
           </strong>
         </div>
       </div>
+
       <div
         className={`growth-result ${report.growthStatus === "unavailable" ? "unavailable-result" : ""}`}
       >
@@ -123,25 +127,36 @@ export function Results({
             : `TB/U Z-score WHO: ${report.heightForAgeZ}. Hasil ini adalah skrining, bukan diagnosis.`}
         </p>
       </div>
+
       <div className="facial-results">
         <h2>
           <ScanFace size={22} />
-          Analisis wajah
+          Skrining wajah AI
         </h2>
-        {FACIAL_AREAS.map((area) => (
-          <div key={area}>
-            <span>{area}</span>
-            <strong>Belum tersedia</strong>
+        <div>
+          <span>Model A V2.1</span>
+          <strong>{facialAnalysisLabel(facial.status)}</strong>
+        </div>
+        {facial.probability !== null && (
+          <div>
+            <span>Skor model</span>
+            <strong>{Math.round(facial.probability * 100)}%</strong>
           </div>
-        ))}
-        <p>Indikator visual tambahan, terpisah dari status stunting.</p>
+        )}
+        {facial.status === "rejected" && (
+          <p>{facialReasonLabel(facial.reason)}</p>
+        )}
+        <p>
+          Analisis wajah adalah indikator eksperimental tambahan. Status
+          pertumbuhan berdasarkan TB/U WHO tetap menjadi hasil utama.
+        </p>
       </div>
 
       {detail && (
         <>
           <div className="clinical-detail">
             <h2>
-              <Eye size={21} />
+              <Info size={21} />
               Dasar hasil
             </h2>
             <dl>
@@ -158,8 +173,8 @@ export function Results({
                 <dd>{growthStatusLabel(report.growthStatus)}</dd>
               </div>
               <div>
-                <dt>Analisis wajah</dt>
-                <dd>Belum tersedia</dd>
+                <dt>Skrining wajah AI</dt>
+                <dd>{facialAnalysisLabel(facial.status)}</dd>
               </div>
               <div>
                 <dt>Pengambilan wajah</dt>
@@ -167,9 +182,9 @@ export function Results({
               </div>
             </dl>
             <p>
-              Status stunting dihitung dari tinggi menurut umur berdasarkan
-              standar WHO untuk anak usia 24–59 bulan. Foto wajah tidak dipakai
-              untuk menentukan kategori stunting.
+              Status stunting utama dihitung dari tinggi menurut umur berdasarkan
+              standar WHO untuk anak usia 24–59 bulan. Model wajah ditampilkan
+              terpisah sebagai skrining eksperimental dan bukan diagnosis.
             </p>
             <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
               Referensi WHO: panjang/tinggi menurut umur ↗
@@ -188,6 +203,7 @@ export function Results({
           </div>
         </>
       )}
+
       {!detail && (
         <button
           className="text-button detail-link"
@@ -222,11 +238,13 @@ export function Results({
           )}
         </div>
       )}
+
       {error && (
         <p className="field-error" role="alert">
           {error}
         </p>
       )}
+
       <p className="parent-caption" role="status">
         {awaitingStaffFinalize
           ? "Hasil juga tersedia pada akun orang tua yang terhubung."
