@@ -2,19 +2,52 @@
 
 import type { FacialAnalysis } from "./screening";
 
-type ModelAResponse =
-  | {
-      status: "ok";
-      classification: "stunting_indication" | "non_stunting_indication";
-      probabilityStunting: number;
-      threshold: number;
-      modelVersion: string;
-    }
-  | {
-      status: "reject";
-      reason: string;
-      modelVersion?: string;
-    };
+type ModelAOkResponse = {
+  status: "ok";
+  classification: "stunting_indication" | "non_stunting_indication";
+  probabilityStunting: number;
+  threshold: number;
+  modelVersion: string;
+};
+
+type ModelARejectResponse = {
+  status: "reject";
+  reason: string;
+  modelVersion?: string;
+};
+
+function record(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function errorMessage(value: unknown): string | null {
+  return record(value) && typeof value.message === "string"
+    ? value.message
+    : null;
+}
+
+function isReject(value: unknown): value is ModelARejectResponse {
+  return (
+    record(value) &&
+    value.status === "reject" &&
+    typeof value.reason === "string" &&
+    (value.modelVersion === undefined || typeof value.modelVersion === "string")
+  );
+}
+
+function isOk(value: unknown): value is ModelAOkResponse {
+  return (
+    record(value) &&
+    value.status === "ok" &&
+    (value.classification === "stunting_indication" ||
+      value.classification === "non_stunting_indication") &&
+    typeof value.probabilityStunting === "number" &&
+    Number.isFinite(value.probabilityStunting) &&
+    typeof value.threshold === "number" &&
+    Number.isFinite(value.threshold) &&
+    typeof value.modelVersion === "string"
+  );
+}
 
 export async function analyzeFacePhoto(
   photo: Blob,
@@ -30,22 +63,20 @@ export async function analyzeFacePhoto(
     cache: "no-store",
   });
 
-  let payload: ModelAResponse | { message?: string };
+  let payload: unknown;
   try {
-    payload = (await response.json()) as ModelAResponse | { message?: string };
+    payload = await response.json();
   } catch {
     throw new Error("Layanan analisis wajah tidak memberi respons yang valid.");
   }
 
   if (!response.ok) {
     throw new Error(
-      "message" in payload && payload.message
-        ? payload.message
-        : "Layanan analisis wajah belum tersedia.",
+      errorMessage(payload) ?? "Layanan analisis wajah belum tersedia.",
     );
   }
 
-  if (payload.status === "reject") {
+  if (isReject(payload)) {
     return {
       status: "rejected",
       probability: null,
@@ -53,6 +84,10 @@ export async function analyzeFacePhoto(
       reason: payload.reason,
       modelVersion: payload.modelVersion ?? "model-a-v2.1",
     };
+  }
+
+  if (!isOk(payload)) {
+    throw new Error("Respons Model A tidak sesuai format yang diharapkan.");
   }
 
   return {
