@@ -147,8 +147,8 @@ export function Results({
           <p>{facialReasonLabel(facial.reason)}</p>
         )}
         <p>
-          Analisis wajah hanya menjadi informasi pendukung dan tidak
-          menentukan status stunting. Hasil utama tetap berasal dari TB/U WHO.
+          Analisis wajah hanya menjadi informasi pendukung dan tidak menentukan
+          status stunting. Hasil utama tetap berasal dari TB/U WHO.
         </p>
       </div>
 
