@@ -6,7 +6,8 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "next dev --hostname 127.0.0.1",
+    "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/model-a/dev.ps1",
+    "dev:web": "next dev --hostname 127.0.0.1",
     "build": "next build",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint src db tests scripts --max-warnings=0",
