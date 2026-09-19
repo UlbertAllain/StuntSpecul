@@ -19,6 +19,7 @@ src/app/                 route entrypoints
 src/components/landing/  public landing
 src/components/portal/   petugas + orang tua
 src/components/screening/layar alat
+src/components/legacy/   compatibility QR lama
 src/components/ui/       primitive UI yang benar-benar dipakai
 src/hooks/               browser/session hooks
 src/lib/                 domain types + client utilities
