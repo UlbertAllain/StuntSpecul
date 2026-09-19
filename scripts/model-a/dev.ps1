@@ -1,7 +1,3 @@
-param(
-    [switch]$SkipInstall
-)
-
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
@@ -53,15 +49,18 @@ if (-not (Test-Path $VenvPython)) {
     }
 }
 
-if (-not $SkipInstall) {
-    Write-Host "[2/4] Memastikan dependency Model A..."
+Write-Host "[2/4] Memeriksa dependency Model A..."
+& $VenvPython -c "import cv2, numpy, onnxruntime" *> $null
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Dependency belum lengkap. Menginstal..."
     & $VenvPython -m pip install --disable-pip-version-check -r $Requirements
 
     if ($LASTEXITCODE -ne 0) {
         throw "Dependency Model A gagal dipasang."
     }
 } else {
-    Write-Host "[2/4] Dependency install dilewati."
+    Write-Host "Dependency sudah siap, skip install."
 }
 
 Write-Host "[3/4] Menjalankan Model A lokal..."
@@ -88,7 +87,7 @@ try {
 
     $env:NEXT_PUBLIC_MODEL_A_ENDPOINT = "http://127.0.0.1:8787"
 
-    npm run dev
+    npm run dev:web
 } finally {
     if ($ModelProcess -and -not $ModelProcess.HasExited) {
         Stop-Process -Id $ModelProcess.Id -Force -ErrorAction SilentlyContinue
