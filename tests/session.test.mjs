@@ -7,7 +7,17 @@ import {
 } from "../src/lib/screening.ts";
 
 const child = { ageMonths: 36, sex: "female", canStand: true };
-const capture = { status: "captured", photo: new Blob(["private"]) };
+const capture = {
+  status: "captured",
+  photo: new Blob(["private"]),
+  facialAnalysis: {
+    status: "non_stunting_indication",
+    probability: 0.2,
+    threshold: 0.4,
+    reason: null,
+    modelVersion: "model-a-v2.1",
+  },
+};
 
 function start(cameraEnabled = true) {
   return sessionReducer(INITIAL_SESSION, {
