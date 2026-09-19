@@ -2,8 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { captureFrame, requestCamera, stopCamera } from "@/lib/camera";
-import { analyzeFacePhoto, faceRetryMessage } from "@/lib/model-a";
-import type { Capture } from "@/lib/screening";
+import { analyzeFacePhoto } from "@/lib/model-a";
+import {
+  UNAVAILABLE_FACIAL_ANALYSIS,
+  type Capture,
+} from "@/lib/screening";
 
 const CAMERA_TIMEOUT_MS = 15_000;
 type CameraStatus =
@@ -128,24 +131,21 @@ export function useCamera(
       const facialAnalysis = await analyzeFacePhoto(photo, ageMonths);
       if (controller.signal.aborted) return;
 
-      if (facialAnalysis.status === "rejected") {
-        stopCamera(streamRef.current);
-        setError(faceRetryMessage(facialAnalysis.reason));
-        setStatus("error");
-        return;
-      }
-
       stopCamera(streamRef.current);
       onCapture({ status: "captured", photo, facialAnalysis });
-    } catch (cause) {
+    } catch {
       if (!controller.signal.aborted) {
+        // Facial AI is supporting data only. A model/service failure must never
+        // block the WHO anthropometric screening flow.
         stopCamera(streamRef.current);
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : "Gambar belum berhasil dianalisis. Silakan coba lagi.",
-        );
-        setStatus("error");
+        onCapture({
+          status: "captured",
+          photo,
+          facialAnalysis: {
+            ...UNAVAILABLE_FACIAL_ANALYSIS,
+            reason: "model_not_ready",
+          },
+        });
       }
     }
   }
