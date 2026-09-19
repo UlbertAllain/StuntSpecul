@@ -30,6 +30,11 @@ Install dari artifact:
 .\scripts\model-a\install.ps1 -ArtifactZip ".\stuntspecula_model_a_v2_artifacts.zip"
 ```
 
+## Dependency files
+
+- `pyproject.toml` mendeskripsikan runtime Python untuk deployment.
+- `requirements.txt` mem-pin dependency yang dipakai launcher lokal agar reproduktif.
+
 ## Local development
 
 Gunakan launcher:
