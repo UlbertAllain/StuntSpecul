@@ -51,13 +51,7 @@ Pastikan tiga file runtime tersedia di `models/`. Jika belum:
 Lalu jalankan web + Model A lokal:
 
 ```powershell
-.\scripts\model-a\dev.ps1
-```
-
-Jika dependency Python sudah pernah terpasang:
-
-```powershell
-.\scripts\model-a\dev.ps1 -SkipInstall
+npm run dev
 ```
 
 Website berjalan di `http://localhost:3000`, Model A lokal di `http://127.0.0.1:8787`.
