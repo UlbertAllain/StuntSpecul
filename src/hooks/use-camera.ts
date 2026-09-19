@@ -123,8 +123,9 @@ export function useCamera(
       return;
 
     setStatus("capturing");
+    let photo: Blob | null = null;
     try {
-      const photo = await captureFrame(video);
+      photo = await captureFrame(video);
       if (controller.signal.aborted) return;
 
       setStatus("analyzing");
@@ -138,6 +139,11 @@ export function useCamera(
         // Facial AI is supporting data only. A model/service failure must never
         // block the WHO anthropometric screening flow.
         stopCamera(streamRef.current);
+        if (!photo) {
+          setError("Gambar belum berhasil diambil. Silakan coba lagi.");
+          setStatus("error");
+          return;
+        }
         onCapture({
           status: "captured",
           photo,
