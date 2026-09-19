@@ -30,11 +30,7 @@ function CaptureCountdown({
   );
 }
 
-export function CameraStep({
-  paused,
-  ageMonths,
-  onComplete,
-}: CameraStepProps) {
+export function CameraStep({ paused, ageMonths, onComplete }: CameraStepProps) {
   const { videoRef, status, attempt, capture, error, retry } = useCamera(
     onComplete,
     ageMonths,
