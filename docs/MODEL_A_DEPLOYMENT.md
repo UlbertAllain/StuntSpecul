@@ -53,7 +53,7 @@ GET http://localhost:3000/api/model-a-screening
 Expected:
 
 ```json
-{"service":"model-a-v2.1","ready":true,"modelDir":"models"}
+{ "service": "model-a-v2.1", "ready": true, "modelDir": "models" }
 ```
 
 ## Production
