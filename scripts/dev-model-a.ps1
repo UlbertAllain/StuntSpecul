@@ -65,7 +65,8 @@ if (-not $SkipInstall) {
 }
 
 Write-Host "[3/4] Menjalankan Model A lokal..."
-$ModelProcess = Start-Process -FilePath $VenvPython -ArgumentList @($LocalServer) -WorkingDirectory $ProjectRoot -PassThru -NoNewWindow
+$QuotedLocalServer = "`"$LocalServer`""
+$ModelProcess = Start-Process -FilePath $VenvPython -ArgumentList @("-u", $QuotedLocalServer) -WorkingDirectory $ProjectRoot -PassThru -NoNewWindow
 
 Start-Sleep -Seconds 2
 
