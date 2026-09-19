@@ -97,7 +97,7 @@ export function ResultSummary({
       </div>
       <div className="portal-card">
         <h3>
-          <ScanFace /> Skrining wajah AI
+          <ScanFace /> Analisis wajah pendukung
         </h3>
         <dl className="portal-details">
           <div>
@@ -120,8 +120,8 @@ export function ResultSummary({
           )}
         </dl>
         <p className="portal-note">
-          Model wajah adalah indikator eksperimental tambahan. TB/U WHO tetap
-          menjadi dasar utama skrining stunting.
+          Analisis wajah hanya informasi pendukung. Penentuan utama status
+          stunting tetap berdasarkan TB/U WHO.
         </p>
       </div>
     </>
