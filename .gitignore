@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -10,45 +8,34 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
-
-# next.js
+# build / test
 /.next/
-/out/
+/dist/
+/coverage/
+*.tsbuildinfo
+next-env.d.ts
 
-# misc
-.DS_Store
-*.pem
+# local environment
+.env*
+!.env.example
+*.db
+*.db-shm
+*.db-wal
+/.venv-model-a/
 
-# debug
+# local artifacts
+/stuntspecula_model_a_v2_artifacts.zip
+/.gitignore.local-backup
+
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# misc
+.DS_Store
+*.pem
 
-# vercel
-.vercel
-
-# typescript
-next-env.d.ts
-/dist/
-/.wrangler/
-/.sites-runtime/
-/outputs/
-/work/
-
-*.tsbuildinfo
-
-.dev.vars
-!.env.example
-
-*.db
-*.db-shm
-*.db-wal
-
-# Local Model A Python environment
-.venv-model-a/
+# Vercel local metadata
+.vercel/
