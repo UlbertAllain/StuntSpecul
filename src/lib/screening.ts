@@ -22,10 +22,36 @@ const readingsSchema = z.object({
   weightKg: z.number().finite().positive().nullable(),
 });
 
+export type FacialAnalysisStatus =
+  | "stunting_indication"
+  | "non_stunting_indication"
+  | "rejected"
+  | "unavailable";
+
+export type FacialAnalysis = {
+  status: FacialAnalysisStatus;
+  probability: number | null;
+  threshold: number | null;
+  reason: string | null;
+  modelVersion: string | null;
+};
+
+export const UNAVAILABLE_FACIAL_ANALYSIS: FacialAnalysis = {
+  status: "unavailable",
+  probability: null,
+  threshold: null,
+  reason: null,
+  modelVersion: null,
+};
+
 export type Child = z.infer<typeof childSchema>;
 export type Readings = z.infer<typeof readingsSchema>;
 export type Capture =
-  | { status: "captured"; photo: Blob }
+  | {
+      status: "captured";
+      photo: Blob;
+      facialAnalysis: FacialAnalysis;
+    }
   | { status: "skipped" | "failed" };
 
 export type ScreeningReport = {
@@ -37,7 +63,7 @@ export type ScreeningReport = {
   captureStatus: Capture["status"];
   growthStatus: GrowthStatus;
   stuntingScreening: StuntingScreening;
-  facialStatus: "unavailable";
+  facialAnalysis: FacialAnalysis;
 };
 
 // Missing devices must remain missing data; never substitute fixture readings.
@@ -82,8 +108,49 @@ export function createScreeningReport(
     captureStatus: capture.status,
     growthStatus: growth.growthStatus,
     stuntingScreening: growth.stuntingScreening,
-    facialStatus: "unavailable",
+    facialAnalysis:
+      capture.status === "captured"
+        ? capture.facialAnalysis
+        : UNAVAILABLE_FACIAL_ANALYSIS,
   };
+}
+
+export function facialAnalysisLabel(
+  status: FacialAnalysisStatus | null,
+): string {
+  switch (status) {
+    case "stunting_indication":
+      return "Terindikasi stunting";
+    case "non_stunting_indication":
+      return "Tidak terindikasi stunting";
+    case "rejected":
+      return "Foto tidak memenuhi kualitas";
+    default:
+      return "Belum tersedia";
+  }
+}
+
+export function facialReasonLabel(reason: string | null): string {
+  switch (reason) {
+    case "blur":
+      return "Foto terlalu buram.";
+    case "too_dark":
+      return "Pencahayaan terlalu gelap.";
+    case "too_bright":
+      return "Pencahayaan terlalu terang.";
+    case "no_face":
+      return "Wajah belum terdeteksi.";
+    case "multiple_faces":
+      return "Terdeteksi lebih dari satu wajah.";
+    case "face_too_small":
+      return "Wajah terlalu jauh dari kamera.";
+    case "age_out_of_scope":
+      return "Usia di luar cakupan Model A.";
+    case "model_not_ready":
+      return "Model analisis wajah belum tersedia.";
+    default:
+      return reason ? "Foto tidak dapat dianalisis." : "Belum tersedia.";
+  }
 }
 
 export function formatAge(months: number): string {

@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import "./portal.css";
-import "./portal-theme.css";
 
 type PortalTone = "neutral" | "parent" | "staff";
 

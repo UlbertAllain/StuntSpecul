@@ -9,7 +9,7 @@ import { findChild } from "./children";
 
 // Keep historical device foreign keys intact; the single station needs no user setup.
 const STATION_ID = "single-station";
-const EXAM_SELECT = `SELECT e.id,e.child_id AS childId,c.name AS childName,c.code AS childCode,e.age_months AS ageMonths,e.sex,e.device_id AS deviceId,d.name AS deviceName,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.bmi,e.capture_status AS captureStatus,e.growth_status AS growthStatus,e.created_at AS createdAt,e.completed_at AS completedAt,CASE WHEN ew.exam_id IS NULL THEN e.completed_at ELSE ew.finalized_at END AS finalizedAt FROM examinations e JOIN children c ON c.id=e.child_id JOIN devices d ON d.id=e.device_id LEFT JOIN examination_workflow ew ON ew.exam_id=e.id`;
+const EXAM_SELECT = `SELECT e.id,e.child_id AS childId,c.name AS childName,c.code AS childCode,e.age_months AS ageMonths,e.sex,e.device_id AS deviceId,d.name AS deviceName,e.status,e.height_cm AS heightCm,e.weight_kg AS weightKg,e.bmi,e.capture_status AS captureStatus,e.facial_status AS facialStatus,e.facial_probability AS facialProbability,e.facial_reason AS facialReason,e.facial_model_version AS facialModelVersion,e.growth_status AS growthStatus,e.created_at AS createdAt,e.completed_at AS completedAt,CASE WHEN ew.exam_id IS NULL THEN e.completed_at ELSE ew.finalized_at END AS finalizedAt FROM examinations e JOIN children c ON c.id=e.child_id JOIN devices d ON d.id=e.device_id LEFT JOIN examination_workflow ew ON ew.exam_id=e.id`;
 type StoredExamination = Omit<Examination, "heightForAgeZ" | "growthStatus"> & {
   growthStatus: string;
 };
@@ -197,6 +197,23 @@ const completionSchema = z
     heightCm: z.number().finite().min(30).max(200).nullable(),
     weightKg: z.number().finite().min(1).max(100).nullable(),
     captureStatus: z.enum(["captured", "skipped", "failed"]),
+    facialStatus: z
+      .enum([
+        "stunting_indication",
+        "non_stunting_indication",
+        "rejected",
+        "unavailable",
+      ])
+      .default("unavailable"),
+    facialProbability: z
+      .number()
+      .finite()
+      .min(0)
+      .max(1)
+      .nullable()
+      .default(null),
+    facialReason: z.string().trim().max(80).nullable().default(null),
+    facialModelVersion: z.string().trim().max(40).nullable().default(null),
   })
   .strict();
 
@@ -219,13 +236,17 @@ export async function completeExamination(
       ? Number((input.weightKg / (input.heightCm / 100) ** 2).toFixed(1))
       : null;
   const result = await env.DB.prepare(
-    "UPDATE examinations SET status='completed',height_cm=?,weight_kg=?,bmi=?,capture_status=?,completed_at=? WHERE id=? AND staff_id=? AND status='running' RETURNING id",
+    "UPDATE examinations SET status='completed',height_cm=?,weight_kg=?,bmi=?,capture_status=?,facial_status=?,facial_probability=?,facial_reason=?,facial_model_version=?,completed_at=? WHERE id=? AND staff_id=? AND status='running' RETURNING id",
   )
     .bind(
       input.heightCm,
       input.weightKg,
       bmi,
       input.captureStatus,
+      input.facialStatus ?? "unavailable",
+      input.facialProbability ?? null,
+      input.facialReason ?? null,
+      input.facialModelVersion ?? null,
       Date.now(),
       id,
       actor.id,

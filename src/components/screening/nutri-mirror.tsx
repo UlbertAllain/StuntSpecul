@@ -30,7 +30,7 @@ import {
   type ScreeningCompletion,
 } from "@/hooks/use-screening-session";
 import { useSpeech } from "@/hooks/use-speech";
-import { STEP_INSTRUCTIONS, STEP_PROGRESS, type Step } from "@/lib/session";
+import { STEP_PROGRESS, type Step } from "@/lib/session";
 import { CameraStep } from "./camera-step";
 import type { MirrorAssignment } from "@/lib/portal";
 import { errorMessage } from "@/lib/api-client";
@@ -89,7 +89,7 @@ export function NutriMirror({
   const [voice, setVoice] = useState(false);
   const [notice, setNotice] = useState("");
   const stageRef = useRef<HTMLElement>(null);
-  useSpeech(STEP_INSTRUCTIONS[step], voice, isPaused);
+  useSpeech(step, voice, isPaused);
 
   useEffect(() => {
     stageRef.current?.focus({ preventScroll: true });
@@ -121,10 +121,6 @@ export function NutriMirror({
   }
 
   function toggleVoice() {
-    if (!("speechSynthesis" in window)) {
-      setNotice("Browser ini belum mendukung panduan suara.");
-      return;
-    }
     setVoice((enabled) => !enabled);
   }
 
@@ -189,6 +185,7 @@ export function NutriMirror({
             </div>
             <CameraStep
               paused={isPaused}
+              ageMonths={session.child?.ageMonths ?? 0}
               onComplete={(capture) => dispatch({ type: "capture", capture })}
             />
           </section>

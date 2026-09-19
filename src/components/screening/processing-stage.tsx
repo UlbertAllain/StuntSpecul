@@ -1,13 +1,13 @@
 "use client";
 
-import { Eye, Ruler, ScanFace } from "lucide-react";
+import { Camera, Ruler, ScanFace } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useCountdown } from "@/hooks/use-countdown";
 import { Mascot } from "./mascot";
 
 const ANALYSIS_STEPS = [
-  { label: "Area mata & kantong mata", icon: Eye },
-  { label: "Kondisi bibir", icon: ScanFace },
+  { label: "Kualitas foto wajah", icon: Camera },
+  { label: "Skrining pola wajah", icon: ScanFace },
   { label: "Data tubuh & acuan WHO", icon: Ruler },
 ];
 
@@ -40,10 +40,7 @@ export function ProcessingStage({
             key={step.label}
           >
             <step.icon size={22} />
-            <span>
-              {step.label}
-              <small>Layanan penilaian belum tersedia</small>
-            </span>
+            <span>{step.label}</span>
             <span
               className={
                 index === activeIndex ? "loading-ring" : "pending-mark"

@@ -86,7 +86,7 @@ test("disconnected sensors remain missing values throughout the report", () => {
   assert.equal(report.heightForAgeZ, null);
   assert.equal(report.growthStatus, "unavailable");
   assert.equal(report.stuntingScreening, null);
-  assert.equal(report.facialStatus, "unavailable");
+  assert.equal(report.facialAnalysis.status, "unavailable");
   assert.match(reportText(report), /TB\/U Z-score WHO: —/);
   assert.match(reportText(report), /Tinggi badan: — cm/);
 });
@@ -117,6 +117,13 @@ test("raw camera photos are not retained in reports or exported text", () => {
   const capture = {
     status: "captured",
     photo: new Blob(["private-photo"], { type: "image/jpeg" }),
+    facialAnalysis: {
+      status: "non_stunting_indication",
+      probability: 0.21,
+      threshold: 0.4,
+      reason: null,
+      modelVersion: "model-a-v2.1",
+    },
   };
   const report = createScreeningReport(
     child,
@@ -125,7 +132,7 @@ test("raw camera photos are not retained in reports or exported text", () => {
     completedAt,
   );
   assert.equal(report.captureStatus, "captured");
-  assert.equal(report.facialStatus, "unavailable");
+  assert.equal(report.facialAnalysis.status, "non_stunting_indication");
   assert.equal(Object.hasOwn(report, "photo"), false);
   assert.doesNotMatch(reportText(report), /private-photo/);
 });
