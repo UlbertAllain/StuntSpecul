@@ -40,15 +40,15 @@ Install dari artifact:
 Gunakan launcher:
 
 ```powershell
-.\scripts\model-a\dev.ps1
+npm run dev
 ```
 
-Launcher menyiapkan virtualenv `.venv-model-a`, menjalankan Model A pada `127.0.0.1:8787`, mengatur `NEXT_PUBLIC_MODEL_A_ENDPOINT`, lalu menjalankan Next.js.
+Launcher yang dipanggil oleh `npm run dev` menyiapkan virtualenv `.venv-model-a` bila diperlukan, memastikan dependency Model A tersedia, menjalankan Model A pada `127.0.0.1:8787`, mengatur `NEXT_PUBLIC_MODEL_A_ENDPOINT`, lalu menjalankan Next.js.
 
 Setelah dependency sudah ada:
 
 ```powershell
-.\scripts\model-a\dev.ps1 -SkipInstall
+npm run dev
 ```
 
 Health check:
