@@ -80,8 +80,9 @@ StuntSpecula/
 │  ├─ app/                 # Next.js routes
 │  ├─ components/
 │  │  ├─ landing/
-│  │  ├─ portal/
+│  │  ├─ portal/             # flow utama
 │  │  ├─ screening/
+│  │  ├─ legacy/             # compatibility QR lama
 │  │  └─ ui/
 │  ├─ hooks/
 │  ├─ lib/                 # domain/client utilities
@@ -94,7 +95,7 @@ Entry point penting:
 
 - `src/components/screening/station-display.tsx` — layar alat
 - `src/components/portal/dashboard.tsx` — dashboard petugas
-- `src/components/portal/parent-account-portal.tsx` — portal orang tua
+- `src/components/portal/parent-portal.tsx` — portal orang tua
 - `src/server/router.ts` — routing API
 - `src/server/station.ts` — lifecycle alat
 - `src/server/screenings.ts` — examination dan penyimpanan hasil
