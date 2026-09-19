@@ -115,7 +115,9 @@ export function createScreeningReport(
   };
 }
 
-export function facialAnalysisLabel(status: FacialAnalysisStatus | null): string {
+export function facialAnalysisLabel(
+  status: FacialAnalysisStatus | null,
+): string {
   switch (status) {
     case "stunting_indication":
       return "Terindikasi stunting";
