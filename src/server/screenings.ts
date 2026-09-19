@@ -205,7 +205,13 @@ const completionSchema = z
         "unavailable",
       ])
       .default("unavailable"),
-    facialProbability: z.number().finite().min(0).max(1).nullable().default(null),
+    facialProbability: z
+      .number()
+      .finite()
+      .min(0)
+      .max(1)
+      .nullable()
+      .default(null),
     facialReason: z.string().trim().max(80).nullable().default(null),
     facialModelVersion: z.string().trim().max(40).nullable().default(null),
   })
