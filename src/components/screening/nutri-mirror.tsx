@@ -189,6 +189,7 @@ export function NutriMirror({
             </div>
             <CameraStep
               paused={isPaused}
+              ageMonths={session.child?.ageMonths ?? 0}
               onComplete={(capture) => dispatch({ type: "capture", capture })}
             />
           </section>
