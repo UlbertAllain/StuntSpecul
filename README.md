@@ -1,10 +1,29 @@
 # StuntSpecula
 
-StuntSpecula adalah platform pemantauan pertumbuhan anak yang menghubungkan perangkat pemeriksaan IoT, dashboard Puskesmas/fasilitas kesehatan, dan portal orang tua. Sistem menggunakan Next.js App Router, Tailwind, API Next.js, SQLite/libSQL, WHO Child Growth Standards untuk tinggi menurut umur, serta Gemini sebagai asisten penjelasan hasil.
+StuntSpecula adalah sistem skrining pertumbuhan anak usia 24–59 bulan yang menghubungkan layar alat, dashboard petugas, portal orang tua, standar WHO height-for-age, dan Model A untuk analisis wajah pendukung.
+
+## Stack
+
+- Next.js 16 + React 19 + TypeScript
+- Tailwind CSS 4
+- libSQL / SQLite + Drizzle schema/migrations
+- Gemini untuk asisten penjelasan hasil
+- Python + OpenCV YuNet + ONNX Runtime untuk Model A
+
+## Prinsip hasil
+
+Status stunting utama berasal dari **TB/U (height-for-age) WHO** berdasarkan usia, jenis kelamin, dan tinggi badan.
+
+Berat badan menjadi data pertumbuhan tambahan. Model A hanya menghasilkan indikator wajah pendukung dan **tidak mengubah hasil WHO**.
 
 ## Jalankan lokal
 
-Gunakan Node.js 22.13 atau lebih baru (Node 22 LTS direkomendasikan).
+Persyaratan utama:
+
+- Node.js 22.13+
+- Python 3.10+ untuk runtime Model A lokal
+
+Setup aplikasi:
 
 ```powershell
 npm ci
@@ -15,134 +34,98 @@ npm run dev
 
 Rute utama:
 
-- `http://localhost:3000` — portal utama orang tua.
-- `http://localhost:3000/ortu` — alias portal monitoring orang tua.
-- `http://localhost:3000/petugas` — dashboard Puskesmas/petugas.
-- `http://localhost:3000/alat` — layar perangkat/timbangan StuntSpecula dengan layout portrait.
+- `/` — landing page
+- `/ortu` — portal akun orang tua
+- `/petugas` — dashboard petugas
+- `/alat` — layar pemeriksaan
+- `/mulai` dan `/hasil` — flow QR kompatibilitas lama
 
-Pada penggunaan lokal pertama, buat akun pengelola dari portal petugas.
+### Jalankan dengan Model A
 
-## Deploy di Vercel
+Pastikan tiga file runtime tersedia di `models/`. Jika belum:
 
-Ikuti [panduan langkah demi langkah](docs/VERCEL.md). Untuk akun, hubungan orang tua-anak, dan riwayat pemeriksaan yang persisten, gunakan database **libSQL di Turso**. API dan Gemini berjalan melalui Next.js Route Handler.
+```powershell
+.\scripts\model-a\install.ps1 -ArtifactZip ".\stuntspecula_model_a_v2_artifacts.zip"
+```
 
-| Environment variable | Fungsi                                                           |
-| -------------------- | ---------------------------------------------------------------- |
-| APP_ORIGIN           | Origin website lengkap, misalnya https://stuntspecula.vercel.app |
-| DATABASE_URL         | URL database libSQL; file SQLite hanya untuk lokal               |
-| DATABASE_AUTH_TOKEN  | Token database remote, hanya di server                           |
-| GEMINI_API_KEY       | API key Gemini, opsional                                         |
-| GEMINI_MODEL         | ID model yang tersedia pada akun Gemini, opsional                |
+Lalu jalankan web + Model A lokal:
 
-Simpan konfigurasi lokal di `.env.local` dan konfigurasi produksi di Vercel Environment Variables. Jangan gunakan prefix `NEXT_PUBLIC_` untuk rahasia server.
+```powershell
+.\scripts\model-a\dev.ps1
+```
 
-## Alur utama
+Jika dependency Python sudah pernah terpasang:
 
-### 1. Orang tua
+```powershell
+.\scripts\model-a\dev.ps1 -SkipInstall
+```
 
-1. Orang tua membuka aplikasi utama pada `/` atau `/ortu`, kemudian membuat akun atau masuk.
-2. Profil anak terhubung dengan akun orang tua.
-3. Orang tua hanya memantau data; nilai hasil pemeriksaan tidak dapat diedit dari portal orang tua.
-4. Setelah pemeriksaan selesai, hasil terbaru dan riwayat pertumbuhan otomatis tersedia pada akun orang tua.
-5. Orang tua dapat membuka detail hasil dan bertanya kepada Asisten Pertumbuhan mengenai hasil yang sudah dihitung server.
+Website berjalan di `http://localhost:3000`, Model A lokal di `http://127.0.0.1:8787`.
 
-### 2. Puskesmas / petugas
+## Struktur project
 
-1. Petugas masuk melalui `/petugas`.
-2. Petugas mencari profil anak pada menu Data Anak.
-3. Petugas menekan **Mulai pemeriksaan** untuk mengirim assignment ke perangkat StuntSpecula.
-4. Dashboard digunakan untuk memantau pemeriksaan aktif, data anak, dan riwayat hasil.
-5. Pengelola dapat mengelola akun petugas.
+```text
+StuntSpecula/
+├─ api/                    # Python function Model A untuk deployment
+├─ db/                     # Drizzle schema
+├─ drizzle/                # SQL migrations
+├─ models/                 # runtime assets Model A
+├─ public/                 # aset statis
+├─ scripts/
+│  ├─ model-a/             # install + local runtime Model A
+│  ├─ check-ai.mjs
+│  ├─ migrate.mjs
+│  └─ server-module.mjs
+├─ src/
+│  ├─ app/                 # Next.js routes
+│  ├─ components/
+│  │  ├─ landing/
+│  │  ├─ portal/
+│  │  ├─ screening/
+│  │  └─ ui/
+│  ├─ hooks/
+│  ├─ lib/                 # domain/client utilities
+│  └─ server/              # API/business modules
+├─ tests/
+└─ docs/
+```
 
-### 3. Perangkat IoT
+Entry point penting:
 
-1. Layar portrait pada `/alat` menunggu assignment dari dashboard petugas.
-2. Setelah petugas memilih anak, layar menunjukkan bahwa data pemeriksaan sudah diterima tanpa menampilkan identitas anak di layar publik.
-3. Pengukuran fisik dirancang untuk tinggi badan, berat badan, dan capture kamera.
-4. Setelah hardware terhubung, pembacaan sensor akan dikirim ke examination yang sudah dipilih petugas.
+- `src/components/screening/station-display.tsx` — layar alat
+- `src/components/portal/dashboard.tsx` — dashboard petugas
+- `src/components/portal/parent-account-portal.tsx` — portal orang tua
+- `src/server/router.ts` — routing API
+- `src/server/station.ts` — lifecycle alat
+- `src/server/screenings.ts` — examination dan penyimpanan hasil
+- `src/lib/growth.ts` — engine WHO TB/U
+- `api/model-a-screening.py` — inference Model A
+- `db/schema.ts` + `drizzle/` — database
 
-Saat ini tampilan dan alur integrasi perangkat sudah disiapkan, tetapi adapter sensor tinggi/berat nyata masih menunggu hardware IoT final. Sistem tidak membuat nilai sensor palsu jika perangkat belum terhubung.
+## Environment
 
-## Skrining pertumbuhan
+```dotenv
+APP_ORIGIN=http://localhost:3000
+DATABASE_URL=file:./stuntspecula.db
+DATABASE_AUTH_TOKEN=
+GEMINI_API_KEY=
+GEMINI_MODEL=
+```
 
-StuntSpecula menghitung **Height-for-Age Z-score (TB/U)** untuk anak usia 24–59 bulan menggunakan tabel LMS WHO untuk standing height usia 2–5 tahun.
+Produksi menggunakan database libSQL remote. Jangan commit file environment atau credential.
 
-Interpretasi utama:
-
-- Z-score `< -3`: indikasi stunting berat.
-- Z-score `< -2`: indikasi stunting.
-- Z-score `-2` sampai `< -1`: bukan kategori stunting; aplikasi menandai untuk pemantauan pertumbuhan.
-- Z-score `>= -1`: tidak terindikasi stunting dari TB/U pada pemeriksaan ini.
-- Nilai biologis yang tidak masuk akal atau pembacaan tinggi yang tidak tersedia tidak diklasifikasikan sebagai normal.
-
-Hasil merupakan **skrining, bukan diagnosis**. Hasil terindikasi perlu dikonfirmasi melalui pengukuran yang benar dan penilaian tenaga kesehatan.
-
-Referensi utama: [WHO Child Growth Standards — Length/height-for-age](https://www.who.int/tools/child-growth-standards/standards/length-height-for-age).
-
-## Analisis wajah
-
-Kamera tetap disiapkan untuk analisis indikator visual seperti area mata, kantong mata, dan kondisi bibir. Kamera **bukan** face recognition untuk menentukan identitas anak. Hasil analisis wajah dipisahkan dari WHO growth engine dan tidak menentukan status stunting.
-
-Model analisis wajah belum terhubung pada versi saat ini. Foto kamera juga tidak dikirim otomatis ke Gemini.
-
-## Portal orang tua
-
-Portal utama `/` (dengan alias `/ortu`) menyediakan:
-
-- login dan sesi akun orang tua yang persisten;
-- profil anak yang terhubung;
-- hasil pemeriksaan terbaru;
-- riwayat pertumbuhan longitudinal;
-- detail tinggi, berat, TB/U Z-score, dan status skrining;
-- tindak lanjut yang sesuai dengan hasil;
-- Asisten Pertumbuhan untuk menjelaskan hasil pemeriksaan.
-
-Asisten Gemini hanya menjelaskan hasil yang sudah dihitung server. Gemini tidak menghitung ulang atau mengganti klasifikasi WHO.
-
-## Dashboard Puskesmas
-
-Portal `/petugas` menyediakan:
-
-- monitoring pemeriksaan aktif;
-- statistik pemeriksaan;
-- pencarian data anak;
-- tombol mulai pemeriksaan untuk anak yang dipilih;
-- riwayat pemeriksaan dan detail hasil;
-- kelola akun petugas untuk role pengelola.
-
-Satu alat menggunakan satu pemeriksaan aktif pada satu waktu.
-
-## Legacy guest flow
-
-Flow QR/link tanpa akun dari versi sebelumnya masih dipertahankan di backend sebagai jalur kompatibilitas/demo, tetapi bukan alur utama produk setelah refactor client tracking.
-
-## Verifikasi
+## Verifikasi sebelum merge
 
 ```powershell
 npm run check
 npm run build
-npm start
+npm run db:migrate
 ```
 
-`npm run ai:check` mengirim satu pertanyaan tanpa data pasien untuk memeriksa koneksi Gemini menggunakan kuota provider.
+Migration yang sudah diterapkan tidak boleh diubah atau diganti nama.
 
-`npm run db:migrate` menjalankan migrasi yang belum tercatat. File migrasi yang sudah diterapkan tidak boleh diedit.
+Dokumentasi lanjutan:
 
-## Struktur penting
-
-- `src/app/page.tsx`: portal utama orang tua.
-- `src/app/ortu`: alias portal monitoring orang tua.
-- `src/app/petugas`: dashboard Puskesmas/petugas.
-- `src/app/alat`: layar portrait perangkat/timbangan.
-- `src/server/router.ts`: pemetaan endpoint dan pemeriksaan origin.
-- `src/server/parent-account.ts`: akun, sesi, hubungan data orang tua, hasil, dan chat orang tua.
-- `src/server/station.ts`: status assignment minimal untuk layar perangkat statis.
-- `src/server/screenings.ts`: examination dan hasil pemeriksaan.
-- `src/lib/growth.ts`: WHO height-for-age engine dan tindak lanjut.
-- `src/server/gemini.ts`: provider asisten penjelasan hasil.
-- `src/components/screening`: antarmuka portrait perangkat.
-- `src/components/portal`: portal orang tua dan petugas.
-- `db/schema.ts`, `drizzle`: skema dan migrasi.
-- `tests`: aturan bisnis, isolasi akun orang tua, otorisasi, WHO growth engine, sesi, kamera, database, dan deployment.
-
-[Arah arsitektur](docs/ARCHITECTURE.md) · [Catatan cleanup](docs/CLEANUP.md)
+- [Arsitektur](docs/ARCHITECTURE.md)
+- [Deployment](docs/DEPLOYMENT.md)
+- [Model A](docs/MODEL_A.md)
