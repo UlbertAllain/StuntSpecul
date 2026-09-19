@@ -70,13 +70,13 @@ export function CameraStep({ paused, ageMonths, onComplete }: CameraStepProps) {
         )}
         {status === "analyzing" && (
           <div className="camera-message" role="status">
-            Memeriksa kualitas dan pola wajah…
+            Menganalisis wajah sebagai data pendukung…
           </div>
         )}
         {status === "error" && (
           <div className="camera-message" role="alert">
             <Camera size={35} />
-            <strong>Foto belum bisa dipakai</strong>
+            <strong>Kamera belum siap</strong>
             <span>{error}</span>
           </div>
         )}
@@ -104,7 +104,8 @@ export function CameraStep({ paused, ageMonths, onComplete }: CameraStepProps) {
         </div>
       )}
       <p className="parent-caption">
-        Foto hanya diproses untuk skrining dan tidak disimpan ke laporan.
+        Foto wajah hanya menjadi analisis pendukung. Hasil utama tetap dihitung
+        dari pengukuran pertumbuhan berdasarkan standar WHO.
       </p>
     </div>
   );
