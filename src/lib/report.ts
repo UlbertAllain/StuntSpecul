@@ -3,13 +3,20 @@ import {
   growthStatusLabel,
   stuntingScreeningLabel,
 } from "./growth.ts";
-import { formatAge, formatReading, type ScreeningReport } from "./screening.ts";
+import {
+  facialAnalysisLabel,
+  facialReasonLabel,
+  formatAge,
+  formatReading,
+  type ScreeningReport,
+} from "./screening.ts";
 
 export const WHO_REFERENCE_URL =
   "https://www.who.int/tools/child-growth-standards/standards/length-height-for-age";
 
 export function reportText(report: ScreeningReport): string {
   const followUp = followUpForGrowthStatus(report.growthStatus);
+  const facial = report.facialAnalysis;
   return [
     "STUNTSPECULA — HASIL SCREENING",
     "",
@@ -22,19 +29,26 @@ export function reportText(report: ScreeningReport): string {
     `TB/U Z-score WHO: ${formatReading(report.heightForAgeZ)}`,
     "",
     `Status pertumbuhan: ${growthStatusLabel(report.growthStatus)}`,
-    `Skrining stunting: ${stuntingScreeningLabel(report.stuntingScreening)}`,
+    `Skrining stunting WHO: ${stuntingScreeningLabel(report.stuntingScreening)}`,
+    "",
+    "SKRINING WAJAH AI — MODEL A V2.1",
+    `Hasil: ${facialAnalysisLabel(facial.status)}`,
+    facial.probability === null
+      ? "Skor model: —"
+      : `Skor model: ${Math.round(facial.probability * 100)}%`,
+    facial.status === "rejected"
+      ? `Catatan: ${facialReasonLabel(facial.reason)}`
+      : "",
     "",
     "LANGKAH SELANJUTNYA",
     ...followUp.map((item, index) => `${index + 1}. ${item}`),
     "",
-    "Analisis area mata: Belum tersedia",
-    "Analisis kantong mata: Belum tersedia",
-    "Analisis bibir: Belum tersedia",
-    "",
-    "Hasil ini merupakan skrining, bukan diagnosis. Hasil yang terindikasi perlu dikonfirmasi oleh tenaga kesehatan.",
-    "Foto wajah tidak disertakan dalam laporan dan tidak menentukan status stunting.",
+    "Hasil ini merupakan skrining, bukan diagnosis. TB/U WHO merupakan hasil utama untuk skrining stunting. Analisis wajah adalah indikator eksperimental tambahan.",
+    "Foto wajah tidak disertakan dalam laporan.",
     `Referensi: ${WHO_REFERENCE_URL}`,
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function downloadReport(report: ScreeningReport): void {
