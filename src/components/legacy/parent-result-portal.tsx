@@ -10,8 +10,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { api, ClientError, errorMessage } from "@/lib/api-client";
 import type { ChatMessage, ParentView } from "@/lib/portal";
-import { PortalShell, Message } from "./shell";
-import { ResultSummary } from "./result-summary";
+import { PortalShell, Message } from "@/components/portal/shell";
+import { ResultSummary } from "@/components/portal/result-summary";
 
 const QUESTIONS = [
   "Apa arti hasil pemeriksaan ini?",
