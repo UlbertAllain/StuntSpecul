@@ -8,9 +8,9 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any
 
-import cv2
-import numpy as np
-import onnxruntime as ort
+cv2 = None
+np = None
+ort = None
 
 MODEL_VERSION = "model-a-v2.1"
 THRESHOLD = 0.40
@@ -24,12 +24,13 @@ MODEL_DIR = Path(os.getenv("MODEL_A_DIR", "models"))
 YUNET_PATH = MODEL_DIR / "face_detection_yunet_2023mar.onnx"
 CLASSIFIER_PATH = MODEL_DIR / "mobilenetv3_stunting_v2.onnx"
 
-IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+IMAGENET_MEAN_VALUES = [0.485, 0.456, 0.406]
+IMAGENET_STD_VALUES = [0.229, 0.224, 0.225]
 
 _detector: Any | None = None
-_session: ort.InferenceSession | None = None
+_session: Any | None = None
 _runtime_lock = threading.Lock()
+_dependency_error: str | None = None
 
 
 def _json(handler: BaseHTTPRequestHandler, status: int, payload: dict[str, Any]) -> None:
@@ -43,23 +44,78 @@ def _json(handler: BaseHTTPRequestHandler, status: int, payload: dict[str, Any])
     handler.wfile.write(body)
 
 
-def _runtime_ready() -> bool:
-    return (
+def _load_dependencies() -> tuple[Any, Any, Any]:
+    global cv2, np, ort, _dependency_error
+
+    if cv2 is not None and np is not None and ort is not None:
+        return cv2, np, ort
+
+    try:
+        import cv2 as cv2_module
+        import numpy as numpy_module
+        import onnxruntime as ort_module
+
+        cv2 = cv2_module
+        np = numpy_module
+        ort = ort_module
+        _dependency_error = None
+        return cv2, np, ort
+    except Exception as exc:
+        _dependency_error = f"{type(exc).__name__}: {exc}"
+        raise RuntimeError(_dependency_error) from exc
+
+
+def _runtime_status() -> dict[str, Any]:
+    files_ready = (
         YUNET_PATH.is_file()
         and CLASSIFIER_PATH.is_file()
         and (MODEL_DIR / "mobilenetv3_stunting_v2.onnx.data").is_file()
     )
 
+    dependency_error = None
+    dependencies_ready = False
 
-def _load_runtime() -> tuple[Any, ort.InferenceSession]:
+    try:
+        cv2_module, np_module, ort_module = _load_dependencies()
+        dependencies_ready = True
+        dependency_versions = {
+            "opencv": getattr(cv2_module, "__version__", "unknown"),
+            "numpy": getattr(np_module, "__version__", "unknown"),
+            "onnxruntime": getattr(ort_module, "__version__", "unknown"),
+        }
+    except Exception as exc:
+        dependency_error = str(exc)
+        dependency_versions = {}
+
+    return {
+        "filesReady": files_ready,
+        "dependenciesReady": dependencies_ready,
+        "dependencyError": dependency_error,
+        "dependencyVersions": dependency_versions,
+        "ready": files_ready and dependencies_ready,
+    }
+
+
+def _runtime_ready() -> bool:
+    return bool(_runtime_status()["ready"])
+
+
+def _load_runtime() -> tuple[Any, Any]:
     global _detector, _session
 
-    if not _runtime_ready():
+    status = _runtime_status()
+
+    if not status["filesReady"]:
         raise FileNotFoundError("Model A deployment files are missing.")
+
+    if not status["dependenciesReady"]:
+        raise RuntimeError(status["dependencyError"] or "Python dependencies are unavailable.")
+
+    cv2_module, np_module, ort_module = _load_dependencies()
 
     with _runtime_lock:
         if _detector is None:
-            _detector = cv2.FaceDetectorYN.create(
+            _detector = cv2_module.FaceDetectorYN.create(
                 str(YUNET_PATH),
                 "",
                 (320, 320),
@@ -69,7 +125,7 @@ def _load_runtime() -> tuple[Any, ort.InferenceSession]:
             )
 
         if _session is None:
-            _session = ort.InferenceSession(
+            _session = ort_module.InferenceSession(
                 str(CLASSIFIER_PATH),
                 providers=["CPUExecutionProvider"],
             )
@@ -305,8 +361,11 @@ def _preprocess(face_crop: np.ndarray) -> np.ndarray:
     gray = cv2.cvtColor(inner, cv2.COLOR_BGR2GRAY)
     gray = cv2.resize(gray, (224, 224), interpolation=cv2.INTER_LINEAR)
 
+    mean = np.array(IMAGENET_MEAN_VALUES, dtype=np.float32)
+    std = np.array(IMAGENET_STD_VALUES, dtype=np.float32)
+
     rgb = np.repeat(gray[:, :, None], 3, axis=2).astype(np.float32) / 255.0
-    rgb = (rgb - IMAGENET_MEAN) / IMAGENET_STD
+    rgb = (rgb - mean) / std
 
     return np.transpose(rgb, (2, 0, 1))[None, ...].astype(np.float32)
 
@@ -393,12 +452,17 @@ def _infer(image_bytes: bytes, age_months: int) -> dict[str, Any]:
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
+        status = _runtime_status()
         _json(
             self,
             200,
             {
                 "service": MODEL_VERSION,
-                "ready": _runtime_ready(),
+                "ready": status["ready"],
+                "filesReady": status["filesReady"],
+                "dependenciesReady": status["dependenciesReady"],
+                "dependencyError": status["dependencyError"],
+                "dependencyVersions": status["dependencyVersions"],
                 "modelDir": str(MODEL_DIR),
             },
         )
@@ -435,6 +499,17 @@ class handler(BaseHTTPRequestHandler):
                 {
                     "message": "Model A belum terpasang pada server.",
                     "code": "model_not_ready",
+                },
+            )
+            return
+        except RuntimeError as exc:
+            _json(
+                self,
+                503,
+                {
+                    "message": "Runtime Model A belum siap.",
+                    "code": "model_runtime_not_ready",
+                    "detail": str(exc),
                 },
             )
             return
