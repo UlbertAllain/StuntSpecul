@@ -3,10 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { captureFrame, requestCamera, stopCamera } from "@/lib/camera";
 import { analyzeFacePhoto } from "@/lib/model-a";
-import {
-  UNAVAILABLE_FACIAL_ANALYSIS,
-  type Capture,
-} from "@/lib/screening";
+import { UNAVAILABLE_FACIAL_ANALYSIS, type Capture } from "@/lib/screening";
 
 const CAMERA_TIMEOUT_MS = 15_000;
 type CameraStatus =
