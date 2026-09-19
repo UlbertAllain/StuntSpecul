@@ -55,7 +55,7 @@ if (-not (Test-Path $VenvPython)) {
 
 if (-not $SkipInstall) {
     Write-Host "[2/4] Memastikan dependency Model A..."
-    & $VenvPython -m pip install --disable-pip-version-check -q -r $Requirements
+    & $VenvPython -m pip install --disable-pip-version-check -r $Requirements
 
     if ($LASTEXITCODE -ne 0) {
         throw "Dependency Model A gagal dipasang."
