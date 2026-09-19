@@ -53,7 +53,10 @@ export async function analyzeFacePhoto(
   photo: Blob,
   ageMonths: number,
 ): Promise<FacialAnalysis> {
-  const endpoint =\n    process.env.NEXT_PUBLIC_MODEL_A_ENDPOINT || "/api/model-a-screening";\n\n  const response = await fetch(endpoint, {
+  const endpoint =
+    process.env.NEXT_PUBLIC_MODEL_A_ENDPOINT || "/api/model-a-screening";
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": photo.type || "image/jpeg",
