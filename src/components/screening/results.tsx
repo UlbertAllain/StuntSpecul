@@ -182,9 +182,10 @@ export function Results({
               </div>
             </dl>
             <p>
-              Status stunting utama dihitung dari tinggi menurut umur berdasarkan
-              standar WHO untuk anak usia 24–59 bulan. Model wajah ditampilkan
-              terpisah sebagai skrining eksperimental dan bukan diagnosis.
+              Status stunting utama dihitung dari tinggi menurut umur
+              berdasarkan standar WHO untuk anak usia 24–59 bulan. Model wajah
+              ditampilkan terpisah sebagai skrining eksperimental dan bukan
+              diagnosis.
             </p>
             <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
               Referensi WHO: panjang/tinggi menurut umur ↗
