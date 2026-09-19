@@ -1,17 +1,17 @@
-# Model A V2.1 deployment assets
+# Model A runtime assets
 
-This directory must contain exactly these runtime assets:
+This folder contains only Model A runtime binaries:
 
 - `face_detection_yunet_2023mar.onnx`
 - `mobilenetv3_stunting_v2.onnx`
 - `mobilenetv3_stunting_v2.onnx.data`
 
-Use:
+Install them with:
 
 ```powershell
-.\scripts\install-model-a.ps1 -ArtifactZip ".\stuntspecula_model_a_v2_artifacts.zip"
+.\scripts\model-a\install.ps1 -ArtifactZip ".\stuntspecula_model_a_v2_artifacts.zip"
 ```
 
-The classifier ONNX uses external weights, so the `.onnx.data` file must remain next to the `.onnx` file.
+The classifier uses external ONNX weights, so the `.onnx.data` file must stay next to the classifier `.onnx`.
 
-These files are runtime model artifacts, not user uploads.
+See [docs/MODEL_A.md](../docs/MODEL_A.md) for runtime and verification instructions.
