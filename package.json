@@ -12,7 +12,7 @@
     "lint": "eslint src db tests scripts --max-warnings=0",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "format": "prettier --write src db tests scripts docs *.json *.ts *.mjs *.md",
-    "format:check": "prettier --check src db tests scripts docs *.json *.ts *.mjs *.md",
+    "format:check": "prettier --write src db tests scripts docs *.json *.ts *.mjs *.md && git diff --exit-code",
     "check": "npm run typecheck && npm run lint && npm test && npm run format:check",
     "db:generate": "drizzle-kit generate",
     "ai:check": "node scripts/check-ai.mjs",
