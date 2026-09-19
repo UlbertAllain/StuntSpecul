@@ -1,37 +1,93 @@
-# Arsitektur StuntSpecula
+# Architecture
 
 ## Runtime
 
-Browser → Next.js Route Handler → router → modul bisnis → adapter database → libSQL.
+StuntSpecula memiliki dua runtime yang jelas:
 
-Frontend dan API di-deploy bersama di Vercel. Tidak ada Worker terpisah, static export, atau proxy localhost produksi. Handler API tipis: membuat environment server, meneruskan request, dan memetakan error. Runtime configuration divalidasi saat request, sehingga build tidak membutuhkan akses database/credential.
+```text
+Browser
+├─ Next.js /api/* → TypeScript business modules → libSQL/SQLite
+└─ Model A request → Python endpoint → YuNet + ONNX Runtime
+```
 
-## Modul
+Next.js menangani UI, autentikasi, examination, WHO growth assessment, portal, dan persistence. Python hanya menangani inference Model A.
 
-- `auth`: login, sesi, setup pertama, pengelola/petugas.
-- `children`: profil dan pencarian.
-- `screenings`: satu pemeriksaan aktif, claim, complete, cancel, riwayat.
-- `access`: QR satu kali, sesi orang tua, pembacaan satu hasil.
-- `ai`: otorisasi chat, persetujuan, rate limit, penyimpanan percakapan.
-- `gemini`: prompt hasil dan komunikasi provider.
-- `database`: kontrak prepare/bind/first/all/run/batch yang dipakai modul; implementasi SDK libSQL.
-- `runtime-config`: origin aplikasi dan validasi koneksi.
-- `http/security`: validasi request, cookie, hashing, response, rate limit.
+## Frontend boundaries
 
-SQL dan business rules lama dipertahankan. Adapter menggunakan SDK resmi agar transport dan transaksi tidak diimplementasikan sendiri. Setiap batch bersifat atomic, termasuk setup admin, klaim QR, serta pasangan pesan chat.
+```text
+src/app/                 route entrypoints
+src/components/landing/  public landing
+src/components/portal/   petugas + orang tua
+src/components/screening/layar alat
+src/components/ui/       primitive UI yang benar-benar dipakai
+src/hooks/               browser/session hooks
+src/lib/                 domain types + client utilities
+```
 
-## Penyimpanan
+Route utama:
 
-Skema SQLite pada `db/schema.ts`; migrasi tersimpan di `drizzle`. Data produksi memakai libSQL remote. SQLite lokal hanya untuk development. `app_migrations` mencatat checksum dan waktu migrasi, di luar entitas bisnis.
+- `/` landing
+- `/ortu` portal akun orang tua
+- `/petugas` dashboard petugas
+- `/alat` station display
 
-Tabel devices dipertahankan untuk foreign key data lama. Record alat internal tetap dibuat otomatis. Tidak ada pengelolaan/pairing perangkat pada UI/API.
+`/mulai` dan `/hasil` dipertahankan untuk compatibility flow QR lama.
 
-## Akses
+## Backend boundaries
 
-Pengelola menambah petugas. Setup pengelola pertama hanya boleh dari development localhost; runtime produksi tidak mempercayai header pemilik dari platform sebelumnya. Buat akun pertama melalui lokal dengan database remote fasilitas.
+```text
+src/server/router.ts          endpoint dispatcher
+src/server/auth.ts            staff auth
+src/server/parent-account.ts  parent account auth/history/chat
+src/server/children.ts        child profiles
+src/server/screenings.ts      examination lifecycle/history
+src/server/station.ts         single-station flow
+src/server/monitoring.ts      dashboard metrics
+src/server/access.ts          result-link compatibility
+src/server/guest-screening.ts guest/QR compatibility flow
+src/server/ai.ts              legacy result-chat orchestration
+src/server/gemini.ts          Gemini provider
+src/server/database.ts        libSQL adapter contract
+src/server/runtime*.ts        runtime/env validation
+```
 
-Staff menggunakan cookie HttpOnly SameSite=Strict; HTTPS menghasilkan Secure. Origin penulisan wajib sesuai APP_ORIGIN. Parent hanya mengakses hasil yang terkait sesi QR miliknya. Hasil/API tidak boleh masuk shared cache. Rahasia tidak dikirim ke browser.
+## Screening result
 
-## Batas integrasi
+WHO height-for-age is authoritative for the stunting screening result:
 
-Gemini menjelaskan satu hasil server, tidak menentukan status pertumbuhan. Sensor, perhitungan WHO, dan model facial belum dihubungkan. Nilai yang tidak tersedia tetap kosong/unavailable.
+```text
+age + sex + height
+→ WHO TB/U
+→ z-score
+→ growth status
+```
+
+Weight is additional growth data.
+
+Model A is independent:
+
+```text
+face photo
+→ YuNet
+→ quality gate
+→ MobileNetV3
+→ supporting facial indicator
+```
+
+A Model A failure must not block completion of the WHO screening.
+
+## Persistence
+
+- Schema source: `db/schema.ts`
+- Immutable migrations: `drizzle/*.sql`
+- Migration runner: `scripts/migrate.mjs`
+- Production database: libSQL
+- Local database: SQLite file or libSQL
+
+Applied migration names and checksums are tracked in `app_migrations`.
+
+## Deployment
+
+Next.js and the Python function deploy in the same Vercel project. Runtime model assets live in `models/`.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) and [MODEL_A.md](MODEL_A.md).
