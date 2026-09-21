@@ -149,7 +149,7 @@ export function StationDisplay() {
         key={`station-ready-${state.active.createdAt}`}
         canBegin={!busy && !error}
         onBegin={begin}
-        waitingLabel="Petugas sudah memilih profil anak. Tekan Aku siap! untuk memulai pemeriksaan."
+        waitingLabel="Orang tua sudah memulai sesi dari HP. Tekan Aku siap! untuk mulai pemeriksaan."
       />
     );
   }
