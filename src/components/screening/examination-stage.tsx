@@ -30,11 +30,13 @@ export function ExaminationStage({
   paused,
   onComplete,
   reading,
+  soundEnabled = false,
 }: {
   phase: MeasurementPhase;
   paused: boolean;
   onComplete: () => void;
   reading?: number | null;
+  soundEnabled?: boolean;
 }) {
   const remaining = useCountdown(7, paused, onComplete);
   const finished = phase !== "prepare" && remaining <= 1;
@@ -107,7 +109,11 @@ export function ExaminationStage({
         )}
       </div>
       {phase !== "prepare" && !finished && (
-        <CountdownCue remaining={remaining} paused={paused} />
+        <CountdownCue
+          remaining={remaining}
+          paused={paused}
+          soundEnabled={soundEnabled}
+        />
       )}
       <Progress
         className="measurement-progress"

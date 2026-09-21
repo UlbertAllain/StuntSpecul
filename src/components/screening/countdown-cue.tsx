@@ -1,13 +1,22 @@
+import { useEffect } from "react";
 import { Check, Pause } from "lucide-react";
+import { playCountdownTone } from "@/lib/sound-effects";
 
 /** A visual cue for holding a pose, independent of sensor readings. */
 export function CountdownCue({
   remaining,
   paused,
+  soundEnabled = false,
 }: {
   remaining: number;
   paused: boolean;
+  soundEnabled?: boolean;
 }) {
+  useEffect(() => {
+    if (!soundEnabled || paused) return;
+    playCountdownTone(remaining);
+  }, [remaining, paused, soundEnabled]);
+
   return (
     <div className="countdown-cue" aria-label="Panduan tahan posisi">
       <span className="countdown-caption">

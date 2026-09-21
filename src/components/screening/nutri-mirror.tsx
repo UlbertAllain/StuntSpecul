@@ -30,6 +30,11 @@ import {
   type ScreeningCompletion,
 } from "@/hooks/use-screening-session";
 import { useSpeech } from "@/hooks/use-speech";
+import {
+  playResultCue,
+  playSoundEnabledCue,
+  primeSoundEffects,
+} from "@/lib/sound-effects";
 import { STEP_PROGRESS, type Step } from "@/lib/session";
 import { CameraStep } from "./camera-step";
 import type { MirrorAssignment } from "@/lib/portal";
@@ -99,7 +104,8 @@ export function NutriMirror({
   useEffect(() => {
     stageRef.current?.focus({ preventScroll: true });
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [step]);
+    if (voice && step === "result") playResultCue();
+  }, [step, voice]);
 
   async function reset() {
     try {
@@ -126,7 +132,14 @@ export function NutriMirror({
   }
 
   function toggleVoice() {
-    setVoice((enabled) => !enabled);
+    setVoice((enabled) => {
+      const next = !enabled;
+      if (next) {
+        primeSoundEffects();
+        playSoundEnabledCue();
+      }
+      return next;
+    });
   }
 
   function renderStage() {
@@ -182,6 +195,7 @@ export function NutriMirror({
                   ? demoReadings?.weightKg
                   : null
             }
+            soundEnabled={voice}
           />
         );
       case "camera":
@@ -251,7 +265,7 @@ export function NutriMirror({
           <button
             className="icon-button"
             onClick={toggleVoice}
-            aria-label={voice ? "Matikan suara" : "Aktifkan panduan suara"}
+            aria-label={voice ? "Matikan suara" : "Aktifkan suara"}
             aria-pressed={voice}
           >
             {voice ? <Volume2 /> : <VolumeX />}
