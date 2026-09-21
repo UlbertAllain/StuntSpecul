@@ -97,6 +97,24 @@ export function ParentPortal() {
     ) || null;
 
   useEffect(() => {
+    if (!activeExam || activeExam.status === "completed") return;
+
+    const controller = new AbortController();
+    const timer = setInterval(() => {
+      api<ParentAccountView>("/parent-account/me", {
+        signal: controller.signal,
+      })
+        .then(setView)
+        .catch(() => {});
+    }, 2500);
+
+    return () => {
+      controller.abort();
+      clearInterval(timer);
+    };
+  }, [activeExam?.id, activeExam?.status]);
+
+  useEffect(() => {
     if (!assistantOpen || !selectedExamForChatId) return;
     const controller = new AbortController();
     api<ChatMessage[]>(
@@ -222,7 +240,11 @@ export function ParentPortal() {
         onError={setError}
         onSuccess={async (parent) => {
           void parent;
-          setView(await api<ParentAccountView>("/parent-account/me"));
+          const nextView = await api<ParentAccountView>("/parent-account/me");
+          setView(nextView);
+          if (nextView.children[0]) setSelectedChildId(nextView.children[0].id);
+          const latestExam = completed(nextView.examinations)[0];
+          if (latestExam) setSelectedExamId(latestExam.id);
           setError("");
         }}
       />
@@ -373,6 +395,7 @@ export function ParentPortal() {
               <X />
             </button>
 
+            {error && <p className="parent-sheet-error">{error}</p>}
             {activeExam ? (
               <>
                 <span className="parent-sheet-kicker">SESI PEMERIKSAAN</span>
