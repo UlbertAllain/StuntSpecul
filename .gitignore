@@ -39,3 +39,8 @@ yarn-error.log*
 
 # Vercel local metadata
 .vercel/
+
+# local secrets and worker cache
+.dev.vars
+.wrangler/
+out/
