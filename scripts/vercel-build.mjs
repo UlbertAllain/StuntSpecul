@@ -11,7 +11,9 @@ function run(command, args) {
 }
 
 if (process.env.VERCEL_ENV === "production") {
-  console.log("[vercel-build] Applying/verifying production database migrations...");
+  console.log(
+    "[vercel-build] Applying/verifying production database migrations...",
+  );
   run(process.execPath, ["scripts/migrate.mjs"]);
 } else {
   console.log(
