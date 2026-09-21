@@ -36,11 +36,11 @@ const CAPTURE_LABELS = {
 export function Results({
   report,
   onFinish,
-  awaitingStaffFinalize = false,
+  awaitingParentFinalize = false,
 }: {
   report: ScreeningReport;
   onFinish?: () => void;
-  awaitingStaffFinalize?: boolean;
+  awaitingParentFinalize?: boolean;
 }) {
   const [detail, setDetail] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -215,7 +215,7 @@ export function Results({
         </button>
       )}
 
-      {awaitingStaffFinalize ? (
+      {awaitingParentFinalize ? (
         <div className="growth-result">
           <div>
             <span>Status sesi</span>
@@ -247,7 +247,7 @@ export function Results({
       )}
 
       <p className="parent-caption" role="status">
-        {awaitingStaffFinalize
+        {awaitingParentFinalize
           ? "Hasil juga tersedia pada akun orang tua yang terhubung."
           : saved
             ? "Laporan sudah diunduh (.txt)."
