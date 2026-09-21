@@ -489,7 +489,6 @@ export function ParentPortal() {
           </aside>
         </div>
       )}
-      </div>
     </PortalShell>
   );
 }
@@ -551,7 +550,7 @@ function ParentAccountAuth({
     <PortalShell
       tone="parent"
       heading="StuntSpecula untuk Orang Tua"
-      subtitle="Akun ini digunakan untuk memantau hasil dan riwayat pertumbuhan anak. Pemeriksaan tetap dilakukan melalui alat di fasilitas kesehatan."
+      subtitle="Pantau pertumbuhan anak dan mulai pemeriksaan langsung dari akun orang tua saat berada di fasilitas."
     >
       <div className="parent-auth-layout">
         <aside className="parent-auth-visual" aria-hidden="true">
@@ -573,8 +572,8 @@ function ParentAccountAuth({
               : "Satu akun untuk melihat riwayat pertumbuhan si kecil."}
           </strong>
           <p>
-            Pemeriksaan tetap dilakukan bersama petugas. Di sini orang tua cukup
-            memantau hasil dan perkembangannya.
+            Saat berada di fasilitas, orang tua dapat memulai pemeriksaan dari
+            HP lalu mendampingi si kecil mengikuti arahan Mimo di alat.
           </p>
         </aside>
 
@@ -826,7 +825,6 @@ function ParentHistory({
           </p>
         </div>
       </div>
-      <ParentGrowthInsights examinations={examinations} />
       {examinations.length === 0 ? (
         <div className="portal-empty">
           <h3>Belum ada riwayat</h3>
