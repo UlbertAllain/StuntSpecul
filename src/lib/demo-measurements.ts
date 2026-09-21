@@ -8,16 +8,29 @@ export type DemoMeasurementInput = {
 export type DemoMeasurements = {
   heightCm: number;
   weightKg: number;
-  targetZScore: number;
-  scenario: "normal" | "monitor" | "stunted" | "severe";
+  generatedZScore: number;
 };
 
-const SCENARIOS = [
-  { targetZScore: -0.4, scenario: "normal" },
-  { targetZScore: -1.4, scenario: "monitor" },
-  { targetZScore: -2.4, scenario: "stunted" },
-  { targetZScore: -3.4, scenario: "severe" },
-] as const;
+type RandomSource = () => number;
+
+const MIN_DEMO_Z = -3.6;
+const MAX_DEMO_Z = 1.4;
+const MIN_WEIGHT_FACTOR = 0.88;
+const MAX_WEIGHT_FACTOR = 1.12;
+
+function normalizedRandom(random: RandomSource): number {
+  const value = random();
+  if (!Number.isFinite(value)) return 0.5;
+  return Math.min(1, Math.max(0, value));
+}
+
+function randomBetween(
+  min: number,
+  max: number,
+  random: RandomSource,
+): number {
+  return min + (max - min) * normalizedRandom(random);
+}
 
 export function demoMeasurementsEnabled(): boolean {
   return process.env.NEXT_PUBLIC_DEMO_MEASUREMENTS === "true";
@@ -25,12 +38,16 @@ export function demoMeasurementsEnabled(): boolean {
 
 export function generateDemoMeasurements(
   child: DemoMeasurementInput,
+  random: RandomSource = Math.random,
 ): DemoMeasurements {
-  const selected = SCENARIOS[child.ageMonths % SCENARIOS.length];
+  // Development-only readings are randomized for each examination.
+  // The WHO engine still receives only the resulting height and independently
+  // decides the TB/U category; the demo generator does not pick a status label.
+  const generatedZScore = randomBetween(MIN_DEMO_Z, MAX_DEMO_Z, random);
   const heightCm = heightForAgeAtZScore(
     child.ageMonths,
     child.sex,
-    selected.targetZScore,
+    generatedZScore,
   );
 
   if (heightCm === null) {
@@ -42,12 +59,16 @@ export function generateDemoMeasurements(
       ? 12.5 + Math.max(0, child.ageMonths - 24) * 0.18
       : 11.9 + Math.max(0, child.ageMonths - 24) * 0.17;
 
-  const weightKg = Math.round(baseWeight * 10) / 10;
+  const weightFactor = randomBetween(
+    MIN_WEIGHT_FACTOR,
+    MAX_WEIGHT_FACTOR,
+    random,
+  );
+  const weightKg = Math.round(baseWeight * weightFactor * 10) / 10;
 
   return {
     heightCm,
     weightKg,
-    targetZScore: selected.targetZScore,
-    scenario: selected.scenario,
+    generatedZScore: Math.round(generatedZScore * 100) / 100,
   };
 }

@@ -8,6 +8,7 @@ import * as guest from "./guest-screening";
 import * as monitoring from "./monitoring";
 import * as parentAccount from "./parent-account";
 import * as station from "./station";
+import { health } from "./health";
 import { chat } from "./ai";
 import { idSchema } from "./security";
 
@@ -17,6 +18,8 @@ export async function route(request: Request, env: Env): Promise<Response> {
   const method = request.method;
   const key = `${method} ${path}`;
   switch (key) {
+    case "GET /api/health":
+      return health(env);
     case "GET /api/config":
       return auth.authConfig(request, env);
     case "POST /api/auth/setup":

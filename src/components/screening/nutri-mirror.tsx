@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -216,10 +216,13 @@ export function NutriMirror({
     }
   }
 
-  const demoReadings =
-    session.child && demoMeasurementsEnabled()
-      ? generateDemoMeasurements(session.child)
-      : null;
+  const demoReadings = useMemo(
+    () =>
+      session.child && demoMeasurementsEnabled()
+        ? generateDemoMeasurements(session.child)
+        : null,
+    [assignment?.id, session.child?.ageMonths, session.child?.sex],
+  );
   const resultLocked = awaitingParentFinalize && step === "result";
 
   return (

@@ -74,25 +74,33 @@ test("WHO engine rejects unavailable, out-of-scope and biologically implausible 
   assert.equal(assessHeightForAge(36, "male", 200).growthStatus, "unavailable");
 });
 
-test("temporary demo measurements exercise all WHO screening states deterministically", () => {
-  const expected = [
-    [36, "within_range"],
-    [37, "monitor"],
-    [38, "stunted"],
-    [39, "severely_stunted"],
-  ];
+test("temporary demo measurements randomize plausible readings and let WHO classify the generated height", () => {
+  const severe = generateDemoMeasurements(
+    { ageMonths: 39, sex: "male" },
+    (() => {
+      const values = [0, 0.5];
+      return () => values.shift() ?? 0.5;
+    })(),
+  );
+  const normal = generateDemoMeasurements(
+    { ageMonths: 39, sex: "male" },
+    (() => {
+      const values = [1, 0.5];
+      return () => values.shift() ?? 0.5;
+    })(),
+  );
 
-  for (const [ageMonths, growthStatus] of expected) {
-    const readings = generateDemoMeasurements({
-      ageMonths,
-      sex: "male",
-    });
-    const result = assessHeightForAge(ageMonths, "male", readings.heightCm);
-
-    assert.equal(result.growthStatus, growthStatus);
-    assert.ok(readings.heightCm > 0);
-    assert.ok(readings.weightKg > 0);
-  }
+  assert.equal(
+    assessHeightForAge(39, "male", severe.heightCm).growthStatus,
+    "severely_stunted",
+  );
+  assert.equal(
+    assessHeightForAge(39, "male", normal.heightCm).growthStatus,
+    "within_range",
+  );
+  assert.notEqual(severe.heightCm, normal.heightCm);
+  assert.ok(severe.weightKg > 0);
+  assert.ok(normal.weightKg > 0);
 });
 
 test("disconnected sensors remain missing values throughout the report", () => {
