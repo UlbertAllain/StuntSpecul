@@ -25,6 +25,7 @@ next-env.d.ts
 
 # local artifacts
 /stuntspecula_model_a_v2_artifacts.zip
+/stuntspecula_model_a_v2_1_deploy_assets.zip
 /.gitignore.local-backup
 
 # logs
@@ -44,3 +45,7 @@ yarn-error.log*
 .dev.vars
 .wrangler/
 out/
+
+# Python cache
+__pycache__/
+*.pyc
