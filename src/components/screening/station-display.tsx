@@ -134,7 +134,7 @@ export function StationDisplay() {
         canBegin
         onComplete={saveCompletion}
         onFinish={finish}
-        awaitingStaffFinalize
+        awaitingParentFinalize
       />
     );
   }
