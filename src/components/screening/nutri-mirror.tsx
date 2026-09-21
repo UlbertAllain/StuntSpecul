@@ -221,7 +221,7 @@ export function NutriMirror({
       session.child && demoMeasurementsEnabled()
         ? generateDemoMeasurements(session.child)
         : null,
-    [assignment?.id, session.child],
+    [session.child],
   );
   const resultLocked = awaitingParentFinalize && step === "result";
 
