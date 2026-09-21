@@ -58,12 +58,15 @@ Sebelum deploy, pastikan ketiga runtime asset tersebut memang ikut dalam branch 
 
 Setelah deploy:
 
-1. `GET /api/config` harus berhasil.
-2. `GET /api/model-a-screening` harus memberi `ready: true`.
-3. Login `/petugas`.
-4. Mulai pemeriksaan dan buka `/alat`.
-5. Selesaikan tinggi → berat → wajah.
-6. Pastikan hasil WHO tersimpan dan hasil wajah tampil sebagai data pendukung.
-7. Pastikan portal `/ortu` dapat membaca riwayat yang sama.
+1. `GET /api/health` harus memberi `ready: true`, `databaseReady: true`, dan `modelASchemaReady: true`.
+2. `GET /api/config` harus berhasil.
+3. `GET /api/model-a-screening` harus memberi `ready: true`.
+4. Login `/petugas`.
+5. Mulai pemeriksaan dan buka `/alat`.
+6. Selesaikan tinggi → berat → wajah.
+7. Pastikan hasil WHO tersimpan dan hasil wajah tampil sebagai data pendukung.
+8. Pastikan portal `/ortu` dapat membaca riwayat yang sama.
+
+Jika endpoint Model A menunjukkan `dependenciesReady: true` tetapi `filesReady: false`, runtime Python sudah tersedia tetapi tiga asset di folder `models/` belum ikut ke deployment. Jalankan installer Model A, commit ketiga asset runtime, lalu deploy ulang.
 
 Jika terjadi error, cek DevTools Network dan Vercel Logs. Jangan menyalin password, cookie, token database, atau API key ke log publik.
