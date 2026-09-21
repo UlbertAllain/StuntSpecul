@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { assessHeightForAge } from "../src/lib/growth.ts";
+import { generateDemoMeasurements } from "../src/lib/demo-measurements.ts";
 import {
   childSchema,
   createScreeningReport,
@@ -71,6 +72,27 @@ test("WHO engine rejects unavailable, out-of-scope and biologically implausible 
     "unavailable",
   );
   assert.equal(assessHeightForAge(36, "male", 200).growthStatus, "unavailable");
+});
+
+test("temporary demo measurements exercise all WHO screening states deterministically", () => {
+  const expected = [
+    [36, "within_range"],
+    [37, "monitor"],
+    [38, "stunted"],
+    [39, "severely_stunted"],
+  ];
+
+  for (const [ageMonths, growthStatus] of expected) {
+    const readings = generateDemoMeasurements({
+      ageMonths,
+      sex: "male",
+    });
+    const result = assessHeightForAge(ageMonths, "male", readings.heightCm);
+
+    assert.equal(result.growthStatus, growthStatus);
+    assert.ok(readings.heightCm > 0);
+    assert.ok(readings.weightKg > 0);
+  }
 });
 
 test("disconnected sensors remain missing values throughout the report", () => {
