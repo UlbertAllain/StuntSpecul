@@ -1,8 +1,11 @@
 import { createClient } from "@libsql/client";
-import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { loadEnvironment, withServerModule } from "./server-module.mjs";
+import {
+  acceptedMigrationChecksums,
+  migrationChecksum,
+} from "./migration-checksum.mjs";
 
 loadEnvironment();
 let client;
@@ -24,12 +27,24 @@ try {
     .sort();
   for (const name of files) {
     const sql = await readFile(join("drizzle", name), "utf8");
-    const checksum = createHash("sha256").update(sql).digest("hex");
+    const checksum = migrationChecksum(sql);
     if (applied.has(name)) {
-      if (applied.get(name) !== checksum)
+      const storedChecksum = String(applied.get(name));
+      const acceptedChecksums = acceptedMigrationChecksums(sql);
+      if (!acceptedChecksums.has(storedChecksum))
         throw new Error(
           `Migration checksum changed for ${name}; restore the original migration.`,
         );
+
+      if (storedChecksum !== checksum) {
+        await client.execute({
+          sql: "UPDATE app_migrations SET checksum=? WHERE name=?",
+          args: [checksum, name],
+        });
+        console.log(
+          `Checksum migrasi dinormalisasi untuk ${name} (line ending lintas platform).`,
+        );
+      }
       continue;
     }
     const statements = sql
