@@ -291,3 +291,130 @@ test("public portrait station status never exposes child identity or examination
     f.db.close();
   }
 });
+
+
+test("parent can start, complete, and finalize the single-station examination lifecycle", async () => {
+  const f = await fixture();
+  try {
+    const parent = await register(f.env, "flow");
+    const childId = f.db
+      .prepare(
+        "SELECT child_id AS childId FROM parent_children WHERE parent_id=?",
+      )
+      .get(parent.account.id).childId;
+
+    const started = await data(
+      await api.route(
+        request(
+          "/api/parent-account/examinations",
+          "POST",
+          { childId, cameraEnabled: true, canStand: true },
+          parent.cookie,
+        ),
+        f.env,
+      ),
+    );
+    assert.equal(started.status, "queued");
+
+    const stored = f.db
+      .prepare(
+        "SELECT status,staff_id AS staffId,device_id AS deviceId FROM examinations WHERE id=?",
+      )
+      .get(started.id);
+    assert.equal(stored.status, "queued");
+    assert.equal(stored.staffId, "guest-screening-system");
+    assert.equal(stored.deviceId, "single-station");
+
+    const claimed = await data(
+      await api.route(
+        request("/api/station/claim", "POST", {}),
+        f.env,
+      ),
+    );
+    assert.equal(claimed.status, "running");
+
+    await data(
+      await api.route(
+        request("/api/station/complete", "POST", {
+          heightCm: 95,
+          weightKg: 14,
+          captureStatus: "captured",
+          facialStatus: "unavailable",
+          facialProbability: null,
+          facialReason: null,
+          facialModelVersion: null,
+        }),
+        f.env,
+      ),
+    );
+
+    const waiting = await data(
+      await api.route(request("/api/station/active"), f.env),
+    );
+    assert.equal(waiting.active.status, "completed");
+
+    const finalized = await data(
+      await api.route(
+        request(
+          `/api/parent-account/examinations/${started.id}/finalize`,
+          "POST",
+          {},
+          parent.cookie,
+        ),
+        f.env,
+      ),
+    );
+    assert.equal(finalized.finalized, true);
+
+    const idle = await data(
+      await api.route(request("/api/station/active"), f.env),
+    );
+    assert.equal(idle.active, null);
+  } finally {
+    f.db.close();
+  }
+});
+
+test("parent can cancel their own stale queued examination", async () => {
+  const f = await fixture();
+  try {
+    const parent = await register(f.env, "cancel-flow");
+    const childId = f.db
+      .prepare(
+        "SELECT child_id AS childId FROM parent_children WHERE parent_id=?",
+      )
+      .get(parent.account.id).childId;
+
+    const started = await data(
+      await api.route(
+        request(
+          "/api/parent-account/examinations",
+          "POST",
+          { childId, cameraEnabled: true, canStand: true },
+          parent.cookie,
+        ),
+        f.env,
+      ),
+    );
+
+    const cancelled = await data(
+      await api.route(
+        request(
+          `/api/parent-account/examinations/${started.id}/cancel`,
+          "POST",
+          {},
+          parent.cookie,
+        ),
+        f.env,
+      ),
+    );
+    assert.equal(cancelled.cancelled, true);
+
+    const status = f.db
+      .prepare("SELECT status FROM examinations WHERE id=?")
+      .get(started.id);
+    assert.equal(status.status, "cancelled");
+  } finally {
+    f.db.close();
+  }
+});
