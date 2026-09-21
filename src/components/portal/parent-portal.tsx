@@ -8,8 +8,12 @@ import {
   Home,
   LogOut,
   MessageCircle,
+  Play,
   Send,
+  Sparkles,
+  TrendingUp,
   UserRound,
+  X,
 } from "lucide-react";
 import { api, ClientError, errorMessage } from "@/lib/api-client";
 import type {
@@ -19,13 +23,14 @@ import type {
   ParentAccountView,
 } from "@/lib/portal";
 import { formatAge, formatReading } from "@/lib/screening";
+import { ageInMonths } from "@/lib/portal";
 import { growthStatusLabel } from "@/lib/growth";
 import { Message, PortalShell } from "./shell";
 import { PasswordInput } from "./password-input";
 import { ResultSummary } from "./result-summary";
 import { ParentGrowthInsights } from "./parent-growth-insights";
 
-type Tab = "home" | "history" | "assistant" | "profile";
+type Tab = "home" | "insights" | "history" | "profile";
 type AuthMode = "login" | "register";
 
 const QUESTIONS = [
@@ -49,6 +54,9 @@ export function ParentPortal() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState("");
   const [consent, setConsent] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [examSheetOpen, setExamSheetOpen] = useState(false);
+  const [selectedChildId, setSelectedChildId] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,6 +65,7 @@ export function ParentPortal() {
         setView(value);
         const latest = completed(value.examinations)[0];
         if (latest) setSelectedExamId(latest.id);
+        if (value.children[0]) setSelectedChildId(value.children[0].id);
       })
       .catch((e) => {
         if (
@@ -79,9 +88,16 @@ export function ParentPortal() {
   const selectedExam =
     completedExams.find((exam) => exam.id === selectedExamId) || latest;
   const selectedExamForChatId = selectedExam?.id || "";
+  const activeExam =
+    view?.examinations.find(
+      (exam) =>
+        exam.status === "queued" ||
+        exam.status === "running" ||
+        (exam.status === "completed" && !exam.finalizedAt),
+    ) || null;
 
   useEffect(() => {
-    if (tab !== "assistant" || !selectedExamForChatId) return;
+    if (!assistantOpen || !selectedExamForChatId) return;
     const controller = new AbortController();
     api<ChatMessage[]>(
       `/parent-account/messages?examId=${encodeURIComponent(selectedExamForChatId)}`,
@@ -92,7 +108,7 @@ export function ParentPortal() {
         if (!controller.signal.aborted) setError(errorMessage(e));
       });
     return () => controller.abort();
-  }, [tab, selectedExamForChatId]);
+  }, [assistantOpen, selectedExamForChatId]);
 
   async function refresh() {
     setView(await api<ParentAccountView>("/parent-account/me"));
@@ -103,6 +119,64 @@ export function ParentPortal() {
     setView(null);
     setTab("home");
     setMessages([]);
+  }
+
+  async function startExamination() {
+    if (!selectedChildId || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api("/parent-account/examinations", {
+        method: "POST",
+        body: {
+          childId: selectedChildId,
+          cameraEnabled: true,
+          canStand: true,
+        },
+      });
+      await refresh();
+      setExamSheetOpen(false);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function finishExamination() {
+    if (!activeExam || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api(`/parent-account/examinations/${activeExam.id}/finalize`, {
+        method: "POST",
+        body: {},
+      });
+      await refresh();
+      setExamSheetOpen(false);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelExamination() {
+    if (!activeExam || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api(`/parent-account/examinations/${activeExam.id}/cancel`, {
+        method: "POST",
+        body: {},
+      });
+      await refresh();
+      setExamSheetOpen(false);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function send(text: string) {
@@ -165,7 +239,7 @@ export function ParentPortal() {
         </button>
       }
     >
-      <nav className="portal-nav" aria-label="Menu orang tua">
+      <nav className="portal-nav parent-desktop-nav" aria-label="Menu orang tua">
         <button
           aria-current={tab === "home" ? "page" : undefined}
           onClick={() => setTab("home")}
@@ -173,16 +247,19 @@ export function ParentPortal() {
           <Home /> Beranda
         </button>
         <button
+          aria-current={tab === "insights" ? "page" : undefined}
+          onClick={() => setTab("insights")}
+        >
+          <TrendingUp /> Insight
+        </button>
+        <button className="parent-desktop-start" onClick={() => setExamSheetOpen(true)}>
+          <Play /> Mulai pemeriksaan
+        </button>
+        <button
           aria-current={tab === "history" ? "page" : undefined}
           onClick={() => setTab("history")}
         >
           <ChartNoAxesCombined /> Riwayat
-        </button>
-        <button
-          aria-current={tab === "assistant" ? "page" : undefined}
-          onClick={() => setTab("assistant")}
-        >
-          <MessageCircle /> Asisten
         </button>
         <button
           aria-current={tab === "profile" ? "page" : undefined}
@@ -193,9 +270,21 @@ export function ParentPortal() {
       </nav>
 
       {error && <Message error>{error}</Message>}
-      <div className="portal-content">
+      <div className="portal-content parent-portal-content">
         {tab === "home" && (
-          <ParentHome view={view} latest={latest} onRefresh={refresh} />
+          <ParentHome
+            view={view}
+            latest={latest}
+            activeExam={activeExam}
+            onRefresh={refresh}
+            onStart={() => setExamSheetOpen(true)}
+          />
+        )}
+        {tab === "insights" && (
+          <ParentInsights
+            examinations={completedExams}
+            child={view.children[0] || null}
+          />
         )}
         {tab === "history" && (
           <ParentHistory
@@ -204,23 +293,202 @@ export function ParentPortal() {
             onSelect={setSelectedExamId}
           />
         )}
-        {tab === "assistant" && (
-          <ParentAssistant
-            aiAvailable={view.aiAvailable}
-            examinations={completedExams}
-            selectedExam={selectedExam}
-            selectedExamId={selectedExamId}
-            onSelectExam={setSelectedExamId}
-            messages={messages}
-            consent={consent}
-            onConsent={setConsent}
-            question={question}
-            onQuestion={setQuestion}
-            busy={busy}
-            onSend={send}
-          />
-        )}
         {tab === "profile" && <ParentProfile view={view} />}
+      </div>
+
+      <button
+        className="parent-ai-fab"
+        onClick={() => setAssistantOpen(true)}
+        aria-label="Buka Asisten Pertumbuhan"
+      >
+        <Sparkles size={20} />
+        <span>Asisten</span>
+      </button>
+
+      <nav className="parent-mobile-nav" aria-label="Navigasi orang tua">
+        <button
+          aria-current={tab === "home" ? "page" : undefined}
+          onClick={() => setTab("home")}
+        >
+          <Home />
+          <span>Beranda</span>
+        </button>
+        <button
+          aria-current={tab === "insights" ? "page" : undefined}
+          onClick={() => setTab("insights")}
+        >
+          <TrendingUp />
+          <span>Insight</span>
+        </button>
+        <button
+          className="parent-mobile-start"
+          data-active={activeExam ? "true" : "false"}
+          onClick={() => setExamSheetOpen(true)}
+        >
+          <span>
+            <Play />
+          </span>
+          <small>
+            {activeExam?.status === "completed"
+              ? "Selesai"
+              : activeExam
+                ? "Aktif"
+                : "Mulai"}
+          </small>
+        </button>
+        <button
+          aria-current={tab === "history" ? "page" : undefined}
+          onClick={() => setTab("history")}
+        >
+          <ChartNoAxesCombined />
+          <span>Riwayat</span>
+        </button>
+        <button
+          aria-current={tab === "profile" ? "page" : undefined}
+          onClick={() => setTab("profile")}
+        >
+          <UserRound />
+          <span>Profil</span>
+        </button>
+      </nav>
+
+      {examSheetOpen && (
+        <div
+          className="parent-sheet-backdrop"
+          role="presentation"
+          onClick={() => !busy && setExamSheetOpen(false)}
+        >
+          <section
+            className="parent-exam-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Pemeriksaan anak"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="parent-sheet-close"
+              onClick={() => setExamSheetOpen(false)}
+              aria-label="Tutup"
+            >
+              <X />
+            </button>
+
+            {activeExam ? (
+              <>
+                <span className="parent-sheet-kicker">SESI PEMERIKSAAN</span>
+                <h2>
+                  {activeExam.status === "completed"
+                    ? "Pemeriksaan sudah selesai."
+                    : "Pemeriksaan sedang aktif."}
+                </h2>
+                <p>
+                  {activeExam.status === "completed"
+                    ? "Hasil sudah tersimpan. Selesaikan sesi supaya alat kembali siap untuk anak berikutnya."
+                    : "Sesi ini sedang menunggu atau berjalan di alat. Jika sesi sebelumnya tertinggal, Anda dapat membatalkannya."}
+                </p>
+                {activeExam.status === "completed" ? (
+                  <button
+                    className="portal-primary parent-sheet-primary"
+                    disabled={busy}
+                    onClick={() => void finishExamination()}
+                  >
+                    {busy ? "Menyelesaikan…" : "Selesaikan sesi"}
+                  </button>
+                ) : (
+                  <button
+                    className="portal-secondary parent-sheet-danger"
+                    disabled={busy}
+                    onClick={() => void cancelExamination()}
+                  >
+                    {busy ? "Membatalkan…" : "Batalkan sesi aktif"}
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <span className="parent-sheet-kicker">MULAI PEMERIKSAAN</span>
+                <h2>Siapa yang akan diperiksa?</h2>
+                <p>
+                  Pilih anak, lalu arahkan si kecil ke alat StuntSpecula.
+                </p>
+                <label>
+                  Profil anak
+                  <select
+                    value={selectedChildId}
+                    onChange={(event) => setSelectedChildId(event.target.value)}
+                  >
+                    {view.children.map((child) => {
+                      const months = ageInMonths(child.birthDate);
+                      const eligible = months >= 24 && months <= 59;
+                      return (
+                        <option
+                          key={child.id}
+                          value={child.id}
+                          disabled={!eligible}
+                        >
+                          {child.name} · {formatAge(months)}
+                          {!eligible ? " · belum sesuai usia alat" : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </label>
+                <button
+                  className="portal-primary parent-sheet-primary"
+                  disabled={!selectedChildId || busy}
+                  onClick={() => void startExamination()}
+                >
+                  <Play size={19} />
+                  {busy ? "Menyiapkan…" : "Mulai pemeriksaan"}
+                </button>
+                <small>
+                  Pemeriksaan standing height digunakan untuk anak usia 24–59 bulan.
+                </small>
+              </>
+            )}
+          </section>
+        </div>
+      )}
+
+      {assistantOpen && (
+        <div
+          className="parent-assistant-backdrop"
+          role="presentation"
+          onClick={() => setAssistantOpen(false)}
+        >
+          <aside
+            className="parent-assistant-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Asisten Pertumbuhan"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="parent-assistant-drawer-head">
+              <div>
+                <span>ASISTEN PERTUMBUHAN</span>
+                <strong>Tanya tentang hasil anak</strong>
+              </div>
+              <button onClick={() => setAssistantOpen(false)} aria-label="Tutup asisten">
+                <X />
+              </button>
+            </div>
+            <ParentAssistant
+              aiAvailable={view.aiAvailable}
+              examinations={completedExams}
+              selectedExam={selectedExam}
+              selectedExamId={selectedExamId}
+              onSelectExam={setSelectedExamId}
+              messages={messages}
+              consent={consent}
+              onConsent={setConsent}
+              question={question}
+              onQuestion={setQuestion}
+              busy={busy}
+              onSend={send}
+            />
+          </aside>
+        </div>
+      )}
       </div>
     </PortalShell>
   );
@@ -430,11 +698,15 @@ function ParentAccountAuth({
 function ParentHome({
   view,
   latest,
+  activeExam,
   onRefresh,
+  onStart,
 }: {
   view: ParentAccountView;
   latest: Examination | null;
+  activeExam: Examination | null;
   onRefresh: () => Promise<void>;
+  onStart: () => void;
 }) {
   const child = view.children[0];
   return (
@@ -459,6 +731,26 @@ function ParentHome({
           </strong>
         </article>
       </div>
+
+      <button className="parent-home-start" onClick={onStart}>
+        <span>
+          <Play size={22} />
+        </span>
+        <div>
+          <strong>
+            {activeExam?.status === "completed"
+              ? "Selesaikan pemeriksaan"
+              : activeExam
+                ? "Lihat sesi aktif"
+                : "Mulai pemeriksaan"}
+          </strong>
+          <small>
+            {activeExam
+              ? "Kelola sesi anak yang sedang menggunakan alat."
+              : "Mulai langsung dari HP orang tua."}
+          </small>
+        </div>
+      </button>
 
       {latest ? (
         <section className="mt-6">
@@ -485,6 +777,29 @@ function ParentHome({
           </p>
         </div>
       )}
+    </>
+  );
+}
+
+function ParentInsights({
+  examinations,
+  child,
+}: {
+  examinations: Examination[];
+  child: ParentAccountView["children"][number] | null;
+}) {
+  return (
+    <>
+      <div className="section-heading parent-insight-heading">
+        <div>
+          <span className="parent-section-eyebrow">PERTUMBUHAN ANAK</span>
+          <h2>Insight pertumbuhan</h2>
+          <p className="portal-note">
+            Grafik membantu melihat pola tinggi, berat, dan TB/U dari waktu ke waktu.
+          </p>
+        </div>
+      </div>
+      <ParentGrowthInsights examinations={examinations} child={child} />
     </>
   );
 }
