@@ -222,8 +222,8 @@ export function Results({
             <strong>Menunggu orang tua</strong>
           </div>
           <p>
-            Hasil sudah tersimpan. Orang tua dapat menutup sesi dari tombol Mulai di HP,
-            lalu alat kembali siap untuk pemeriksaan berikutnya.
+            Hasil sudah tersimpan. Orang tua dapat menutup sesi dari tombol
+            Mulai di HP, lalu alat kembali siap untuk pemeriksaan berikutnya.
           </p>
         </div>
       ) : (

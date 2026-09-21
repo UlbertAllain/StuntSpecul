@@ -292,7 +292,6 @@ test("public portrait station status never exposes child identity or examination
   }
 });
 
-
 test("parent can start, complete, and finalize the single-station examination lifecycle", async () => {
   const f = await fixture();
   try {
@@ -326,10 +325,7 @@ test("parent can start, complete, and finalize the single-station examination li
     assert.equal(stored.deviceId, "single-station");
 
     const claimed = await data(
-      await api.route(
-        request("/api/station/claim", "POST", {}),
-        f.env,
-      ),
+      await api.route(request("/api/station/claim", "POST", {}), f.env),
     );
     assert.equal(claimed.status, "running");
 

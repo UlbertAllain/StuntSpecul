@@ -237,14 +237,9 @@ async function requireOwnedExam(
   return getExamination(env, owned.id);
 }
 
-
 const STATION_ID = "single-station";
 
-async function requireOwnedChild(
-  env: Env,
-  parentId: string,
-  childId: string,
-) {
+async function requireOwnedChild(env: Env, parentId: string, childId: string) {
   return env.DB.prepare(
     "SELECT c.id,c.birth_date AS birthDate,c.sex FROM children c JOIN parent_children pc ON pc.child_id=c.id WHERE c.id=? AND pc.parent_id=?",
   )

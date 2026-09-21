@@ -45,7 +45,11 @@ export function PublicLanding() {
     <main className="min-h-svh overflow-hidden bg-[#FFFDF7] text-[#18334d]">
       <header className="relative z-30 border-b-[3px] border-[#18334d] bg-[#FFFDF7]">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-3 md:px-8">
-          <Link href="/" aria-label="StuntSpecula" className="h-14 w-36 shrink-0 overflow-hidden sm:h-auto sm:w-auto sm:overflow-visible">
+          <Link
+            href="/"
+            aria-label="StuntSpecula"
+            className="h-14 w-36 shrink-0 overflow-hidden sm:h-auto sm:w-auto sm:overflow-visible"
+          >
             <Image
               src="/images/stuntspecula-logo.jpeg"
               alt="StuntSpecula"

@@ -263,7 +263,10 @@ export function ParentPortal() {
         </button>
       }
     >
-      <nav className="portal-nav parent-desktop-nav" aria-label="Menu orang tua">
+      <nav
+        className="portal-nav parent-desktop-nav"
+        aria-label="Menu orang tua"
+      >
         <button
           aria-current={tab === "home" ? "page" : undefined}
           onClick={() => setTab("home")}
@@ -276,7 +279,10 @@ export function ParentPortal() {
         >
           <TrendingUp /> Insight
         </button>
-        <button className="parent-desktop-start" onClick={() => setExamSheetOpen(true)}>
+        <button
+          className="parent-desktop-start"
+          onClick={() => setExamSheetOpen(true)}
+        >
           <Play /> Mulai pemeriksaan
         </button>
         <button
@@ -433,9 +439,7 @@ export function ParentPortal() {
               <>
                 <span className="parent-sheet-kicker">MULAI PEMERIKSAAN</span>
                 <h2>Siapa yang akan diperiksa?</h2>
-                <p>
-                  Pilih anak, lalu arahkan si kecil ke alat StuntSpecula.
-                </p>
+                <p>Pilih anak, lalu arahkan si kecil ke alat StuntSpecula.</p>
                 <label>
                   Profil anak
                   <select
@@ -467,7 +471,8 @@ export function ParentPortal() {
                   {busy ? "Menyiapkan…" : "Mulai pemeriksaan"}
                 </button>
                 <small>
-                  Pemeriksaan standing height digunakan untuk anak usia 24–59 bulan.
+                  Pemeriksaan standing height digunakan untuk anak usia 24–59
+                  bulan.
                 </small>
               </>
             )}
@@ -493,7 +498,10 @@ export function ParentPortal() {
                 <span>ASISTEN PERTUMBUHAN</span>
                 <strong>Tanya tentang hasil anak</strong>
               </div>
-              <button onClick={() => setAssistantOpen(false)} aria-label="Tutup asisten">
+              <button
+                onClick={() => setAssistantOpen(false)}
+                aria-label="Tutup asisten"
+              >
                 <X />
               </button>
             </div>
@@ -819,7 +827,8 @@ function ParentInsights({
           <span className="parent-section-eyebrow">PERTUMBUHAN ANAK</span>
           <h2>Insight pertumbuhan</h2>
           <p className="portal-note">
-            Grafik membantu melihat pola tinggi, berat, dan TB/U dari waktu ke waktu.
+            Grafik membantu melihat pola tinggi, berat, dan TB/U dari waktu ke
+            waktu.
           </p>
         </div>
       </div>

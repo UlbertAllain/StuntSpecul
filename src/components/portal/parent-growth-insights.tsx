@@ -115,7 +115,9 @@ function zTrend(latest: Examination, previous: Examination | undefined) {
 function demoHeight(ageMonths: number, sex: "male" | "female") {
   const base = sex === "male" ? 87.1 : 85.7;
   const monthlyGrowth = sex === "male" ? 0.65 : 0.68;
-  return Number((base + Math.max(0, ageMonths - 24) * monthlyGrowth).toFixed(1));
+  return Number(
+    (base + Math.max(0, ageMonths - 24) * monthlyGrowth).toFixed(1),
+  );
 }
 
 function demoWeight(ageMonths: number) {
@@ -157,24 +159,24 @@ function demoExamination(
   };
 }
 
-function displaySeries(examinations: Examination[], child: ChildProfile | null) {
+function displaySeries(
+  examinations: Examination[],
+  child: ChildProfile | null,
+) {
   const real = sameChildExams(examinations);
   if (real.length >= 2 || !child) return { exams: real, demo: false };
 
   const currentAge = real[0]?.ageMonths ?? ageInMonths(child.birthDate);
-  if (currentAge < 24 || currentAge > 59)
-    return { exams: real, demo: false };
+  if (currentAge < 24 || currentAge > 59) return { exams: real, demo: false };
 
-  const latestHeight =
-    real[0]?.heightCm ?? demoHeight(currentAge, child.sex);
+  const latestHeight = real[0]?.heightCm ?? demoHeight(currentAge, child.sex);
   const latestWeight = real[0]?.weightKg ?? demoWeight(currentAge);
   const latestTimestamp =
     real[0]?.completedAt || real[0]?.createdAt || Date.now();
 
   const generated = [1, 2, 3].map((monthsBack, index) => {
     const age = Math.max(24, currentAge - monthsBack);
-    const timestamp =
-      latestTimestamp - monthsBack * 30 * 24 * 60 * 60 * 1000;
+    const timestamp = latestTimestamp - monthsBack * 30 * 24 * 60 * 60 * 1000;
     const height = Number(
       Math.max(
         30,
@@ -507,7 +509,9 @@ export function ParentGrowthInsights({
       <div className="portal-empty parent-insight-empty">
         <ChartNoAxesCombined />
         <h3>Belum ada data untuk divisualisasikan</h3>
-        <p>Tambahkan profil anak usia 24–59 bulan untuk melihat contoh insight.</p>
+        <p>
+          Tambahkan profil anak usia 24–59 bulan untuk melihat contoh insight.
+        </p>
       </div>
     );
 
@@ -525,7 +529,8 @@ export function ParentGrowthInsights({
         <div className="parent-demo-banner">
           <strong>Mode demo grafik</strong>
           <span>
-            Titik sebelum pemeriksaan asli adalah data simulasi tampilan dan tidak disimpan ke database.
+            Titik sebelum pemeriksaan asli adalah data simulasi tampilan dan
+            tidak disimpan ke database.
           </span>
         </div>
       )}
@@ -658,14 +663,23 @@ export function ParentGrowthInsights({
       <article className="parent-calibration-card">
         <div className="parent-calibration-copy">
           <span>KALIBRASI TB/U</span>
-          <h3>{series.demo ? "Simulasi pembacaan pertumbuhan" : "Pembacaan terbaru"}</h3>
+          <h3>
+            {series.demo
+              ? "Simulasi pembacaan pertumbuhan"
+              : "Pembacaan terbaru"}
+          </h3>
           <p>
-            Usia {latest.ageMonths} bulan · TB {formatReading(latest.heightCm)} cm · BB{" "}
-            {formatReading(latest.weightKg)} kg
+            Usia {latest.ageMonths} bulan · TB {formatReading(latest.heightCm)}{" "}
+            cm · BB {formatReading(latest.weightKg)} kg
           </p>
           <strong>{riskLabel(latest.growthStatus)}</strong>
           <small>
-            TB/U {latest.heightForAgeZ === null ? "—" : `${latest.heightForAgeZ.toFixed(2)} SD`}. Berat badan ditampilkan sebagai konteks; status stunting utama mengikuti tinggi menurut umur WHO.
+            TB/U{" "}
+            {latest.heightForAgeZ === null
+              ? "—"
+              : `${latest.heightForAgeZ.toFixed(2)} SD`}
+            . Berat badan ditampilkan sebagai konteks; status stunting utama
+            mengikuti tinggi menurut umur WHO.
           </small>
         </div>
         <div className="parent-risk-scale" aria-label="Skala TB/U">
