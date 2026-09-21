@@ -31,7 +31,7 @@ const STEPS = [
 
 const WAITING_TIPS = [
   "Nanti cukup berdiri tegak dan santai, ya.",
-  "Mimo akan menemani sampai pemeriksaan selesai.",
+  "Mulai pemeriksaan dari HP orang tua, lalu Mimo akan menemani.",
   "Tinggi, berat, lalu lihat kamera. Gampang!",
 ];
 
@@ -189,7 +189,7 @@ export function StationIdleScreen({
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#4E8BC4] opacity-35" />
                     <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#4E8BC4]" />
                   </span>
-                  MENUNGGU PETUGAS MEMILIH ANAK
+                  MENUNGGU ORANG TUA MEMULAI
                 </div>
                 <p
                   key={tipIndex}
