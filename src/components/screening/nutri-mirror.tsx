@@ -34,6 +34,10 @@ import { STEP_PROGRESS, type Step } from "@/lib/session";
 import { CameraStep } from "./camera-step";
 import type { MirrorAssignment } from "@/lib/portal";
 import { errorMessage } from "@/lib/api-client";
+import {
+  demoMeasurementsEnabled,
+  generateDemoMeasurements,
+} from "@/lib/demo-measurements";
 import { ExaminationStage } from "./examination-stage";
 import { Mascot } from "./mascot";
 import { ProcessingStage } from "./processing-stage";
@@ -170,6 +174,13 @@ export function NutriMirror({
             phase={step}
             paused={isPaused}
             onComplete={() => dispatch({ type: "advance", from: step })}
+            reading={
+              step === "height"
+                ? demoReadings?.heightCm
+                : step === "weight"
+                  ? demoReadings?.weightKg
+                  : null
+            }
           />
         );
       case "camera":
@@ -205,6 +216,10 @@ export function NutriMirror({
     }
   }
 
+  const demoReadings =
+    session.child && demoMeasurementsEnabled()
+      ? generateDemoMeasurements(session.child)
+      : null;
   const resultLocked = awaitingParentFinalize && step === "result";
 
   return (
