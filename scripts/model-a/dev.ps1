@@ -86,6 +86,7 @@ try {
     Write-Host "Model A : http://127.0.0.1:8787"
 
     $env:NEXT_PUBLIC_MODEL_A_ENDPOINT = "http://127.0.0.1:8787"
+    $env:NEXT_PUBLIC_DEMO_MEASUREMENTS = "true"
 
     npm run dev:web
 } finally {
