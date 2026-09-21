@@ -68,6 +68,8 @@ export async function route(request: Request, env: Env): Promise<Response> {
       return parentAccount.parentAccountMessages(request, env);
     case "POST /api/parent-account/chat":
       return parentAccount.parentAccountChat(request, env);
+    case "POST /api/parent-account/examinations":
+      return parentAccount.startParentExamination(request, env);
 
     // Legacy guest-screening flow is retained as a fallback for events/demo use.
     case "POST /api/screening/session":
@@ -97,6 +99,19 @@ export async function route(request: Request, env: Env): Promise<Response> {
     case "POST /api/parent/chat":
       return chat(request, env);
   }
+  const parentExamMatch = path.match(
+    /^\/api\/parent-account\/examinations\/([^/]+)\/(finalize|cancel)$/,
+  );
+  if (parentExamMatch && method === "POST") {
+    const [, rawId, action] = parentExamMatch;
+    const parsed = idSchema.safeParse(rawId);
+    if (!parsed.success) throw new ApiError(404, "Halaman tidak ditemukan.");
+    if (action === "finalize")
+      return parentAccount.finalizeParentExamination(request, env, parsed.data);
+    if (action === "cancel")
+      return parentAccount.cancelParentExamination(request, env, parsed.data);
+  }
+
   const match = path.match(
     /^\/api\/(staff|examinations|mirror\/examinations)\/([^/]+)(?:\/(access|claim|complete|cancel|finalize))?$/,
   );
