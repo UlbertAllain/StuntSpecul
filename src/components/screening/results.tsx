@@ -113,18 +113,24 @@ export function Results({
       <div
         className={`growth-result ${report.growthStatus === "unavailable" ? "unavailable-result" : ""}`}
       >
-        <div>
-          <span>Hasil utama — pertumbuhan WHO</span>
+        <div className="growth-result-primary">
+          <span>Hasil pertumbuhan WHO</span>
           <strong>{growthStatusLabel(report.growthStatus)}</strong>
         </div>
-        <div>
-          <span>Status TB/U</span>
-          <strong>{stuntingScreeningLabel(report.stuntingScreening)}</strong>
-        </div>
+        <dl className="growth-result-meta">
+          <div>
+            <dt>Status TB/U</dt>
+            <dd>{stuntingScreeningLabel(report.stuntingScreening)}</dd>
+          </div>
+          <div>
+            <dt>Z-score</dt>
+            <dd>{formatReading(report.heightForAgeZ)}</dd>
+          </div>
+        </dl>
         <p>
           {report.heightForAgeZ === null
             ? "TB/U belum dapat dihitung karena pembacaan tinggi badan belum tersedia atau tidak valid."
-            : `TB/U Z-score WHO: ${report.heightForAgeZ}. Hasil ini adalah skrining, bukan diagnosis.`}
+            : "Hasil ini adalah skrining, bukan diagnosis."}
         </p>
       </div>
 

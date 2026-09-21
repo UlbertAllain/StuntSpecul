@@ -1872,3 +1872,168 @@
 .measurement-scene::before {
   pointer-events: none;
 }
+
+
+/* Result screen cleanup: calm, compact, and information-first. */
+.mirror-stage:has(.results-screen) {
+  background: #fffdf7;
+}
+
+.results-screen {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.results-screen .screen-heading {
+  margin-bottom: 8px;
+}
+
+.results-screen .screen-heading .stage-kicker {
+  margin: 0 0 10px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #527188;
+  letter-spacing: 0.08em;
+}
+
+.results-screen .screen-heading h1 {
+  margin: 0;
+}
+
+.result-identity {
+  margin: 14px 0 16px;
+}
+
+.body-results {
+  gap: 10px;
+  padding: 12px 0 16px;
+  border: 0;
+}
+
+.body-results > div {
+  min-width: 0;
+}
+
+.body-results strong {
+  margin-top: 7px;
+  font-size: 38px;
+}
+
+.growth-result {
+  display: block;
+  margin: 0 0 22px;
+  padding: 16px 18px;
+  border: 1px solid #dfd5ae;
+  border-radius: 14px;
+  background: #fffaf0;
+  box-shadow: none;
+}
+
+.growth-result-primary > span {
+  display: block;
+  color: #62788a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.growth-result-primary > strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 21px;
+  line-height: 1.25;
+  font-weight: 850;
+}
+
+.growth-result-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin: 14px 0 0;
+  border-top: 1px solid #e8dfc0;
+}
+
+.growth-result-meta > div {
+  min-width: 0;
+  padding: 10px 12px 0 0;
+}
+
+.growth-result-meta > div + div {
+  padding-left: 12px;
+  border-left: 1px solid #e8dfc0;
+}
+
+.growth-result-meta dt {
+  color: #697e8d;
+  font-size: 11px;
+}
+
+.growth-result-meta dd {
+  margin: 3px 0 0;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.growth-result > p {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #e8dfc0;
+  color: #667b89;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.facial-results {
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 1px solid #d7e0e6;
+}
+
+.facial-results h2 {
+  padding-bottom: 8px;
+}
+
+.facial-results > div {
+  padding: 9px 0;
+}
+
+.facial-results p {
+  margin-top: 10px;
+}
+
+.clinical-detail {
+  margin: 20px 0;
+  padding: 18px 0 0;
+  border-top: 1px solid #d7e0e6;
+}
+
+@media (max-width: 480px) {
+  .result-identity {
+    margin: 10px 0 14px;
+  }
+
+  .body-results {
+    padding: 8px 0 14px;
+  }
+
+  .body-results strong {
+    font-size: 33px;
+  }
+
+  .growth-result {
+    padding: 14px;
+    margin-bottom: 18px;
+  }
+
+  .growth-result-primary > strong {
+    font-size: 19px;
+  }
+
+  .growth-result-meta {
+    margin-top: 12px;
+  }
+
+  .growth-result-meta dd {
+    font-size: 13px;
+  }
+}
