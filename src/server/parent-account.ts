@@ -4,6 +4,7 @@ import { ApiError, body, cookie, ok, sessionCookie } from "./http";
 import {
   digest,
   emailSchema,
+  idSchema,
   hashPassword,
   nameSchema,
   passwordSchema,
@@ -15,7 +16,6 @@ import {
 import { ageInMonths, type ChatMessage, type Examination } from "../lib/portal";
 import { getExamination, listParentExaminations } from "./screenings";
 import { SYSTEM_SCREENING_STAFF_ID } from "./auth";
-import { idSchema } from "./security";
 import { geminiExplainer } from "./gemini";
 
 const PARENT_ACCOUNT_COOKIE = "ss_parent_account";
