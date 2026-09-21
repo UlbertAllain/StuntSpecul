@@ -40,7 +40,7 @@ export function StationCompleteScreen() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#4E8BC4] opacity-45" />
             <span className="relative inline-flex h-3 w-3 rounded-full bg-[#4E8BC4]" />
           </span>
-          Menunggu petugas menyelesaikan sesi
+          Menunggu orang tua menyelesaikan sesi dari HP
         </div>
       </section>
     </main>
