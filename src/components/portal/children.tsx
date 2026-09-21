@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { History, Play, Search, UserRound } from "lucide-react";
+import { History, Search, UserRound } from "lucide-react";
 import type { ChildProfile } from "@/lib/portal";
 import { ageInMonths } from "@/lib/portal";
 import { api, errorMessage } from "@/lib/api-client";
@@ -14,8 +14,6 @@ export function ChildrenPanel() {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [history, setHistory] = useState("");
-  const [busyId, setBusyId] = useState("");
-  const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -30,26 +28,6 @@ export function ChildrenPanel() {
     return () => controller.abort();
   }, [query]);
 
-  async function start(child: ChildProfile) {
-    if (busyId) return;
-    setBusyId(child.id);
-    setError("");
-    setNotice("");
-    try {
-      await api("/examinations", {
-        method: "POST",
-        body: { childId: child.id, cameraEnabled: true, canStand: true },
-      });
-      setNotice(
-        `Pemeriksaan ${child.name} sudah dikirim ke alat. Arahkan anak ke StuntSpecula.`,
-      );
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      setBusyId("");
-    }
-  }
-
   if (history)
     return (
       <ExaminationHistory childId={history} onBack={() => setHistory("")} />
@@ -61,13 +39,12 @@ export function ChildrenPanel() {
         <div>
           <h2>Data anak</h2>
           <p className="portal-note">
-            Pilih profil anak yang akan diperiksa. Hasil pengukuran akan masuk
-            otomatis ke riwayat anak dan akun orang tua yang terhubung.
+            Petugas dapat melihat profil dan riwayat anak. Pemeriksaan baru
+            sekarang dimulai dari akun orang tua di HP.
           </p>
         </div>
       </div>
 
-      {notice && <Message>{notice}</Message>}
       {error && <Message error>{error}</Message>}
 
       <form
@@ -131,14 +108,6 @@ export function ChildrenPanel() {
                   >
                     <History size={18} />
                     Riwayat
-                  </button>
-                  <button
-                    className="portal-primary"
-                    disabled={!eligible || !!busyId}
-                    onClick={() => void start(child)}
-                  >
-                    <Play size={18} />
-                    {busyId === child.id ? "Mengirim…" : "Mulai pemeriksaan"}
                   </button>
                 </div>
               </article>

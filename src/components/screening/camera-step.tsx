@@ -7,6 +7,7 @@ import type { Capture } from "@/lib/screening";
 
 type CameraStepProps = {
   paused: boolean;
+  ageMonths: number;
   onComplete: (capture: Capture) => void;
 };
 
@@ -29,9 +30,11 @@ function CaptureCountdown({
   );
 }
 
-export function CameraStep({ paused, onComplete }: CameraStepProps) {
-  const { videoRef, status, attempt, capture, error, retry } =
-    useCamera(onComplete);
+export function CameraStep({ paused, ageMonths, onComplete }: CameraStepProps) {
+  const { videoRef, status, attempt, capture, error, retry } = useCamera(
+    onComplete,
+    ageMonths,
+  );
 
   return (
     <div className="camera-step">
@@ -65,27 +68,32 @@ export function CameraStep({ paused, onComplete }: CameraStepProps) {
             Mengambil gambar…
           </div>
         )}
+        {status === "analyzing" && (
+          <div className="camera-message" role="status">
+            Menganalisis wajah sebagai data pendukung…
+          </div>
+        )}
         {status === "error" && (
           <div className="camera-message" role="alert">
             <Camera size={35} />
-            <strong>Kamera belum tersedia</strong>
+            <strong>Kamera belum siap</strong>
             <span>{error}</span>
           </div>
         )}
       </div>
       <p className="camera-direction">
-        Wajah di tengah. Mata terbuka. Bibir rileks.
+        Wajah di tengah. Lihat lurus. Tetap diam sebentar.
       </p>
       <div className="facial-targets">
-        <span>Area mata</span>
-        <span>Kantong mata</span>
-        <span>Bibir</span>
+        <span>Wajah di tengah</span>
+        <span>Cahaya cukup</span>
+        <span>Satu anak saja</span>
       </div>
       {status === "error" && (
         <div className="camera-recovery">
           <button className="secondary-button" onClick={retry}>
             <RotateCcw size={18} />
-            Coba lagi
+            Ambil ulang
           </button>
           <button
             className="text-button"
@@ -96,7 +104,8 @@ export function CameraStep({ paused, onComplete }: CameraStepProps) {
         </div>
       )}
       <p className="parent-caption">
-        Pendamping, bantu posisikan wajah di tengah.
+        Foto wajah hanya menjadi analisis pendukung. Hasil utama tetap dihitung
+        dari pengukuran pertumbuhan berdasarkan standar WHO.
       </p>
     </div>
   );

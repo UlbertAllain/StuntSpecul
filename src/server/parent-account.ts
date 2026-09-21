@@ -4,6 +4,7 @@ import { ApiError, body, cookie, ok, sessionCookie } from "./http";
 import {
   digest,
   emailSchema,
+  idSchema,
   hashPassword,
   nameSchema,
   passwordSchema,
@@ -14,6 +15,7 @@ import {
 } from "./security";
 import { ageInMonths, type ChatMessage, type Examination } from "../lib/portal";
 import { getExamination, listParentExaminations } from "./screenings";
+import { SYSTEM_SCREENING_STAFF_ID } from "./auth";
 import { geminiExplainer } from "./gemini";
 
 const PARENT_ACCOUNT_COOKIE = "ss_parent_account";
@@ -233,6 +235,142 @@ async function requireOwnedExam(
     .first<{ id: string }>();
   if (!owned) throw new ApiError(404, "Hasil pemeriksaan tidak ditemukan.");
   return getExamination(env, owned.id);
+}
+
+const STATION_ID = "single-station";
+
+async function requireOwnedChild(env: Env, parentId: string, childId: string) {
+  return env.DB.prepare(
+    "SELECT c.id,c.birth_date AS birthDate,c.sex FROM children c JOIN parent_children pc ON pc.child_id=c.id WHERE c.id=? AND pc.parent_id=?",
+  )
+    .bind(childId, parentId)
+    .first<{ id: string; birthDate: string; sex: "male" | "female" }>();
+}
+
+export async function startParentExamination(request: Request, env: Env) {
+  const parent = await requireParentAccount(request, env);
+  const input = await body(
+    request,
+    z
+      .object({
+        childId: idSchema,
+        cameraEnabled: z.boolean().default(true),
+        canStand: z.literal(true, {
+          errorMap: () => ({
+            message: "Pastikan anak sudah bisa berdiri tanpa bantuan.",
+          }),
+        }),
+      })
+      .strict(),
+  );
+
+  const child = await requireOwnedChild(env, parent.id, input.childId);
+  if (!child) throw new ApiError(404, "Profil anak tidak ditemukan.");
+
+  const age = ageInMonths(child.birthDate);
+  if (age < 24 || age > 59)
+    throw new ApiError(
+      422,
+      "Pemeriksaan berdiri ini untuk anak usia 24–59 bulan.",
+    );
+
+  const now = Date.now();
+  const id = crypto.randomUUID();
+
+  await env.DB.prepare(
+    "INSERT INTO devices (id,name,active,created_at) VALUES (?,'Mirror',1,?) ON CONFLICT(id) DO NOTHING",
+  )
+    .bind(STATION_ID, now)
+    .run();
+
+  const created = await env.DB.prepare(
+    "INSERT INTO examinations (id,child_id,staff_id,device_id,age_months,sex,status,capture_status,created_at) SELECT ?,?,?,?,?,?,'queued',?,? WHERE NOT EXISTS (SELECT 1 FROM examinations e WHERE e.status IN ('queued','running') OR (e.status='completed' AND e.device_id=? AND EXISTS (SELECT 1 FROM examination_workflow ew WHERE ew.exam_id=e.id AND ew.finalized_at IS NULL))) RETURNING id",
+  )
+    .bind(
+      id,
+      child.id,
+      SYSTEM_SCREENING_STAFF_ID,
+      STATION_ID,
+      age,
+      child.sex,
+      input.cameraEnabled ? null : "skipped",
+      now,
+      STATION_ID,
+    )
+    .first();
+
+  if (!created)
+    throw new ApiError(
+      409,
+      "Alat masih memiliki sesi aktif. Selesaikan atau batalkan sesi sebelumnya terlebih dahulu.",
+    );
+
+  await env.DB.prepare(
+    "INSERT INTO examination_workflow (exam_id,finalized_at,created_at) VALUES (?,NULL,?) ON CONFLICT(exam_id) DO NOTHING",
+  )
+    .bind(id, now)
+    .run();
+
+  return ok({ id, status: "queued" }, 201);
+}
+
+async function requireOwnedLifecycleExam(
+  env: Env,
+  parentId: string,
+  examId: string,
+) {
+  return env.DB.prepare(
+    "SELECT e.id,e.status,ew.finalized_at AS finalizedAt FROM examinations e JOIN parent_children pc ON pc.child_id=e.child_id LEFT JOIN examination_workflow ew ON ew.exam_id=e.id WHERE e.id=? AND pc.parent_id=?",
+  )
+    .bind(examId, parentId)
+    .first<{ id: string; status: string; finalizedAt: number | null }>();
+}
+
+export async function finalizeParentExamination(
+  request: Request,
+  env: Env,
+  examId: string,
+) {
+  const parent = await requireParentAccount(request, env);
+  const exam = await requireOwnedLifecycleExam(env, parent.id, examId);
+
+  if (!exam) throw new ApiError(404, "Pemeriksaan tidak ditemukan.");
+  if (exam.status !== "completed")
+    throw new ApiError(409, "Pemeriksaan di alat belum selesai.");
+  if (exam.finalizedAt) return ok({ id: exam.id, finalized: true });
+
+  await env.DB.prepare(
+    "UPDATE examination_workflow SET finalized_at=? WHERE exam_id=? AND finalized_at IS NULL",
+  )
+    .bind(Date.now(), exam.id)
+    .run();
+
+  return ok({ id: exam.id, finalized: true });
+}
+
+export async function cancelParentExamination(
+  request: Request,
+  env: Env,
+  examId: string,
+) {
+  const parent = await requireParentAccount(request, env);
+  const exam = await requireOwnedLifecycleExam(env, parent.id, examId);
+
+  if (!exam) throw new ApiError(404, "Pemeriksaan tidak ditemukan.");
+  if (!["queued", "running"].includes(exam.status))
+    throw new ApiError(409, "Sesi ini sudah selesai.");
+
+  const now = Date.now();
+  await env.DB.batch([
+    env.DB.prepare(
+      "UPDATE examinations SET status='cancelled' WHERE id=? AND status IN ('queued','running')",
+    ).bind(exam.id),
+    env.DB.prepare(
+      "UPDATE examination_workflow SET finalized_at=? WHERE exam_id=? AND finalized_at IS NULL",
+    ).bind(now, exam.id),
+  ]);
+
+  return ok({ id: exam.id, cancelled: true });
 }
 
 export async function parentAccountChat(request: Request, env: Env) {

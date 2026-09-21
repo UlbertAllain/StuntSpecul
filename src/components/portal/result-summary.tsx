@@ -4,7 +4,12 @@ import {
   growthStatusLabel,
   stuntingScreeningLabel,
 } from "@/lib/growth";
-import { formatAge, formatReading } from "@/lib/screening";
+import {
+  facialAnalysisLabel,
+  facialReasonLabel,
+  formatAge,
+  formatReading,
+} from "@/lib/screening";
 import type { Examination, ParentView } from "@/lib/portal";
 
 export function ResultSummary({
@@ -92,25 +97,31 @@ export function ResultSummary({
       </div>
       <div className="portal-card">
         <h3>
-          <ScanFace /> Analisis wajah
+          <ScanFace /> Analisis wajah pendukung
         </h3>
         <dl className="portal-details">
           <div>
-            <dt>Area mata</dt>
-            <dd>Belum tersedia</dd>
+            <dt>Model A V2.1</dt>
+            <dd>{facialAnalysisLabel(result.facialStatus)}</dd>
           </div>
           <div>
-            <dt>Kantong mata</dt>
-            <dd>Belum tersedia</dd>
+            <dt>Skor model</dt>
+            <dd>
+              {result.facialProbability === null
+                ? "—"
+                : `${Math.round(result.facialProbability * 100)}%`}
+            </dd>
           </div>
-          <div>
-            <dt>Kondisi bibir</dt>
-            <dd>Belum tersedia</dd>
-          </div>
+          {result.facialStatus === "rejected" && (
+            <div>
+              <dt>Catatan kualitas</dt>
+              <dd>{facialReasonLabel(result.facialReason)}</dd>
+            </div>
+          )}
         </dl>
         <p className="portal-note">
-          Indikator wajah ditampilkan terpisah dan tidak menentukan status
-          stunting.
+          Analisis wajah hanya informasi pendukung. Penentuan utama status
+          stunting tetap berdasarkan TB/U WHO.
         </p>
       </div>
     </>

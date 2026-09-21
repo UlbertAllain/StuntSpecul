@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { assessHeightForAge } from "../src/lib/growth.ts";
+import { generateDemoMeasurements } from "../src/lib/demo-measurements.ts";
 import {
   childSchema,
   createScreeningReport,
@@ -73,6 +74,27 @@ test("WHO engine rejects unavailable, out-of-scope and biologically implausible 
   assert.equal(assessHeightForAge(36, "male", 200).growthStatus, "unavailable");
 });
 
+test("temporary demo measurements exercise all WHO screening states deterministically", () => {
+  const expected = [
+    [36, "within_range"],
+    [37, "monitor"],
+    [38, "stunted"],
+    [39, "severely_stunted"],
+  ];
+
+  for (const [ageMonths, growthStatus] of expected) {
+    const readings = generateDemoMeasurements({
+      ageMonths,
+      sex: "male",
+    });
+    const result = assessHeightForAge(ageMonths, "male", readings.heightCm);
+
+    assert.equal(result.growthStatus, growthStatus);
+    assert.ok(readings.heightCm > 0);
+    assert.ok(readings.weightKg > 0);
+  }
+});
+
 test("disconnected sensors remain missing values throughout the report", () => {
   const readings = readMeasurements();
   const report = createScreeningReport(
@@ -86,7 +108,7 @@ test("disconnected sensors remain missing values throughout the report", () => {
   assert.equal(report.heightForAgeZ, null);
   assert.equal(report.growthStatus, "unavailable");
   assert.equal(report.stuntingScreening, null);
-  assert.equal(report.facialStatus, "unavailable");
+  assert.equal(report.facialAnalysis.status, "unavailable");
   assert.match(reportText(report), /TB\/U Z-score WHO: —/);
   assert.match(reportText(report), /Tinggi badan: — cm/);
 });
@@ -117,6 +139,13 @@ test("raw camera photos are not retained in reports or exported text", () => {
   const capture = {
     status: "captured",
     photo: new Blob(["private-photo"], { type: "image/jpeg" }),
+    facialAnalysis: {
+      status: "non_stunting_indication",
+      probability: 0.21,
+      threshold: 0.4,
+      reason: null,
+      modelVersion: "model-a-v2.1",
+    },
   };
   const report = createScreeningReport(
     child,
@@ -125,7 +154,7 @@ test("raw camera photos are not retained in reports or exported text", () => {
     completedAt,
   );
   assert.equal(report.captureStatus, "captured");
-  assert.equal(report.facialStatus, "unavailable");
+  assert.equal(report.facialAnalysis.status, "non_stunting_indication");
   assert.equal(Object.hasOwn(report, "photo"), false);
   assert.doesNotMatch(reportText(report), /private-photo/);
 });

@@ -13,13 +13,16 @@ export function databaseConfig(values: Variables): Config {
       "Database belum dikonfigurasi oleh pengelola.",
       "database_not_configured",
     );
+
   const local = url.startsWith("file:");
-  if (local && (values.VERCEL || values.NODE_ENV === "production"))
+
+  if (local && values.NODE_ENV === "production")
     throw new ApiError(
       503,
       "Hosting membutuhkan database permanen.",
       "database_url_invalid",
     );
+
   if (!local) {
     let parsed: URL;
     try {
@@ -31,6 +34,7 @@ export function databaseConfig(values: Variables): Config {
         "database_url_invalid",
       );
     }
+
     if (
       !["libsql:", "https:"].includes(parsed.protocol) ||
       parsed.username ||
@@ -43,6 +47,7 @@ export function databaseConfig(values: Variables): Config {
         "Alamat database belum valid.",
         "database_url_invalid",
       );
+
     if (!authToken)
       throw new ApiError(
         503,
@@ -50,15 +55,24 @@ export function databaseConfig(values: Variables): Config {
         "database_not_configured",
       );
   }
+
   return { url, authToken, intMode: "number" };
 }
 
 export function applicationConfig(values: Variables, request: Request) {
-  const development = values.NODE_ENV === "development" && !values.VERCEL;
+  const requestUrl = new URL(request.url);
+  const requestIsLocal = LOOPBACK.has(requestUrl.hostname);
+  const isProduction = values.NODE_ENV === "production";
+
   const configured = values.APP_ORIGIN?.trim();
+
+  // Local development, including `vercel dev`, may use HTTP localhost.
+  // Production must always use the explicitly configured HTTPS public origin.
   const candidate =
-    configured || (development ? new URL(request.url).origin : "");
+    configured || (!isProduction && requestIsLocal ? requestUrl.origin : "");
+
   let origin: URL;
+
   try {
     origin = new URL(candidate);
   } catch {
@@ -68,7 +82,9 @@ export function applicationConfig(values: Variables, request: Request) {
       "app_origin_invalid",
     );
   }
-  const local = LOOPBACK.has(origin.hostname);
+
+  const originIsLocal = LOOPBACK.has(origin.hostname);
+
   if (
     origin.username ||
     origin.password ||
@@ -76,17 +92,22 @@ export function applicationConfig(values: Variables, request: Request) {
     origin.hash ||
     origin.pathname !== "/" ||
     (origin.protocol !== "https:" &&
-      !(development && local && origin.protocol === "http:"))
+      !(!isProduction && originIsLocal && origin.protocol === "http:"))
   )
     throw new ApiError(
       503,
       "Alamat aplikasi belum valid.",
       "app_origin_invalid",
     );
+
+  // When running locally, same-origin checks must follow the actual local
+  // request origin instead of a production APP_ORIGIN copied into env files.
+  const appOrigin =
+    !isProduction && requestIsLocal ? requestUrl.origin : origin.origin;
+
   return {
-    APP_ORIGIN: origin.origin,
-    ALLOW_LOCAL_SETUP:
-      development && local && LOOPBACK.has(new URL(request.url).hostname),
+    APP_ORIGIN: appOrigin,
+    ALLOW_LOCAL_SETUP: !isProduction && requestIsLocal,
     GEMINI_API_KEY: values.GEMINI_API_KEY?.trim(),
     GEMINI_MODEL: values.GEMINI_MODEL?.trim(),
   };

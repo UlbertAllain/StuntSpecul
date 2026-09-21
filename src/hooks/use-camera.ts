@@ -2,12 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import { captureFrame, requestCamera, stopCamera } from "@/lib/camera";
-import type { Capture } from "@/lib/screening";
+import { analyzeFacePhoto } from "@/lib/model-a";
+import { UNAVAILABLE_FACIAL_ANALYSIS, type Capture } from "@/lib/screening";
 
 const CAMERA_TIMEOUT_MS = 15_000;
-type CameraStatus = "connecting" | "ready" | "capturing" | "error";
+type CameraStatus =
+  | "connecting"
+  | "ready"
+  | "capturing"
+  | "analyzing"
+  | "error";
 
-export function useCamera(onCapture: (capture: Capture) => void) {
+export function useCamera(
+  onCapture: (capture: Capture) => void,
+  ageMonths: number,
+) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controllerRef = useRef<AbortController | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -111,16 +120,35 @@ export function useCamera(onCapture: (capture: Capture) => void) {
       return;
 
     setStatus("capturing");
+    let photo: Blob | null = null;
     try {
-      const photo = await captureFrame(video);
+      photo = await captureFrame(video);
       if (controller.signal.aborted) return;
+
+      setStatus("analyzing");
+      const facialAnalysis = await analyzeFacePhoto(photo, ageMonths);
+      if (controller.signal.aborted) return;
+
       stopCamera(streamRef.current);
-      onCapture({ status: "captured", photo });
+      onCapture({ status: "captured", photo, facialAnalysis });
     } catch {
       if (!controller.signal.aborted) {
+        // Facial AI is supporting data only. A model/service failure must never
+        // block the WHO anthropometric screening flow.
         stopCamera(streamRef.current);
-        setError("Gambar belum berhasil diambil. Silakan coba lagi.");
-        setStatus("error");
+        if (!photo) {
+          setError("Gambar belum berhasil diambil. Silakan coba lagi.");
+          setStatus("error");
+          return;
+        }
+        onCapture({
+          status: "captured",
+          photo,
+          facialAnalysis: {
+            ...UNAVAILABLE_FACIAL_ANALYSIS,
+            reason: "model_not_ready",
+          },
+        });
       }
     }
   }

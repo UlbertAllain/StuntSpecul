@@ -287,7 +287,15 @@ test("completion is idempotent, staff-scoped, and cannot accept a forged growth 
       "UPDATE examinations SET status='running',completed_at=NULL WHERE id=?",
     )
     .run(f.exam);
-  const payload = { heightCm: 102.4, weightKg: 16.2, captureStatus: "skipped" };
+  const payload = {
+    heightCm: 102.4,
+    weightKg: 16.2,
+    captureStatus: "captured",
+    facialStatus: "non_stunting_indication",
+    facialProbability: 0.18,
+    facialReason: null,
+    facialModelVersion: "model-a-v2.1",
+  };
   const path = `/api/mirror/examinations/${f.exam}/complete`,
     cookie = `ss_staff=${f.staffToken}`;
   await assert.rejects(
@@ -304,10 +312,15 @@ test("completion is idempotent, staff-scoped, and cannot accept a forged growth 
     f.env,
   );
   const row = f.db
-    .prepare("SELECT height_cm,growth_status FROM examinations WHERE id=?")
+    .prepare(
+      "SELECT height_cm,growth_status,facial_status,facial_probability,facial_model_version FROM examinations WHERE id=?",
+    )
     .get(f.exam);
   assert.equal(row.height_cm, 102.4);
   assert.equal(row.growth_status, "unavailable");
+  assert.equal(row.facial_status, "non_stunting_indication");
+  assert.equal(row.facial_probability, 0.18);
+  assert.equal(row.facial_model_version, "model-a-v2.1");
   await assert.rejects(
     () =>
       api.route(

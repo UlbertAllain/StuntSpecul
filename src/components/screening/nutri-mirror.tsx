@@ -30,10 +30,14 @@ import {
   type ScreeningCompletion,
 } from "@/hooks/use-screening-session";
 import { useSpeech } from "@/hooks/use-speech";
-import { STEP_INSTRUCTIONS, STEP_PROGRESS, type Step } from "@/lib/session";
+import { STEP_PROGRESS, type Step } from "@/lib/session";
 import { CameraStep } from "./camera-step";
 import type { MirrorAssignment } from "@/lib/portal";
 import { errorMessage } from "@/lib/api-client";
+import {
+  demoMeasurementsEnabled,
+  generateDemoMeasurements,
+} from "@/lib/demo-measurements";
 import { ExaminationStage } from "./examination-stage";
 import { Mascot } from "./mascot";
 import { ProcessingStage } from "./processing-stage";
@@ -73,7 +77,7 @@ export function NutriMirror({
   onComplete,
   onFinish,
   waitingLabel = "Petugas menyiapkan pemeriksaan.",
-  awaitingStaffFinalize = false,
+  awaitingParentFinalize = false,
 }: {
   assignment?: MirrorAssignment;
   canBegin?: boolean;
@@ -81,7 +85,7 @@ export function NutriMirror({
   onComplete?: (payload: ScreeningCompletion) => Promise<void>;
   onFinish?: (cancel: boolean) => Promise<void>;
   waitingLabel?: string;
-  awaitingStaffFinalize?: boolean;
+  awaitingParentFinalize?: boolean;
 }) {
   const { session, dispatch, active, isPaused, complete, saveError, saving } =
     useScreeningSession(assignment, onComplete);
@@ -89,7 +93,7 @@ export function NutriMirror({
   const [voice, setVoice] = useState(false);
   const [notice, setNotice] = useState("");
   const stageRef = useRef<HTMLElement>(null);
-  useSpeech(STEP_INSTRUCTIONS[step], voice, isPaused);
+  useSpeech(step, voice, isPaused);
 
   useEffect(() => {
     stageRef.current?.focus({ preventScroll: true });
@@ -107,7 +111,7 @@ export function NutriMirror({
   }
 
   function requestExit() {
-    if (step !== "welcome" && !(awaitingStaffFinalize && step === "result"))
+    if (step !== "welcome" && !(awaitingParentFinalize && step === "result"))
       dispatch({ type: "set-exit", open: true });
   }
 
@@ -121,10 +125,6 @@ export function NutriMirror({
   }
 
   function toggleVoice() {
-    if (!("speechSynthesis" in window)) {
-      setNotice("Browser ini belum mendukung panduan suara.");
-      return;
-    }
     setVoice((enabled) => !enabled);
   }
 
@@ -174,6 +174,13 @@ export function NutriMirror({
             phase={step}
             paused={isPaused}
             onComplete={() => dispatch({ type: "advance", from: step })}
+            reading={
+              step === "height"
+                ? demoReadings?.heightCm
+                : step === "weight"
+                  ? demoReadings?.weightKg
+                  : null
+            }
           />
         );
       case "camera":
@@ -189,6 +196,7 @@ export function NutriMirror({
             </div>
             <CameraStep
               paused={isPaused}
+              ageMonths={session.child?.ageMonths ?? 0}
               onComplete={(capture) => dispatch({ type: "capture", capture })}
             />
           </section>
@@ -200,15 +208,19 @@ export function NutriMirror({
           report && (
             <Results
               report={report}
-              onFinish={awaitingStaffFinalize ? undefined : reset}
-              awaitingStaffFinalize={awaitingStaffFinalize}
+              onFinish={awaitingParentFinalize ? undefined : reset}
+              awaitingParentFinalize={awaitingParentFinalize}
             />
           )
         );
     }
   }
 
-  const resultLocked = awaitingStaffFinalize && step === "result";
+  const demoReadings =
+    session.child && demoMeasurementsEnabled()
+      ? generateDemoMeasurements(session.child)
+      : null;
+  const resultLocked = awaitingParentFinalize && step === "result";
 
   return (
     <div

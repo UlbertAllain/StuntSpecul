@@ -18,6 +18,14 @@ export type ScreeningCompletion = {
   heightCm: number | null;
   weightKg: number | null;
   captureStatus: "captured" | "skipped" | "failed";
+  facialStatus:
+    | "stunting_indication"
+    | "non_stunting_indication"
+    | "rejected"
+    | "unavailable";
+  facialProbability: number | null;
+  facialReason: string | null;
+  facialModelVersion: string | null;
 };
 
 export function useScreeningSession(
@@ -52,13 +60,17 @@ export function useScreeningSession(
     if (!session.child || !session.capture) return;
     const report = createScreeningReport(
       session.child,
-      readMeasurements(),
+      readMeasurements(session.child),
       session.capture,
     );
     const payload: ScreeningCompletion = {
       heightCm: report.readings.heightCm,
       weightKg: report.readings.weightKg,
       captureStatus: report.captureStatus,
+      facialStatus: report.facialAnalysis.status,
+      facialProbability: report.facialAnalysis.probability,
+      facialReason: report.facialAnalysis.reason,
+      facialModelVersion: report.facialAnalysis.modelVersion,
     };
 
     setSaving(true);

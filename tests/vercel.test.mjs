@@ -29,7 +29,6 @@ test("production rejects local/missing database and missing application origin",
   for (const values of [
     {},
     { DATABASE_URL: "file:local.db", NODE_ENV: "production" },
-    { DATABASE_URL: "file:local.db", VERCEL: "1" },
     { DATABASE_URL: "https://database.example" },
     {
       DATABASE_URL: "http://database.example",
@@ -50,6 +49,14 @@ test("production rejects local/missing database and missing application origin",
   );
   assert.equal(
     config.databaseConfig({ DATABASE_URL: "file:local.db" }).url,
+    "file:local.db",
+  );
+  assert.equal(
+    config.databaseConfig({
+      DATABASE_URL: "file:local.db",
+      NODE_ENV: "development",
+      VERCEL: "1",
+    }).url,
     "file:local.db",
   );
 });
@@ -89,6 +96,17 @@ test("production cannot enable setup using local URLs or forged owner headers", 
       request,
     ).ALLOW_LOCAL_SETUP,
     true,
+  );
+  assert.equal(
+    config.applicationConfig(
+      {
+        NODE_ENV: "development",
+        VERCEL: "1",
+        APP_ORIGIN: "https://stuntspecula.vercel.app",
+      },
+      request,
+    ).APP_ORIGIN,
+    "http://localhost:3000",
   );
 });
 

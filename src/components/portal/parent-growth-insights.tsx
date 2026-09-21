@@ -10,8 +10,12 @@ import {
   Scale,
 } from "lucide-react";
 
-import { growthStatusLabel } from "@/lib/growth";
-import type { Examination } from "@/lib/portal";
+import {
+  assessHeightForAge,
+  growthStatusLabel,
+  type GrowthStatus,
+} from "@/lib/growth";
+import { ageInMonths, type ChildProfile, type Examination } from "@/lib/portal";
 import { formatReading } from "@/lib/screening";
 
 const MAX_POINTS = 6;
@@ -108,6 +112,116 @@ function zTrend(latest: Examination, previous: Examination | undefined) {
   };
 }
 
+function demoHeight(ageMonths: number, sex: "male" | "female") {
+  const base = sex === "male" ? 87.1 : 85.7;
+  const monthlyGrowth = sex === "male" ? 0.65 : 0.68;
+  return Number(
+    (base + Math.max(0, ageMonths - 24) * monthlyGrowth).toFixed(1),
+  );
+}
+
+function demoWeight(ageMonths: number) {
+  return Number((12.4 + Math.max(0, ageMonths - 24) * 0.18).toFixed(1));
+}
+
+function demoExamination(
+  child: ChildProfile,
+  ageMonths: number,
+  heightCm: number,
+  weightKg: number,
+  timestamp: number,
+  index: number,
+): Examination {
+  const assessment = assessHeightForAge(ageMonths, child.sex, heightCm);
+  return {
+    id: `demo-${child.id}-${index}`,
+    childId: child.id,
+    childName: child.name,
+    childCode: child.code,
+    ageMonths,
+    sex: child.sex,
+    deviceId: "demo",
+    deviceName: "Visualisasi demo",
+    status: "completed",
+    heightCm,
+    weightKg,
+    bmi: Number((weightKg / (heightCm / 100) ** 2).toFixed(1)),
+    heightForAgeZ: assessment.heightForAgeZ,
+    captureStatus: "skipped",
+    facialStatus: null,
+    facialProbability: null,
+    facialReason: null,
+    facialModelVersion: null,
+    growthStatus: assessment.growthStatus,
+    createdAt: timestamp,
+    completedAt: timestamp,
+    finalizedAt: timestamp,
+  };
+}
+
+function displaySeries(
+  examinations: Examination[],
+  child: ChildProfile | null,
+) {
+  const real = sameChildExams(examinations);
+  if (real.length >= 2 || !child) return { exams: real, demo: false };
+
+  const currentAge = real[0]?.ageMonths ?? ageInMonths(child.birthDate);
+  if (currentAge < 24 || currentAge > 59) return { exams: real, demo: false };
+
+  const latestHeight = real[0]?.heightCm ?? demoHeight(currentAge, child.sex);
+  const latestWeight = real[0]?.weightKg ?? demoWeight(currentAge);
+  const latestTimestamp =
+    real[0]?.completedAt || real[0]?.createdAt || Date.now();
+
+  const generated = [1, 2, 3].map((monthsBack, index) => {
+    const age = Math.max(24, currentAge - monthsBack);
+    const timestamp = latestTimestamp - monthsBack * 30 * 24 * 60 * 60 * 1000;
+    const height = Number(
+      Math.max(
+        30,
+        latestHeight - monthsBack * (child.sex === "male" ? 0.65 : 0.68),
+      ).toFixed(1),
+    );
+    const weight = Number(
+      Math.max(1, latestWeight - monthsBack * 0.18).toFixed(1),
+    );
+    return demoExamination(child, age, height, weight, timestamp, index);
+  });
+
+  if (real[0]) return { exams: [real[0], ...generated], demo: true };
+
+  const current = demoExamination(
+    child,
+    currentAge,
+    latestHeight,
+    latestWeight,
+    latestTimestamp,
+    3,
+  );
+  return { exams: [current, ...generated], demo: true };
+}
+
+function riskLabel(status: GrowthStatus) {
+  switch (status) {
+    case "within_range":
+      return "Tidak terindikasi";
+    case "monitor":
+      return "Perlu dipantau";
+    case "stunted":
+      return "Terindikasi stunting";
+    case "severely_stunted":
+      return "Terindikasi stunting berat";
+    default:
+      return "Belum tersedia";
+  }
+}
+
+function zMarker(z: number | null) {
+  if (z === null) return 50;
+  return Math.max(0, Math.min(100, ((z + 4) / 5) * 100));
+}
+
 function formatShortDate(timestamp: number) {
   return new Date(timestamp).toLocaleDateString("id-ID", {
     day: "numeric",
@@ -201,7 +315,7 @@ function GrowthLineChart({
   const gradientId = `area-${title.replaceAll(" ", "-").replaceAll("/", "-")}`;
 
   return (
-    <article className="overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-white">
+    <article className="overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fcff_52%,#fff7fa_100%)] shadow-[0_14px_38px_rgba(78,139,196,0.08)]">
       <div className="flex flex-col gap-4 border-b border-[var(--border)] p-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-lg font-black">{title}</h3>
@@ -220,15 +334,26 @@ function GrowthLineChart({
       <div className="p-4 sm:p-5">
         <div className="overflow-x-auto">
           <svg
-            className="min-w-[500px] text-[var(--blue)]"
+            className="h-auto w-full text-[var(--blue)]"
             viewBox={`0 0 ${chartWidth} ${chartHeight}`}
             role="img"
             aria-label={`Grafik ${title.toLowerCase()}`}
           >
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="currentColor" stopOpacity="0.16" />
-                <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+                <stop offset="0%" stopColor="#72B8E6" stopOpacity="0.3" />
+                <stop offset="55%" stopColor="#FFB4D0" stopOpacity="0.16" />
+                <stop offset="100%" stopColor="#FFFDF7" stopOpacity="0" />
+              </linearGradient>
+              <linearGradient
+                id={`${gradientId}-stroke`}
+                x1="0"
+                y1="0"
+                x2="1"
+                y2="0"
+              >
+                <stop offset="0%" stopColor="#4E8BC4" />
+                <stop offset="100%" stopColor="#B43E70" />
               </linearGradient>
             </defs>
 
@@ -307,7 +432,7 @@ function GrowthLineChart({
                 <polyline
                   points={polyline}
                   fill="none"
-                  stroke="currentColor"
+                  stroke={`url(#${gradientId}-stroke)`}
                   strokeWidth="4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -370,13 +495,25 @@ function GrowthLineChart({
 
 export function ParentGrowthInsights({
   examinations,
+  child,
 }: {
   examinations: Examination[];
+  child: ChildProfile | null;
 }) {
-  const childExams = sameChildExams(examinations);
+  const series = displaySeries(examinations, child);
+  const childExams = series.exams;
   const latest = childExams[0];
 
-  if (!latest) return null;
+  if (!latest)
+    return (
+      <div className="portal-empty parent-insight-empty">
+        <ChartNoAxesCombined />
+        <h3>Belum ada data untuk divisualisasikan</h3>
+        <p>
+          Tambahkan profil anak usia 24–59 bulan untuk melihat contoh insight.
+        </p>
+      </div>
+    );
 
   const previous = childExams[1];
   const heightChange = delta(latest.heightCm, previous?.heightCm ?? null);
@@ -388,6 +525,16 @@ export function ParentGrowthInsights({
 
   return (
     <section className="mb-8 space-y-6">
+      {series.demo && (
+        <div className="parent-demo-banner">
+          <strong>Mode demo grafik</strong>
+          <span>
+            Titik sebelum pemeriksaan asli adalah data simulasi tampilan dan
+            tidak disimpan ke database.
+          </span>
+        </div>
+      )}
+
       <div className="rounded-[1.75rem] border border-[var(--border)] bg-[linear-gradient(135deg,#f2f9ff_0%,#ffffff_58%,#fff5f8_100%)] p-6 md:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -403,7 +550,9 @@ export function ParentGrowthInsights({
             </p>
           </div>
           <span className="w-fit rounded-full border border-[var(--border)] bg-white px-4 py-2 text-xs font-extrabold text-[var(--muted-foreground)]">
-            {childExams.length} pemeriksaan tersimpan
+            {series.demo
+              ? "Visualisasi demo"
+              : `${childExams.length} pemeriksaan tersimpan`}
           </span>
         </div>
 
@@ -510,6 +659,43 @@ export function ParentGrowthInsights({
           </p>
         </article>
       </div>
+
+      <article className="parent-calibration-card">
+        <div className="parent-calibration-copy">
+          <span>KALIBRASI TB/U</span>
+          <h3>
+            {series.demo
+              ? "Simulasi pembacaan pertumbuhan"
+              : "Pembacaan terbaru"}
+          </h3>
+          <p>
+            Usia {latest.ageMonths} bulan · TB {formatReading(latest.heightCm)}{" "}
+            cm · BB {formatReading(latest.weightKg)} kg
+          </p>
+          <strong>{riskLabel(latest.growthStatus)}</strong>
+          <small>
+            TB/U{" "}
+            {latest.heightForAgeZ === null
+              ? "—"
+              : `${latest.heightForAgeZ.toFixed(2)} SD`}
+            . Berat badan ditampilkan sebagai konteks; status stunting utama
+            mengikuti tinggi menurut umur WHO.
+          </small>
+        </div>
+        <div className="parent-risk-scale" aria-label="Skala TB/U">
+          <div className="parent-risk-gradient" />
+          <span
+            className="parent-risk-marker"
+            style={{ left: `${zMarker(latest.heightForAgeZ)}%` }}
+          />
+          <div className="parent-risk-labels">
+            <span>Berat</span>
+            <span>Stunting</span>
+            <span>Pantau</span>
+            <span>Rentang</span>
+          </div>
+        </div>
+      </article>
 
       <div>
         <div className="section-heading">

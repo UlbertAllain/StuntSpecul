@@ -59,6 +59,29 @@ const BOYS_S = [
 const MIN_AGE_MONTHS = 24;
 const MAX_AGE_MONTHS = 59;
 
+export function heightForAgeAtZScore(
+  ageMonths: number,
+  sex: Sex,
+  zScore: number,
+): number | null {
+  if (
+    !Number.isInteger(ageMonths) ||
+    ageMonths < MIN_AGE_MONTHS ||
+    ageMonths > MAX_AGE_MONTHS ||
+    !Number.isFinite(zScore)
+  ) {
+    return null;
+  }
+
+  const index = ageMonths - MIN_AGE_MONTHS;
+  const median = sex === "male" ? BOYS_M[index] : GIRLS_M[index];
+  const s = sex === "male" ? BOYS_S[index] : GIRLS_S[index];
+
+  if (median === undefined || s === undefined) return null;
+
+  return Math.round(median * (1 + s * zScore) * 10) / 10;
+}
+
 export function assessHeightForAge(
   ageMonths: number,
   sex: Sex,

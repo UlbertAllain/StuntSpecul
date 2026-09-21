@@ -8,7 +8,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api-client";
-import { Message, PortalShell } from "./shell";
+import { Message, PortalShell } from "@/components/portal/shell";
 
 type ScreeningStatus =
   | "waiting_parent"
@@ -26,7 +26,7 @@ type ParentState = {
   expiresAt: number;
 };
 
-export function ParentScreening() {
+export function LegacyParentScreening() {
   const [state, setState] = useState<ParentState | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);

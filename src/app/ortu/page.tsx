@@ -1,5 +1,5 @@
-import { ParentAccountPortal } from "@/components/portal/parent-account-portal";
+import { ParentPortal } from "@/components/portal/parent-portal";
 
 export default function ParentPage() {
-  return <ParentAccountPortal />;
+  return <ParentPortal />;
 }

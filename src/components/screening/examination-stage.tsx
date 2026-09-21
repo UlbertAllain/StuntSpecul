@@ -29,10 +29,12 @@ export function ExaminationStage({
   phase,
   paused,
   onComplete,
+  reading,
 }: {
   phase: MeasurementPhase;
   paused: boolean;
   onComplete: () => void;
+  reading?: number | null;
 }) {
   const remaining = useCountdown(7, paused, onComplete);
   const finished = phase !== "prepare" && remaining <= 1;
@@ -85,12 +87,18 @@ export function ExaminationStage({
         ) : (
           <>
             <strong>
-              {finished ? "—" : "···"}
+              {finished && reading !== null && reading !== undefined
+                ? reading.toFixed(1)
+                : finished
+                  ? "—"
+                  : "···"}
               <small>{phase === "height" ? "cm" : "kg"}</small>
             </strong>
             <span>
               {finished
-                ? "Sensor belum terhubung"
+                ? reading !== null && reading !== undefined
+                  ? "Data demo sementara"
+                  : "Sensor belum terhubung"
                 : paused
                   ? "Pengukuran dijeda"
                   : "Tahan posisi sebentar"}
