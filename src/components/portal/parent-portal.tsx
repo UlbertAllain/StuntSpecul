@@ -95,9 +95,11 @@ export function ParentPortal() {
         exam.status === "running" ||
         (exam.status === "completed" && !exam.finalizedAt),
     ) || null;
+  const activeExamId = activeExam?.id || "";
+  const activeExamStatus = activeExam?.status || "";
 
   useEffect(() => {
-    if (!activeExam || activeExam.status === "completed") return;
+    if (!activeExamId || activeExamStatus === "completed") return;
 
     const controller = new AbortController();
     const timer = setInterval(() => {
@@ -112,7 +114,7 @@ export function ParentPortal() {
       controller.abort();
       clearInterval(timer);
     };
-  }, [activeExam?.id, activeExam?.status]);
+  }, [activeExamId, activeExamStatus]);
 
   useEffect(() => {
     if (!assistantOpen || !selectedExamForChatId) return;
