@@ -4,6 +4,10 @@ import {
   type GrowthStatus,
   type StuntingScreening,
 } from "./growth.ts";
+import {
+  demoMeasurementsEnabled,
+  generateDemoMeasurements,
+} from "./demo-measurements.ts";
 
 export const childSchema = z.object({
   ageMonths: z
@@ -66,8 +70,14 @@ export type ScreeningReport = {
   facialAnalysis: FacialAnalysis;
 };
 
-// Missing devices must remain missing data; never substitute fixture readings.
-export function readMeasurements(): Readings {
+// Production keeps missing sensors as missing data. Local demo mode can
+// temporarily exercise the full WHO/report/history pipeline before hardware arrives.
+export function readMeasurements(child?: Child): Readings {
+  if (child && demoMeasurementsEnabled()) {
+    const demo = generateDemoMeasurements(child);
+    return { heightCm: demo.heightCm, weightKg: demo.weightKg };
+  }
+
   return { heightCm: null, weightKg: null };
 }
 
