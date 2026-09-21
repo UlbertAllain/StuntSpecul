@@ -171,7 +171,7 @@ function displaySeries(examinations: Examination[], child: ChildProfile | null) 
   const latestTimestamp =
     real[0]?.completedAt || real[0]?.createdAt || Date.now();
 
-  const generated = [3, 2, 1].map((monthsBack, index) => {
+  const generated = [1, 2, 3].map((monthsBack, index) => {
     const age = Math.max(24, currentAge - monthsBack);
     const timestamp =
       latestTimestamp - monthsBack * 30 * 24 * 60 * 60 * 1000;
@@ -332,7 +332,7 @@ function GrowthLineChart({
       <div className="p-4 sm:p-5">
         <div className="overflow-x-auto">
           <svg
-            className="min-w-[500px] text-[var(--blue)]"
+            className="h-auto w-full text-[var(--blue)]"
             viewBox={`0 0 ${chartWidth} ${chartHeight}`}
             role="img"
             aria-label={`Grafik ${title.toLowerCase()}`}
