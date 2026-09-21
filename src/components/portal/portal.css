@@ -2079,7 +2079,6 @@
   }
 }
 
-
 /* Parent mobile polish: flat application shell, compact navigation, no duplicate CTA. */
 @media (max-width: 760px) {
   .portal-shell--parent {

@@ -13,7 +13,12 @@ export function primeSoundEffects() {
   if (current?.state === "suspended") void current.resume();
 }
 
-function tone(frequency: number, start: number, duration: number, volume: number) {
+function tone(
+  frequency: number,
+  start: number,
+  duration: number,
+  volume: number,
+) {
   const current = context();
   if (!current || current.state !== "running") return;
 

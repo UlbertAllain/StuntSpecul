@@ -1873,7 +1873,6 @@
   pointer-events: none;
 }
 
-
 /* Result screen cleanup: calm, compact, and information-first. */
 .mirror-stage:has(.results-screen) {
   background: #fffdf7;
