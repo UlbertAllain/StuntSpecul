@@ -60,7 +60,7 @@ export function useScreeningSession(
     if (!session.child || !session.capture) return;
     const report = createScreeningReport(
       session.child,
-      readMeasurements(),
+      readMeasurements(session.child),
       session.capture,
     );
     const payload: ScreeningCompletion = {
