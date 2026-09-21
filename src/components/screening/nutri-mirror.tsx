@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -35,6 +35,7 @@ import { CameraStep } from "./camera-step";
 import type { MirrorAssignment } from "@/lib/portal";
 import { errorMessage } from "@/lib/api-client";
 import {
+  createSeededRandom,
   demoMeasurementsEnabled,
   generateDemoMeasurements,
 } from "@/lib/demo-measurements";
@@ -216,13 +217,16 @@ export function NutriMirror({
     }
   }
 
-  const demoReadings = useMemo(
-    () =>
-      session.child && demoMeasurementsEnabled()
-        ? generateDemoMeasurements(session.child)
-        : null,
-    [session.child],
-  );
+  const demoReadings =
+    session.child && demoMeasurementsEnabled()
+      ? generateDemoMeasurements(
+          session.child,
+          createSeededRandom(
+            assignment?.id ??
+              `legacy:${session.child.ageMonths}:${session.child.sex}`,
+          ),
+        )
+      : null;
   const resultLocked = awaitingParentFinalize && step === "result";
 
   return (
