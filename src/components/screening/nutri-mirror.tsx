@@ -29,12 +29,8 @@ import {
   useScreeningSession,
   type ScreeningCompletion,
 } from "@/hooks/use-screening-session";
-import { useSpeech } from "@/hooks/use-speech";
-import {
-  playResultCue,
-  playSoundEnabledCue,
-  primeSoundEffects,
-} from "@/lib/sound-effects";
+import { useMimoAudio } from "@/hooks/use-mimo-audio";
+import { stopMimoStageCue } from "@/lib/mimo-audio";
 import { STEP_PROGRESS, type Step } from "@/lib/session";
 import { CameraStep } from "./camera-step";
 import type { MirrorAssignment } from "@/lib/portal";
@@ -95,16 +91,15 @@ export function NutriMirror({
   const { session, dispatch, active, isPaused, complete, saveError, saving } =
     useScreeningSession(assignment, onComplete);
   const { step, report, paused, exitOpen } = session;
-  const [voice, setVoice] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const [notice, setNotice] = useState("");
   const stageRef = useRef<HTMLElement>(null);
-  useSpeech(step, voice, isPaused);
+  const { playCurrentFromGesture } = useMimoAudio(step, soundEnabled, isPaused);
 
   useEffect(() => {
     stageRef.current?.focus({ preventScroll: true });
     window.scrollTo({ top: 0, behavior: "instant" });
-    if (voice && step === "result") playResultCue();
-  }, [step, voice]);
+  }, [step]);
 
   async function reset() {
     try {
@@ -130,15 +125,15 @@ export function NutriMirror({
     }
   }
 
-  function toggleVoice() {
-    setVoice((enabled) => {
-      const next = !enabled;
-      if (next) {
-        primeSoundEffects();
-        playSoundEnabledCue();
-      }
-      return next;
-    });
+  function toggleSound() {
+    if (soundEnabled) {
+      stopMimoStageCue();
+      setSoundEnabled(false);
+      return;
+    }
+
+    playCurrentFromGesture();
+    setSoundEnabled(true);
   }
 
   function renderStage() {
@@ -194,7 +189,7 @@ export function NutriMirror({
                   ? demoReadings?.weightKg
                   : null
             }
-            soundEnabled={voice}
+            soundEnabled={soundEnabled}
           />
         );
       case "camera":
@@ -211,6 +206,7 @@ export function NutriMirror({
             <CameraStep
               paused={isPaused}
               ageMonths={session.child?.ageMonths ?? 0}
+              soundEnabled={soundEnabled}
               onComplete={(capture) => dispatch({ type: "capture", capture })}
             />
           </section>
@@ -277,11 +273,13 @@ export function NutriMirror({
         <div className="header-tools">
           <button
             className="icon-button"
-            onClick={toggleVoice}
-            aria-label={voice ? "Matikan suara" : "Aktifkan suara"}
-            aria-pressed={voice}
+            onClick={toggleSound}
+            aria-label={
+              soundEnabled ? "Matikan efek suara" : "Aktifkan efek suara"
+            }
+            aria-pressed={soundEnabled}
           >
-            {voice ? <Volume2 /> : <VolumeX />}
+            {soundEnabled ? <Volume2 /> : <VolumeX />}
           </button>
           <button
             className="icon-button fullscreen-button"

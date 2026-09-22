@@ -1,28 +1,22 @@
-# Mimo voice clips
+# Mimo sound effects
 
-StuntSpecula uses prerecorded voice clips instead of browser text-to-speech so
-the child-facing voice stays consistent and natural across devices.
+Audio pada flow pemeriksaan StuntSpecula menggunakan SFX pendek tanpa suara
+manusia dan tanpa browser text-to-speech.
 
-Place these files in this directory:
+File di folder ini dioptimalkan ke MP3 untuk penggunaan web dari source audio
+Mimo yang disediakan untuk proyek.
 
-- `welcome.mp3`
-- `prepare.mp3`
-- `height.mp3`
-- `weight.mp3`
-- `camera.mp3`
-- `analysis.mp3`
-- `result.mp3`
+Mapping:
 
-Recommended delivery: friendly Indonesian adult/young-adult voice, relaxed,
-clear, and conversational. Avoid exaggerated cartoon pitch or synthetic
-child-like voices.
+- `mimo-hello.mp3` → welcome
+- `mimo-ready.mp3` → persiapan
+- `mimo-height.mp3` → pengukuran tinggi
+- `mimo-weight.mp3` → pengukuran berat
+- `mimo-camera.mp3` → kamera
+- `mimo-processing.mp3` → proses analisis
+- `mimo-success.mp3` → hasil
+- `mimo-stage-done.mp3` → tahap selesai
+- `countdown-3.mp3`, `countdown-2.mp3`, `countdown-1.mp3` → hitung mundur
 
-Suggested lines:
-
-- welcome: "Halo! Aku Mimo. Yuk, berdiri bersamaku!"
-- prepare: "Lepas alas kaki, lalu naik ke alat. Aku tunggu di sini."
-- height: "Berdiri tegak seperti aku. Kaki rapat, lihat lurus ke depan."
-- weight: "Sekarang kita main patung-patungan. Diam sebentar, ya."
-- camera: "Lihat ke tengah. Mata terbuka, bibir rileks. Tetap diam sebentar."
-- analysis: "Terima kasih, kamu sudah hebat. Sekarang boleh santai."
-- result: "Tos dulu, kamu hebat!"
+Jika efek suara dimatikan dari tombol volume, seluruh cue Mimo dan countdown
+ikut dimatikan.

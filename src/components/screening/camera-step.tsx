@@ -1,24 +1,35 @@
 "use client";
 
+import { useEffect } from "react";
 import { Camera, Check, RotateCcw } from "lucide-react";
 import { useCamera } from "@/hooks/use-camera";
 import { useCountdown } from "@/hooks/use-countdown";
+import { playMimoCountdownCue } from "@/lib/mimo-audio";
 import type { Capture } from "@/lib/screening";
 
 type CameraStepProps = {
   paused: boolean;
   ageMonths: number;
+  soundEnabled?: boolean;
   onComplete: (capture: Capture) => void;
 };
 
 function CaptureCountdown({
   paused,
+  soundEnabled,
   onComplete,
 }: {
   paused: boolean;
+  soundEnabled: boolean;
   onComplete: () => void;
 }) {
   const remaining = useCountdown(6, paused, onComplete);
+
+  useEffect(() => {
+    if (!soundEnabled || paused) return;
+    playMimoCountdownCue(remaining);
+  }, [remaining, paused, soundEnabled]);
+
   return (
     <div
       className="capture-count"
@@ -30,7 +41,12 @@ function CaptureCountdown({
   );
 }
 
-export function CameraStep({ paused, ageMonths, onComplete }: CameraStepProps) {
+export function CameraStep({
+  paused,
+  ageMonths,
+  soundEnabled = false,
+  onComplete,
+}: CameraStepProps) {
   const { videoRef, status, attempt, capture, error, retry } = useCamera(
     onComplete,
     ageMonths,
@@ -55,6 +71,7 @@ export function CameraStep({ paused, ageMonths, onComplete }: CameraStepProps) {
           <CaptureCountdown
             key={attempt}
             paused={paused}
+            soundEnabled={soundEnabled}
             onComplete={capture}
           />
         )}

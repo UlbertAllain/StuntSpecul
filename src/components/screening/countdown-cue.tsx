@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Check, Pause } from "lucide-react";
-import { playCountdownTone } from "@/lib/sound-effects";
+import { playMimoCountdownCue } from "@/lib/mimo-audio";
 
 /** A visual cue for holding a pose, independent of sensor readings. */
 export function CountdownCue({
@@ -14,7 +14,7 @@ export function CountdownCue({
 }) {
   useEffect(() => {
     if (!soundEnabled || paused) return;
-    playCountdownTone(remaining);
+    playMimoCountdownCue(remaining);
   }, [remaining, paused, soundEnabled]);
 
   return (

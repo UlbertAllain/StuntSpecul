@@ -2,6 +2,7 @@
 import { Check, Ruler, Scale, Footprints } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useCountdown } from "@/hooks/use-countdown";
+import { playMimoStageDoneCue } from "@/lib/mimo-audio";
 import type { MeasurementPhase } from "@/lib/session";
 import { Mascot } from "./mascot";
 import { CountdownCue } from "./countdown-cue";
@@ -38,7 +39,17 @@ export function ExaminationStage({
   reading?: number | null;
   soundEnabled?: boolean;
 }) {
-  const remaining = useCountdown(7, paused, onComplete);
+  function finishStage() {
+    if (!soundEnabled) {
+      onComplete();
+      return;
+    }
+
+    playMimoStageDoneCue();
+    window.setTimeout(onComplete, 180);
+  }
+
+  const remaining = useCountdown(7, paused, finishStage);
   const finished = phase !== "prepare" && remaining <= 1;
   const progress = Math.min(100, ((7 - remaining) / 5) * 100);
   const item = instructions[phase];
