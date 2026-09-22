@@ -211,6 +211,8 @@ export const parentAccounts = sqliteTable(
     name: text("name").notNull(),
     email: text("email").notNull().unique(),
     passwordHash: text("password_hash").notNull(),
+    avatarUrl: text("avatar_url"),
+    avatarPublicId: text("avatar_public_id"),
     active: integer("active").notNull().default(1),
     createdAt: integer("created_at").notNull(),
   },

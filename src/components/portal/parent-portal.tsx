@@ -1,17 +1,17 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
-  type FormEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
-  Baby,
+  Camera,
   ChartNoAxesCombined,
   Home,
   LogOut,
@@ -23,22 +23,15 @@ import {
   X,
 } from "lucide-react";
 import { api, ClientError, errorMessage } from "@/lib/api-client";
-import type {
-  ChatMessage,
-  Examination,
-  ParentAccountSummary,
-  ParentAccountView,
-} from "@/lib/portal";
+import type { ChatMessage, Examination, ParentAccountView } from "@/lib/portal";
 import { formatAge, formatReading } from "@/lib/screening";
 import { ageInMonths } from "@/lib/portal";
 import { growthStatusLabel } from "@/lib/growth";
 import { Message, PortalShell } from "./shell";
-import { PasswordInput } from "./password-input";
-import { ResultSummary } from "./result-summary";
+import { uploadProfilePhoto } from "@/lib/cloudinary";
 import { ParentGrowthInsights } from "./parent-growth-insights";
 
 type Tab = "home" | "insights" | "history" | "profile";
-type AuthMode = "login" | "register";
 
 const QUESTIONS = [
   "Apa arti hasil pemeriksaan terakhir?",
@@ -76,12 +69,12 @@ function completed(exams: Examination[]) {
 }
 
 export function ParentPortal() {
+  const router = useRouter();
   const [view, setView] = useState<ParentAccountView | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("home");
-  const [mode, setMode] = useState<AuthMode>("login");
   const [selectedExamId, setSelectedExamId] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState("");
@@ -218,17 +211,18 @@ export function ParentPortal() {
         if (value.children[0]) setSelectedChildId(value.children[0].id);
       })
       .catch((e) => {
-        if (
-          !controller.signal.aborted &&
-          (!(e instanceof ClientError) || e.status !== 401)
-        )
-          setError(errorMessage(e));
+        if (controller.signal.aborted) return;
+        if (e instanceof ClientError && e.status === 401) {
+          router.replace("/login");
+          return;
+        }
+        setError(errorMessage(e));
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, []);
+  }, [router]);
 
   const completedExams = useMemo(
     () => completed(view?.examinations || []),
@@ -285,10 +279,11 @@ export function ParentPortal() {
   }
 
   async function logout() {
-    await api("/parent-account/logout", { method: "POST", body: {} });
-    setView(null);
-    setTab("home");
-    setMessages([]);
+    try {
+      await api("/parent-account/logout", { method: "POST", body: {} });
+    } finally {
+      router.replace("/login");
+    }
   }
 
   async function startExamination() {
@@ -416,23 +411,9 @@ export function ParentPortal() {
 
   if (!view)
     return (
-      <ParentAccountAuth
-        mode={mode}
-        error={error}
-        busy={busy}
-        onMode={setMode}
-        onBusy={setBusy}
-        onError={setError}
-        onSuccess={async (parent) => {
-          void parent;
-          const nextView = await api<ParentAccountView>("/parent-account/me");
-          setView(nextView);
-          if (nextView.children[0]) setSelectedChildId(nextView.children[0].id);
-          const latestExam = completed(nextView.examinations)[0];
-          if (latestExam) setSelectedExamId(latestExam.id);
-          setError("");
-        }}
-      />
+      <PortalShell tone="parent" heading="Mengalihkan ke login">
+        <Message>Sebentar…</Message>
+      </PortalShell>
     );
 
   return (
@@ -489,7 +470,6 @@ export function ParentPortal() {
             view={view}
             latest={latest}
             activeExam={activeExam}
-            onRefresh={refresh}
             onStart={() => setExamSheetOpen(true)}
           />
         )}
@@ -499,14 +479,8 @@ export function ParentPortal() {
             child={view.children[0] || null}
           />
         )}
-        {tab === "history" && (
-          <ParentHistory
-            examinations={completedExams}
-            selectedExamId={selectedExamId}
-            onSelect={setSelectedExamId}
-          />
-        )}
-        {tab === "profile" && <ParentProfile view={view} />}
+        {tab === "history" && <ParentHistory examinations={completedExams} />}
+        {tab === "profile" && <ParentProfile view={view} onRefresh={refresh} />}
       </div>
 
       <button
@@ -722,204 +696,43 @@ export function ParentPortal() {
   );
 }
 
-function ParentAccountAuth({
-  mode,
-  error,
-  busy,
-  onMode,
-  onBusy,
-  onError,
-  onSuccess,
-}: {
-  mode: AuthMode;
-  error: string;
-  busy: boolean;
-  onMode: (mode: AuthMode) => void;
-  onBusy: (busy: boolean) => void;
-  onError: (message: string) => void;
-  onSuccess: (parent: ParentAccountSummary) => Promise<void>;
-}) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [childName, setChildName] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [sex, setSex] = useState<"male" | "female" | "">("");
+function MiniGrowthChart({ examinations }: { examinations: Examination[] }) {
+  const values = completed(examinations)
+    .filter((exam) => exam.heightCm !== null)
+    .slice(0, 6)
+    .reverse();
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (busy) return;
-    onBusy(true);
-    onError("");
-    try {
-      const parent = await api<ParentAccountSummary>(
-        mode === "login" ? "/parent-account/login" : "/parent-account/register",
-        {
-          method: "POST",
-          body:
-            mode === "login"
-              ? { email, password }
-              : {
-                  name,
-                  email,
-                  password,
-                  child: { name: childName, birthDate, sex },
-                },
-        },
-      );
-      await onSuccess(parent);
-    } catch (e) {
-      onError(errorMessage(e));
-    } finally {
-      onBusy(false);
-    }
+  if (values.length < 2) {
+    return (
+      <div className="parent-mini-chart empty">
+        <span>Grafik akan muncul setelah ada beberapa pemeriksaan.</span>
+      </div>
+    );
   }
 
+  const heights = values.map((exam) => exam.heightCm as number);
+  const min = Math.min(...heights) - 2;
+  const max = Math.max(...heights) + 2;
+  const range = Math.max(1, max - min);
+  const points = values
+    .map((exam, index) => {
+      const x = values.length === 1 ? 50 : (index / (values.length - 1)) * 100;
+      const y = 88 - (((exam.heightCm as number) - min) / range) * 70;
+      return `${x},${y}`;
+    })
+    .join(" ");
+
   return (
-    <PortalShell
-      tone="parent"
-      heading="StuntSpecula untuk Orang Tua"
-      subtitle="Pantau pertumbuhan anak dan mulai pemeriksaan langsung dari akun orang tua saat berada di fasilitas."
-    >
-      <div className="parent-auth-layout">
-        <aside className="parent-auth-visual" aria-hidden="true">
-          <span className="parent-auth-bubble">
-            {mode === "login" ? "Hai, ketemu lagi! 👋" : "Yuk, mulai pantau!"}
-          </span>
-          <div className="parent-auth-mascot">
-            <Image
-              src="/images/mimo-cheer.png"
-              alt=""
-              width={800}
-              height={800}
-              className="h-full w-full object-contain"
-            />
-          </div>
-          <strong>
-            {mode === "login"
-              ? "Lihat bagaimana si kecil tumbuh dari waktu ke waktu."
-              : "Satu akun untuk melihat riwayat pertumbuhan si kecil."}
-          </strong>
-          <p>
-            Saat berada di fasilitas, orang tua dapat memulai pemeriksaan dari
-            HP lalu mendampingi si kecil mengikuti arahan Mimo di alat.
-          </p>
-        </aside>
-
-        <form
-          className="portal-card profile-form parent-auth-form"
-          onSubmit={submit}
-        >
-          <div className="section-heading">
-            <div>
-              <h2>{mode === "login" ? "Masuk" : "Buat akun orang tua"}</h2>
-              <p className="portal-note">
-                {mode === "login"
-                  ? "Gunakan akun yang terhubung dengan profil anak."
-                  : "Pendaftaran awal membuat satu profil anak. Pengukuran tidak dapat diubah dari akun orang tua."}
-              </p>
-            </div>
-          </div>
-
-          {mode === "register" && (
-            <>
-              <label>
-                Nama orang tua / wali
-                <input
-                  required
-                  minLength={2}
-                  maxLength={80}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </label>
-              <div className="portal-card parent-child-register !mb-2">
-                <h3>
-                  <Baby size={18} /> Profil anak
-                </h3>
-                <label>
-                  Nama anak
-                  <input
-                    required
-                    minLength={2}
-                    maxLength={80}
-                    value={childName}
-                    onChange={(e) => setChildName(e.target.value)}
-                  />
-                </label>
-                <label>
-                  Tanggal lahir
-                  <input
-                    required
-                    type="date"
-                    value={birthDate}
-                    onChange={(e) => setBirthDate(e.target.value)}
-                  />
-                </label>
-                <label>
-                  Jenis kelamin
-                  <select
-                    required
-                    value={sex}
-                    onChange={(e) =>
-                      setSex(e.target.value as "male" | "female" | "")
-                    }
-                  >
-                    <option value="">Pilih jenis kelamin</option>
-                    <option value="male">Laki-laki</option>
-                    <option value="female">Perempuan</option>
-                  </select>
-                </label>
-              </div>
-            </>
-          )}
-
-          <label>
-            Email
-            <input
-              required
-              type="email"
-              maxLength={160}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
-          </label>
-          <label>
-            Password
-            <PasswordInput
-              required
-              minLength={12}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={
-                mode === "login" ? "current-password" : "new-password"
-              }
-            />
-            {mode === "register" && <small>Minimal 12 karakter.</small>}
-          </label>
-          <button
-            className="portal-primary w-full"
-            disabled={busy || (mode === "register" && !sex)}
-          >
-            {busy ? "Memproses…" : mode === "login" ? "Masuk" : "Buat akun"}
-          </button>
-          <button
-            type="button"
-            className="portal-text justify-center"
-            onClick={() => {
-              onMode(mode === "login" ? "register" : "login");
-              onError("");
-            }}
-          >
-            {mode === "login"
-              ? "Belum punya akun? Buat akun"
-              : "Sudah punya akun? Masuk"}
-          </button>
-          {error && <Message error>{error}</Message>}
-        </form>
-      </div>
-    </PortalShell>
+    <div className="parent-mini-chart">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <polyline
+          points={points}
+          fill="none"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+      <span>Perkembangan tinggi badan</span>
+    </div>
   );
 }
 
@@ -927,84 +740,122 @@ function ParentHome({
   view,
   latest,
   activeExam,
-  onRefresh,
   onStart,
 }: {
   view: ParentAccountView;
   latest: Examination | null;
   activeExam: Examination | null;
-  onRefresh: () => Promise<void>;
   onStart: () => void;
 }) {
   const child = view.children[0];
+
   return (
     <>
-      <div className="parent-home-overview grid gap-4 md:grid-cols-3">
-        <article className="portal-card parent-child-summary !mb-0 md:col-span-2">
-          <p className="portal-note">Profil pertumbuhan</p>
-          <h2>{child?.name || "Anak"}</h2>
-          <p>
-            {latest
-              ? formatAge(latest.ageMonths)
-              : "Usia akan tampil setelah pemeriksaan"}
-            {child
-              ? ` · ${child.sex === "male" ? "Laki-laki" : "Perempuan"}`
-              : ""}
-          </p>
-        </article>
-        <article className="portal-card parent-count-summary !mb-0">
-          <p className="portal-note">Pemeriksaan tersimpan</p>
-          <strong className="mt-2 block text-3xl font-black">
-            {completed(view.examinations).length}
-          </strong>
-        </article>
-      </div>
+      <section className="mobile-dashboard-card parent-growth-card">
+        <div className="parent-dashboard-head">
+          <div>
+            <span>PROFIL PERTUMBUHAN</span>
+            <h2>{child?.name || "Anak"}</h2>
+            <p>
+              {child
+                ? formatAge(ageInMonths(child.birthDate))
+                : "Belum ada profil"}
+              {child
+                ? ` · ${child.sex === "male" ? "Laki-laki" : "Perempuan"}`
+                : ""}
+            </p>
+          </div>
+          <span className="parent-dashboard-avatar">
+            {child?.name.slice(0, 1).toUpperCase() || "A"}
+          </span>
+        </div>
+
+        <MiniGrowthChart examinations={view.examinations} />
+
+        <div className="parent-latest-metrics">
+          <article>
+            <span>Tinggi</span>
+            <strong>{formatReading(latest?.heightCm ?? null)}</strong>
+            <small>cm</small>
+          </article>
+          <article>
+            <span>Berat</span>
+            <strong>{formatReading(latest?.weightKg ?? null)}</strong>
+            <small>kg</small>
+          </article>
+          <article>
+            <span>TB/U</span>
+            <strong className="metric-status">
+              {latest ? growthStatusLabel(latest.growthStatus) : "Belum ada"}
+            </strong>
+          </article>
+        </div>
+      </section>
+
+      {activeExam && (
+        <button className="simple-session-banner" onClick={onStart}>
+          <div>
+            <strong>
+              {activeExam.status === "completed"
+                ? "Hasil sudah siap"
+                : "Pemeriksaan sedang aktif"}
+            </strong>
+            <span>
+              {activeExam.status === "completed"
+                ? "Selesaikan sesi agar alat siap digunakan kembali."
+                : "Buka status sesi pemeriksaan anak."}
+            </span>
+          </div>
+          <Play size={19} />
+        </button>
+      )}
+
+      <section className="mobile-dashboard-card parent-info-card">
+        <div className="simple-card-title">
+          <TrendingUp size={19} />
+          <div>
+            <h3>Ringkasan terbaru</h3>
+            <p>
+              {latest
+                ? "Pemeriksaan " +
+                  new Date(
+                    latest.completedAt || latest.createdAt,
+                  ).toLocaleDateString("id-ID")
+                : "Belum ada pemeriksaan tersimpan."}
+            </p>
+          </div>
+        </div>
+        {latest && (
+          <div className="parent-summary-lines">
+            <div>
+              <span>Status pertumbuhan</span>
+              <strong>{growthStatusLabel(latest.growthStatus)}</strong>
+            </div>
+            <div>
+              <span>Analisis wajah</span>
+              <strong>
+                {latest.facialStatus
+                  ? latest.facialStatus === "stunting_indication"
+                    ? "Indikasi pendukung"
+                    : latest.facialStatus === "non_stunting_indication"
+                      ? "Tidak terindikasi"
+                      : "Foto perlu diulang"
+                  : "Belum tersedia"}
+              </strong>
+            </div>
+          </div>
+        )}
+      </section>
 
       <button className="parent-home-start" onClick={onStart}>
         <span>
           <Play size={22} />
         </span>
         <div>
-          <strong>
-            {activeExam?.status === "completed"
-              ? "Selesaikan pemeriksaan"
-              : activeExam
-                ? "Lihat sesi aktif"
-                : "Mulai pemeriksaan"}
-          </strong>
-          <small>
-            {activeExam
-              ? "Kelola sesi anak yang sedang menggunakan alat."
-              : "Mulai langsung dari HP orang tua."}
-          </small>
+          <strong>Mulai pemeriksaan</strong>
+          <small>Mulai sesi dari HP orang tua.</small>
         </div>
       </button>
-
-      {latest ? (
-        <section className="mt-6">
-          <div className="section-heading">
-            <div>
-              <h2>Hasil terbaru</h2>
-              <p className="portal-note">
-                Hasil masuk otomatis setelah pemeriksaan di fasilitas selesai.
-              </p>
-            </div>
-            <button className="portal-text" onClick={() => void onRefresh()}>
-              Perbarui
-            </button>
-          </div>
-          <ResultSummary result={latest} />
-        </section>
-      ) : (
-        <div className="portal-empty mt-6">
-          <ChartNoAxesCombined />
-          <h3>Belum ada hasil pemeriksaan</h3>
-          <p>
-            Setelah anak diperiksa menggunakan alat StuntSpecula, hasil akan
-            muncul otomatis di akun ini.
-          </p>
-        </div>
-      )}
     </>
   );
 }
@@ -1033,63 +884,62 @@ function ParentInsights({
   );
 }
 
-function ParentHistory({
-  examinations,
-  selectedExamId,
-  onSelect,
-}: {
-  examinations: Examination[];
-  selectedExamId: string;
-  onSelect: (id: string) => void;
-}) {
-  const selected =
-    examinations.find((e) => e.id === selectedExamId) || examinations[0];
+function ParentHistory({ examinations }: { examinations: Examination[] }) {
   return (
     <>
-      <div className="section-heading">
+      <div className="section-heading compact-section-heading">
         <div>
           <h2>Riwayat pertumbuhan</h2>
           <p className="portal-note">
-            Bandingkan hasil antar pemeriksaan untuk melihat perubahan dari
-            waktu ke waktu.
+            Semua hasil penting langsung terlihat tanpa membuka detail lagi.
           </p>
         </div>
       </div>
       {examinations.length === 0 ? (
         <div className="portal-empty">
           <h3>Belum ada riwayat</h3>
-          <p>Riwayat akan terisi otomatis dari pemeriksaan di fasilitas.</p>
+          <p>Riwayat akan terisi otomatis setelah pemeriksaan selesai.</p>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-          <div className="examination-list">
-            {examinations.map((exam) => (
-              <button
-                key={exam.id}
-                className="examination-row text-left"
-                aria-current={selected?.id === exam.id ? "true" : undefined}
-                onClick={() => onSelect(exam.id)}
-              >
-                <span>
-                  <strong>
-                    {new Date(
-                      exam.completedAt || exam.createdAt,
-                    ).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </strong>
-                  <small>{growthStatusLabel(exam.growthStatus)}</small>
-                </span>
-                <span className="row-readings">
-                  {formatReading(exam.heightCm)} cm /{" "}
-                  {formatReading(exam.weightKg)} kg
-                </span>
-              </button>
-            ))}
-          </div>
-          <div>{selected && <ResultSummary result={selected} />}</div>
+        <div className="parent-flat-history">
+          {examinations.map((exam) => (
+            <article key={exam.id} className="parent-flat-history-card">
+              <div>
+                <strong>
+                  {new Date(
+                    exam.completedAt || exam.createdAt,
+                  ).toLocaleDateString("id-ID", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </strong>
+                <span>{growthStatusLabel(exam.growthStatus)}</span>
+              </div>
+              <dl>
+                <div>
+                  <dt>Tinggi</dt>
+                  <dd>{formatReading(exam.heightCm)} cm</dd>
+                </div>
+                <div>
+                  <dt>Berat</dt>
+                  <dd>{formatReading(exam.weightKg)} kg</dd>
+                </div>
+                <div>
+                  <dt>Model A</dt>
+                  <dd>
+                    {exam.facialStatus === "stunting_indication"
+                      ? "Indikasi"
+                      : exam.facialStatus === "non_stunting_indication"
+                        ? "Tidak terindikasi"
+                        : exam.facialStatus === "rejected"
+                          ? "Ulang foto"
+                          : "Belum tersedia"}
+                  </dd>
+                </div>
+              </dl>
+            </article>
+          ))}
         </div>
       )}
     </>
@@ -1231,55 +1081,102 @@ function ParentAssistant({
   );
 }
 
-function ParentProfile({ view }: { view: ParentAccountView }) {
+function ParentProfile({
+  view,
+  onRefresh,
+}: {
+  view: ParentAccountView;
+  onRefresh: () => Promise<void>;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const child = view.children[0];
+
+  async function uploadAvatar(file: File | undefined) {
+    if (!file || uploading) return;
+    setUploading(true);
+    setProfileError("");
+    try {
+      const uploaded = await uploadProfilePhoto(file);
+      await api("/parent-account/profile", {
+        method: "PATCH",
+        body: {
+          avatarUrl: uploaded.secureUrl,
+          avatarPublicId: uploaded.publicId,
+        },
+      });
+      await onRefresh();
+    } catch (cause) {
+      setProfileError(errorMessage(cause));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <>
-      <section className="portal-card">
-        <h2>Profil orang tua</h2>
-        <dl className="portal-details">
-          <div>
-            <dt>Nama</dt>
-            <dd>{view.parent.name}</dd>
-          </div>
-          <div>
-            <dt>Email</dt>
-            <dd>{view.parent.email}</dd>
-          </div>
-          <div>
-            <dt>Akses</dt>
-            <dd>Monitoring hasil pertumbuhan</dd>
-          </div>
-        </dl>
+      <section className="parent-profile-hero">
+        <label className="parent-profile-photo">
+          {view.parent.avatarUrl ? (
+            <Image
+              src={view.parent.avatarUrl}
+              alt={view.parent.name}
+              width={184}
+              height={184}
+              unoptimized
+            />
+          ) : (
+            <span>{view.parent.name.slice(0, 1).toUpperCase()}</span>
+          )}
+          <i>
+            <Camera size={16} />
+          </i>
+          <input
+            type="file"
+            accept="image/*"
+            disabled={uploading}
+            onChange={(event) => void uploadAvatar(event.target.files?.[0])}
+          />
+        </label>
+        <h2>{view.parent.name}</h2>
+        <p>{view.parent.email}</p>
+        <small>
+          {uploading ? "Mengunggah foto…" : "Tekan foto untuk mengganti profil"}
+        </small>
       </section>
-      {view.children.map((child) => (
-        <section className="portal-card" key={child.id}>
-          <h3>
-            <Baby size={18} /> {child.name}
-          </h3>
-          <dl className="portal-details">
+      {profileError && <Message error>{profileError}</Message>}
+      <section className="profile-menu-card">
+        <div>
+          <span>Profil anak</span>
+          <strong>{child?.name || "Belum ada profil"}</strong>
+        </div>
+        {child && (
+          <>
             <div>
-              <dt>Kode anak</dt>
-              <dd>{child.code}</dd>
-            </div>
-            <div>
-              <dt>Tanggal lahir</dt>
-              <dd>
+              <span>Tanggal lahir</span>
+              <strong>
                 {new Date(`${child.birthDate}T00:00:00Z`).toLocaleDateString(
                   "id-ID",
                 )}
-              </dd>
+              </strong>
             </div>
             <div>
-              <dt>Jenis kelamin</dt>
-              <dd>{child.sex === "male" ? "Laki-laki" : "Perempuan"}</dd>
+              <span>Jenis kelamin</span>
+              <strong>
+                {child.sex === "male" ? "Laki-laki" : "Perempuan"}
+              </strong>
             </div>
-          </dl>
-          <p className="portal-note">
-            Data hasil pengukuran tidak dapat diubah dari akun orang tua. Bila
-            profil anak perlu dikoreksi, hubungi petugas fasilitas.
-          </p>
-        </section>
-      ))}
+            <div>
+              <span>Kode anak</span>
+              <strong>{child.code}</strong>
+            </div>
+          </>
+        )}
+      </section>
+      <p className="portal-note profile-note">
+        Foto profil disimpan melalui Cloudinary. Data pemeriksaan tidak dapat
+        diubah dari halaman profil.
+      </p>
     </>
   );
 }

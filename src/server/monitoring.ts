@@ -83,7 +83,7 @@ export async function monitoringOverview(request: Request, env: Env) {
 }
 
 export async function deviceMonitoring(request: Request, env: Env) {
-  await requireStaff(request, env);
+  await requireStaff(request, env, true);
   const now = Date.now();
   const stored = await env.DB.prepare(
     "SELECT id,name,active,last_seen AS lastSeen,created_at AS createdAt FROM devices WHERE id=?",
@@ -156,9 +156,7 @@ type InsightExam = {
 };
 
 export async function adminInsights(request: Request, env: Env) {
-  const actor = await requireStaff(request, env);
-  if (actor.role !== "admin")
-    throw new ApiError(403, "Insight hanya tersedia untuk pengelola.");
+  await requireStaff(request, env);
 
   const now = Date.now();
   const currentStart = now - 30 * DAY;

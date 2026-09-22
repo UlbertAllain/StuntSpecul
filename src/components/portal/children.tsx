@@ -1,115 +1,113 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { History, Search, UserRound } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, UserRound } from "lucide-react";
 import type { ChildProfile } from "@/lib/portal";
 import { ageInMonths } from "@/lib/portal";
 import { api, errorMessage } from "@/lib/api-client";
 import { formatAge } from "@/lib/screening";
-import { ExaminationHistory } from "./history";
 import { Message } from "./shell";
 
 export function ChildrenPanel() {
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [search, setSearch] = useState("");
-  const [query, setQuery] = useState("");
-  const [history, setHistory] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
-    api<ChildProfile[]>(`/children?q=${encodeURIComponent(query)}`, {
-      signal: controller.signal,
-    })
+    api<ChildProfile[]>("/children", { signal: controller.signal })
       .then(setChildren)
-      .catch((e) => {
-        if (!controller.signal.aborted) setError(errorMessage(e));
+      .catch((cause) => {
+        if (!controller.signal.aborted) setError(errorMessage(cause));
       });
     return () => controller.abort();
-  }, [query]);
+  }, []);
 
-  if (history)
-    return (
-      <ExaminationHistory childId={history} onBack={() => setHistory("")} />
+  const visible = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return children;
+    return children.filter(
+      (child) =>
+        child.name.toLowerCase().includes(query) ||
+        child.code.toLowerCase().includes(query) ||
+        child.guardian.toLowerCase().includes(query),
     );
+  }, [children, search]);
 
   return (
     <>
-      <div className="section-heading">
+      <div className="section-heading compact-section-heading">
         <div>
           <h2>Data anak</h2>
           <p className="portal-note">
-            Petugas dapat melihat profil dan riwayat anak. Pemeriksaan baru
-            sekarang dimulai dari akun orang tua di HP.
+            Informasi penting ditampilkan langsung tanpa membuka halaman detail.
           </p>
         </div>
       </div>
 
       {error && <Message error>{error}</Message>}
 
-      <form
-        className="search-form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setQuery(search);
-        }}
-      >
-        <Search size={20} />
+      <label className="simple-search">
+        <Search size={18} />
         <input
-          aria-label="Cari anak"
-          placeholder="Cari nama atau kode anak…"
+          aria-label="Cari data anak"
+          placeholder="Cari nama, kode, atau orang tua…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          maxLength={80}
+          onChange={(event) => setSearch(event.target.value)}
         />
-        <button className="portal-secondary">Cari</button>
-      </form>
+      </label>
 
-      {children.length === 0 ? (
+      {visible.length === 0 ? (
         <div className="portal-empty">
           <UserRound />
-          <h3>{query ? "Data anak tidak ditemukan" : "Belum ada data anak"}</h3>
-          <p>
-            Profil anak akan muncul setelah terdaftar pada sistem StuntSpecula.
-          </p>
+          <h3>Data anak tidak ditemukan</h3>
+          <p>Ubah kata pencarian atau tunggu data anak terdaftar.</p>
         </div>
       ) : (
-        <div className="child-list">
-          {children.map((child) => {
+        <div className="flat-child-list">
+          {visible.map((child) => {
             const months = ageInMonths(child.birthDate);
             const eligible = months >= 24 && months <= 59;
             return (
-              <article className="child-row" key={child.id}>
-                <span className="child-avatar">
-                  {child.name.slice(0, 1).toUpperCase()}
-                </span>
-                <div>
-                  <h3>{child.name}</h3>
-                  <p>
-                    {child.code} · {formatAge(months)}
-                  </p>
-                  <small>
-                    {child.sex === "male" ? "Laki-laki" : "Perempuan"}
-                    {child.guardian
-                      ? ` · Orang tua/wali: ${child.guardian}`
-                      : ""}
-                  </small>
-                  {!eligible && (
-                    <small className="field-error">
-                      Alat standing height saat ini digunakan untuk usia 24–59
-                      bulan.
-                    </small>
-                  )}
-                </div>
-                <div className="portal-actions">
-                  <button
-                    className="portal-secondary"
-                    onClick={() => setHistory(child.id)}
+              <article className="flat-child-card" key={child.id}>
+                <div className="flat-child-head">
+                  <span className="flat-child-avatar">
+                    {child.name.slice(0, 1).toUpperCase()}
+                  </span>
+                  <div>
+                    <h3>{child.name}</h3>
+                    <p>{child.code}</p>
+                  </div>
+                  <span
+                    className={
+                      eligible ? "simple-badge success" : "simple-badge muted"
+                    }
                   >
-                    <History size={18} />
-                    Riwayat
-                  </button>
+                    {eligible ? "Siap diperiksa" : "Di luar usia alat"}
+                  </span>
                 </div>
+                <dl className="flat-details-grid">
+                  <div>
+                    <dt>Usia</dt>
+                    <dd>{formatAge(months)}</dd>
+                  </div>
+                  <div>
+                    <dt>Jenis kelamin</dt>
+                    <dd>{child.sex === "male" ? "Laki-laki" : "Perempuan"}</dd>
+                  </div>
+                  <div>
+                    <dt>Orang tua / wali</dt>
+                    <dd>{child.guardian}</dd>
+                  </div>
+                  <div>
+                    <dt>Tanggal lahir</dt>
+                    <dd>
+                      {new Date(
+                        `${child.birthDate}T00:00:00Z`,
+                      ).toLocaleDateString("id-ID")}
+                    </dd>
+                  </div>
+                </dl>
               </article>
             );
           })}

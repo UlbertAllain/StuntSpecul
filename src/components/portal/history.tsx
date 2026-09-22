@@ -1,58 +1,49 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import type { Examination } from "@/lib/portal";
 import { api, errorMessage } from "@/lib/api-client";
-import { formatReading } from "@/lib/screening";
+import { facialAnalysisLabel, formatReading } from "@/lib/screening";
+import { growthStatusLabel } from "@/lib/growth";
 import { Message } from "./shell";
-import { ResultSummary } from "./result-summary";
 
 const STATUS = {
-  queued: "Menunggu mulai",
-  running: "Sedang diperiksa",
+  queued: "Menunggu",
+  running: "Berjalan",
   completed: "Selesai",
   cancelled: "Dibatalkan",
 };
 
-export function ExaminationHistory({
-  childId = "",
-  onBack,
-}: {
-  childId?: string;
-  onBack?: () => void;
-}) {
+export function ExaminationHistory({ childId = "" }: { childId?: string }) {
   const [items, setItems] = useState<Examination[]>([]);
   const [page, setPage] = useState(0);
-  const [selected, setSelected] = useState<Examination | null>(null);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
-
     async function load() {
       try {
         const result = await api<Examination[]>(
-          `/examinations?childId=${childId}&page=${page}`,
+          `/examinations?childId=${encodeURIComponent(childId)}&page=${page}`,
           { signal: controller.signal },
         );
         if (controller.signal.aborted) return;
         setItems(result);
-        setSelected((current) =>
-          current
-            ? result.find((item) => item.id === current.id) || current
-            : null,
-        );
         setError("");
-        if (result.some((r) => r.status === "queued" || r.status === "running"))
+        if (
+          result.some(
+            (item) => item.status === "queued" || item.status === "running",
+          )
+        ) {
           timer = setTimeout(load, 5000);
-      } catch (e) {
-        if (!controller.signal.aborted) setError(errorMessage(e));
+        }
+      } catch (cause) {
+        if (!controller.signal.aborted) setError(errorMessage(cause));
       }
     }
-
     void load();
     return () => {
       controller.abort();
@@ -60,54 +51,22 @@ export function ExaminationHistory({
     };
   }, [childId, page, revision]);
 
-  if (selected)
-    return (
-      <div className="history-detail">
-        <button className="portal-text" onClick={() => setSelected(null)}>
-          <ArrowLeft size={18} />
-          Kembali ke riwayat
-        </button>
-        <ResultSummary result={selected} />
-        <div className="portal-card">
-          <h3>Status pemeriksaan</h3>
-          <p>
-            <span className={`status-label status-${selected.status}`}>
-              {STATUS[selected.status]}
-            </span>
-          </p>
-          <p className="portal-note">
-            Data di halaman petugas bersifat monitoring. Hasil dan chatbot orang
-            tua tetap terikat pada sesi pemeriksaan masing-masing.
-          </p>
-        </div>
-        {error && <Message error>{error}</Message>}
-      </div>
-    );
-
   return (
     <>
-      <div className="section-heading">
+      <div className="section-heading compact-section-heading">
         <div>
-          <h2>{childId ? "Riwayat anak" : "Riwayat pemeriksaan"}</h2>
+          <h2>Riwayat pemeriksaan</h2>
           <p className="portal-note">
-            Seluruh pemeriksaan tampil otomatis dari flow orang tua dan mirror.
+            Hasil utama langsung terlihat di daftar, tanpa masuk ke halaman
+            lain.
           </p>
         </div>
-        <div className="portal-actions">
-          {onBack && (
-            <button className="portal-text" onClick={onBack}>
-              <ArrowLeft size={17} />
-              Data anak
-            </button>
-          )}
-          <button
-            className="portal-text"
-            onClick={() => setRevision((v) => v + 1)}
-          >
-            <RefreshCw size={17} />
-            Perbarui
-          </button>
-        </div>
+        <button
+          className="portal-text"
+          onClick={() => setRevision((value) => value + 1)}
+        >
+          <RefreshCw size={17} /> Perbarui
+        </button>
       </div>
 
       {error && <Message error>{error}</Message>}
@@ -115,35 +74,49 @@ export function ExaminationHistory({
       {items.length === 0 ? (
         <div className="portal-empty">
           <h3>Belum ada pemeriksaan</h3>
-          <p>Riwayat akan muncul setelah orang tua memulai screening.</p>
+          <p>Riwayat akan muncul setelah pemeriksaan dilakukan.</p>
         </div>
       ) : (
-        <div className="examination-list">
+        <div className="flat-history-list">
           {items.map((item) => (
-            <button
-              key={item.id}
-              className="examination-row"
-              onClick={() => setSelected(item)}
-            >
-              <span>
-                <strong>{item.childName}</strong>
-                <small>
-                  {item.childCode} ·{" "}
-                  {new Date(item.createdAt).toLocaleString("id-ID", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
-                </small>
-              </span>
-              <span className={`status-label status-${item.status}`}>
-                {STATUS[item.status]}
-              </span>
-              <span className="row-readings">
-                {formatReading(item.heightCm)} cm /{" "}
-                {formatReading(item.weightKg)} kg
-              </span>
-              <ArrowRight size={18} />
-            </button>
+            <article className="flat-history-card" key={item.id}>
+              <div className="flat-history-head">
+                <div>
+                  <h3>{item.childName}</h3>
+                  <p>
+                    {new Date(item.createdAt).toLocaleString("id-ID", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </p>
+                </div>
+                <span className={`simple-badge status-${item.status}`}>
+                  {STATUS[item.status]}
+                </span>
+              </div>
+              <div className="history-metrics">
+                <div>
+                  <span>Tinggi</span>
+                  <strong>{formatReading(item.heightCm)} cm</strong>
+                </div>
+                <div>
+                  <span>Berat</span>
+                  <strong>{formatReading(item.weightKg)} kg</strong>
+                </div>
+                <div>
+                  <span>TB/U WHO</span>
+                  <strong>{growthStatusLabel(item.growthStatus)}</strong>
+                </div>
+              </div>
+              <div className="history-support-row">
+                <span>Model A V2.1</span>
+                <strong>
+                  {item.facialStatus
+                    ? facialAnalysisLabel(item.facialStatus)
+                    : "Belum tersedia"}
+                </strong>
+              </div>
+            </article>
           ))}
         </div>
       )}
@@ -152,7 +125,7 @@ export function ExaminationHistory({
         <button
           disabled={page === 0}
           className="portal-secondary"
-          onClick={() => setPage((p) => p - 1)}
+          onClick={() => setPage((value) => value - 1)}
         >
           Sebelumnya
         </button>
@@ -160,7 +133,7 @@ export function ExaminationHistory({
         <button
           disabled={items.length < 50}
           className="portal-secondary"
-          onClick={() => setPage((p) => p + 1)}
+          onClick={() => setPage((value) => value + 1)}
         >
           Berikutnya
         </button>

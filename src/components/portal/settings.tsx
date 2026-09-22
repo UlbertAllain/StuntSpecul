@@ -46,8 +46,8 @@ export function SettingsPanel({ user }: { user: Staff }) {
         <div>
           <h2>Kelola petugas</h2>
           <p className="portal-note">
-            Petugas dapat memantau data anak dan riwayat pemeriksaan. Pengelola
-            dapat mengatur akun petugas.
+            Menu ini khusus admin untuk menambah, mengaktifkan, atau
+            menonaktifkan akun petugas.
           </p>
         </div>
       </div>
@@ -93,7 +93,7 @@ export function SettingsPanel({ user }: { user: Staff }) {
             <label>
               Akses
               <select name="role" defaultValue="staff">
-                <option value="staff">Petugas monitoring</option>
+                <option value="staff">Petugas</option>
                 <option value="admin">Pengelola</option>
               </select>
             </label>
@@ -112,9 +112,8 @@ export function SettingsPanel({ user }: { user: Staff }) {
                 {person.name} {person.id === user.id && "(Anda)"}
               </strong>
               <small>
-                {person.email} ·{" "}
-                {person.role === "admin" ? "Pengelola" : "Petugas monitoring"} ·{" "}
-                {person.active ? "Aktif" : "Nonaktif"}
+                {person.email} · {person.role === "admin" ? "Admin" : "Petugas"}{" "}
+                · {person.active ? "Aktif" : "Nonaktif"}
               </small>
             </div>
             {person.id !== user.id && (

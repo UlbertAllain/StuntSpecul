@@ -25,6 +25,7 @@ type ParentAccount = {
   id: string;
   name: string;
   email: string;
+  avatarUrl: string | null;
   active: number;
 };
 
@@ -62,15 +63,24 @@ async function createParentSession(
       now,
     )
     .run();
-  return ok({ id: parent.id, name: parent.name, email: parent.email }, 200, {
-    "Set-Cookie": sessionCookie(
-      request,
-      PARENT_ACCOUNT_COOKIE,
-      raw,
-      PARENT_ACCOUNT_SECONDS,
-      env,
-    ),
-  });
+  return ok(
+    {
+      id: parent.id,
+      name: parent.name,
+      email: parent.email,
+      avatarUrl: parent.avatarUrl ?? null,
+    },
+    200,
+    {
+      "Set-Cookie": sessionCookie(
+        request,
+        PARENT_ACCOUNT_COOKIE,
+        raw,
+        PARENT_ACCOUNT_SECONDS,
+        env,
+      ),
+    },
+  );
 }
 
 export async function requireParentAccount(
@@ -86,7 +96,7 @@ export async function requireParentAccount(
     );
   const hash = await digest(raw);
   const parent = await env.DB.prepare(
-    "SELECT p.id,p.name,p.email,p.active,s.token_hash AS sessionHash FROM parent_accounts p JOIN parent_account_sessions s ON s.parent_id=p.id WHERE s.token_hash=? AND s.expires_at>? AND p.active=1",
+    "SELECT p.id,p.name,p.email,p.avatar_url AS avatarUrl,p.active,s.token_hash AS sessionHash FROM parent_accounts p JOIN parent_account_sessions s ON s.parent_id=p.id WHERE s.token_hash=? AND s.expires_at>? AND p.active=1",
   )
     .bind(hash, Date.now())
     .first<ParentSession>();
@@ -166,6 +176,7 @@ export async function registerParent(request: Request, env: Env) {
     id: parentId,
     name: input.name,
     email: input.email,
+    avatarUrl: null,
     active: 1,
   });
 }
@@ -177,7 +188,7 @@ export async function loginParent(request: Request, env: Env) {
     z.object({ email: emailSchema, password: passwordSchema }),
   );
   const parent = await env.DB.prepare(
-    "SELECT id,name,email,active,password_hash AS passwordHash FROM parent_accounts WHERE email=?",
+    "SELECT id,name,email,avatar_url AS avatarUrl,active,password_hash AS passwordHash FROM parent_accounts WHERE email=?",
   )
     .bind(input.email)
     .first<ParentAccount & { passwordHash: string }>();
@@ -216,10 +227,50 @@ export async function parentAccountView(request: Request, env: Env) {
   const exams = await listParentExaminations(env, parent.id);
 
   return ok({
-    parent: { id: parent.id, name: parent.name, email: parent.email },
+    parent: {
+      id: parent.id,
+      name: parent.name,
+      email: parent.email,
+      avatarUrl: parent.avatarUrl ?? null,
+    },
     children,
     examinations: exams,
     aiAvailable: !!env.GEMINI_API_KEY && !!env.GEMINI_MODEL,
+  });
+}
+
+export async function updateParentProfile(request: Request, env: Env) {
+  const parent = await requireParentAccount(request, env);
+  const input = await body(
+    request,
+    z
+      .object({
+        avatarUrl: z.string().url().max(1200).nullable(),
+        avatarPublicId: z.string().trim().min(1).max(255).nullable(),
+      })
+      .strict(),
+  );
+
+  if (
+    input.avatarUrl &&
+    !/^https:\/\/res\.cloudinary\.com\//i.test(input.avatarUrl)
+  ) {
+    throw new ApiError(
+      422,
+      "Foto profil harus berasal dari Cloudinary.",
+      "invalid_profile_image",
+    );
+  }
+
+  await env.DB.prepare(
+    "UPDATE parent_accounts SET avatar_url=?,avatar_public_id=? WHERE id=?",
+  )
+    .bind(input.avatarUrl, input.avatarPublicId, parent.id)
+    .run();
+
+  return ok({
+    avatarUrl: input.avatarUrl,
+    avatarPublicId: input.avatarPublicId,
   });
 }
 

@@ -8,6 +8,7 @@ import * as guest from "./guest-screening";
 import * as monitoring from "./monitoring";
 import * as parentAccount from "./parent-account";
 import * as station from "./station";
+import * as unifiedAuth from "./unified-auth";
 import { health } from "./health";
 import { chat } from "./ai";
 import { idSchema } from "./security";
@@ -26,6 +27,8 @@ export async function route(request: Request, env: Env): Promise<Response> {
       return auth.setup(request, env);
     case "POST /api/auth/login":
       return auth.login(request, env);
+    case "POST /api/auth/unified-login":
+      return unifiedAuth.unifiedLogin(request, env);
     case "POST /api/auth/logout":
       return auth.logout(request, env);
     case "GET /api/auth/me":
@@ -67,6 +70,8 @@ export async function route(request: Request, env: Env): Promise<Response> {
       return parentAccount.logoutParent(request, env);
     case "GET /api/parent-account/me":
       return parentAccount.parentAccountView(request, env);
+    case "PATCH /api/parent-account/profile":
+      return parentAccount.updateParentProfile(request, env);
     case "GET /api/parent-account/messages":
       return parentAccount.parentAccountMessages(request, env);
     case "POST /api/parent-account/chat":
