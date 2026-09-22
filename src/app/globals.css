@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "../components/screening/screening.css";
-@import "../components/portal/portal.css";
 
 :root {
   /* Brand palette supplied by the project owner. */

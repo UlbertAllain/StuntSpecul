@@ -91,11 +91,9 @@ export function sessionCookie(
 }
 export function failure(error: unknown) {
   const known = error instanceof ApiError;
-  if (!known)
-    console.error(
-      "API request failed",
-      error instanceof Error ? error.name : "UnknownError",
-    );
+  if (!known) {
+    console.error("API request failed:", error);
+  }
   return new Response(
     JSON.stringify({
       success: false,

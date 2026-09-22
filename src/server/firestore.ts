@@ -160,10 +160,12 @@ export class FirestoreRest {
     this.config = config;
   }
 
+  private documentRoot() {
+    return `projects/${this.config.projectId}/databases/(default)/documents`;
+  }
+
   private root() {
-    return `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(
-      this.config.projectId,
-    )}/databases/(default)/documents`;
+    return `https://firestore.googleapis.com/v1/${this.documentRoot()}`;
   }
 
   private async token() {
@@ -353,14 +355,14 @@ export class FirestoreRest {
 
         if (write.delete) {
           return {
-            delete: `${this.root()}/${encodePath(write.path)}`,
+            delete: `${this.documentRoot()}/${encodePath(write.path)}`,
             ...(currentDocument ? { currentDocument } : {}),
           };
         }
 
         return {
           update: {
-            name: `${this.root()}/${encodePath(write.path)}`,
+            name: `${this.documentRoot()}/${encodePath(write.path)}`,
             fields: encodeFields(write.data || {}),
           },
           ...(write.mergeFields?.length
