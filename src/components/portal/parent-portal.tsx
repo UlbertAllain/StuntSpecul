@@ -18,7 +18,6 @@ import {
   MessageCircle,
   Play,
   Send,
-  Sparkles,
   TrendingUp,
   UserRound,
   X,
@@ -47,7 +46,7 @@ const QUESTIONS = [
   "Kapan saya perlu berkonsultasi ke tenaga kesehatan?",
 ];
 
-const ASSISTANT_FAB_POSITION_KEY = "stuntspecula:assistant-fab-position";
+const ASSISTANT_FAB_POSITION_KEY = "stuntspecula:assistant-fab-position-v2";
 const ASSISTANT_FAB_MARGIN = 8;
 
 type AssistantFabPosition = {
@@ -64,6 +63,8 @@ type AssistantFabDrag = {
   width: number;
   height: number;
   moved: boolean;
+  bodyOverflow: string;
+  bodyTouchAction: string;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -132,6 +133,79 @@ export function ParentPortal() {
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    function handlePointerMove(event: PointerEvent) {
+      const drag = assistantFabDragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+
+      event.preventDefault();
+      const deltaX = event.clientX - drag.startX;
+      const deltaY = event.clientY - drag.startY;
+
+      if (Math.hypot(deltaX, deltaY) > 4) drag.moved = true;
+
+      setAssistantFabPosition({
+        left: clamp(
+          drag.left + deltaX,
+          ASSISTANT_FAB_MARGIN,
+          window.innerWidth - drag.width - ASSISTANT_FAB_MARGIN,
+        ),
+        top: clamp(
+          drag.top + deltaY,
+          ASSISTANT_FAB_MARGIN,
+          window.innerHeight - drag.height - ASSISTANT_FAB_MARGIN,
+        ),
+      });
+    }
+
+    function finishDrag(event: PointerEvent) {
+      const drag = assistantFabDragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+
+      event.preventDefault();
+      assistantFabDragRef.current = null;
+      document.body.style.overflow = drag.bodyOverflow;
+      document.body.style.touchAction = drag.bodyTouchAction;
+
+      if (!drag.moved) return;
+
+      suppressAssistantClickRef.current = true;
+      setAssistantFabPosition((position) => {
+        if (position) {
+          try {
+            sessionStorage.setItem(
+              ASSISTANT_FAB_POSITION_KEY,
+              JSON.stringify(position),
+            );
+          } catch {}
+        }
+        return position;
+      });
+
+      window.setTimeout(() => {
+        suppressAssistantClickRef.current = false;
+      }, 250);
+    }
+
+    window.addEventListener("pointermove", handlePointerMove, {
+      passive: false,
+    });
+    window.addEventListener("pointerup", finishDrag, { passive: false });
+    window.addEventListener("pointercancel", finishDrag, { passive: false });
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", finishDrag);
+      window.removeEventListener("pointercancel", finishDrag);
+
+      const drag = assistantFabDragRef.current;
+      if (drag) {
+        document.body.style.overflow = drag.bodyOverflow;
+        document.body.style.touchAction = drag.bodyTouchAction;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -297,9 +371,12 @@ export function ParentPortal() {
   }
 
   function beginAssistantDrag(event: ReactPointerEvent<HTMLButtonElement>) {
-    if (event.button !== 0) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
 
+    event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
+
+    suppressAssistantClickRef.current = false;
     assistantFabDragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -309,59 +386,12 @@ export function ParentPortal() {
       width: rect.width,
       height: rect.height,
       moved: false,
+      bodyOverflow: document.body.style.overflow,
+      bodyTouchAction: document.body.style.touchAction,
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
 
-  function moveAssistantFab(event: ReactPointerEvent<HTMLButtonElement>) {
-    const drag = assistantFabDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-
-    const deltaX = event.clientX - drag.startX;
-    const deltaY = event.clientY - drag.startY;
-    if (Math.hypot(deltaX, deltaY) > 4) drag.moved = true;
-
-    setAssistantFabPosition({
-      left: clamp(
-        drag.left + deltaX,
-        ASSISTANT_FAB_MARGIN,
-        window.innerWidth - drag.width - ASSISTANT_FAB_MARGIN,
-      ),
-      top: clamp(
-        drag.top + deltaY,
-        ASSISTANT_FAB_MARGIN,
-        window.innerHeight - drag.height - ASSISTANT_FAB_MARGIN,
-      ),
-    });
-  }
-
-  function endAssistantDrag(event: ReactPointerEvent<HTMLButtonElement>) {
-    const drag = assistantFabDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-
-    assistantFabDragRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    if (!drag.moved) return;
-
-    suppressAssistantClickRef.current = true;
-    setAssistantFabPosition((position) => {
-      if (position) {
-        try {
-          sessionStorage.setItem(
-            ASSISTANT_FAB_POSITION_KEY,
-            JSON.stringify(position),
-          );
-        } catch {}
-      }
-      return position;
-    });
-
-    window.setTimeout(() => {
-      suppressAssistantClickRef.current = false;
-    }, 0);
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
   }
 
   const assistantFabStyle: CSSProperties | undefined = assistantFabPosition
@@ -484,18 +514,21 @@ export function ParentPortal() {
         className="parent-ai-fab"
         style={assistantFabStyle}
         onPointerDown={beginAssistantDrag}
-        onPointerMove={moveAssistantFab}
-        onPointerUp={endAssistantDrag}
-        onPointerCancel={endAssistantDrag}
         onClick={() => {
           if (suppressAssistantClickRef.current) return;
           setAssistantOpen(true);
         }}
-        aria-label="Buka Asisten Pertumbuhan. Tombol dapat digeser."
-        title="Geser untuk memindahkan, tekan untuk membuka Asisten"
+        aria-label="Buka Asisten Pertumbuhan. Tekan untuk membuka, geser untuk memindahkan."
+        title="Asisten Pertumbuhan"
       >
-        <Sparkles size={20} />
-        <span>Asisten</span>
+        <Image
+          src="/images/mimo-cheer.png"
+          alt=""
+          width={96}
+          height={96}
+          className="parent-ai-fab-avatar"
+          draggable={false}
+        />
       </button>
 
       <nav className="parent-mobile-nav" aria-label="Navigasi orang tua">
