@@ -49,6 +49,9 @@ export function Results({
   const [error, setError] = useState("");
   const followUp = followUpForGrowthStatus(report.growthStatus);
   const facial = report.facialAnalysis;
+  const showFacialReason =
+    Boolean(facial.reason) &&
+    (facial.status === "rejected" || facial.status === "unavailable");
 
   function save() {
     try {
@@ -158,14 +161,12 @@ export function Results({
             <strong>{Math.round(facial.probability * 100)}%</strong>
           </div>
         )}
-        {facial.status === "rejected" && (
+        {showFacialReason && facial.reason && (
           <p>{facialReasonLabel(facial.reason)}</p>
         )}
         <p>
-          {facial.status === "unavailable" &&
-          facial.reason === "model_not_ready"
-            ? "Model A live belum memberi hasil pada sesi ini. Hasil utama tetap berasal dari TB/U WHO."
-            : "Analisis wajah hanya menjadi informasi pendukung. Hasil utama tetap berasal dari TB/U WHO."}
+          Analisis wajah hanya menjadi informasi pendukung. Hasil utama tetap
+          berasal dari TB/U WHO.
         </p>
       </div>
 

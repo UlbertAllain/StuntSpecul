@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { captureFrame, requestCamera, stopCamera } from "@/lib/camera";
-import { analyzeFacePhoto } from "@/lib/model-a";
+import { analyzeFacePhoto, modelAErrorReason } from "@/lib/model-a";
 import { UNAVAILABLE_FACIAL_ANALYSIS, type Capture } from "@/lib/screening";
 
 const CAMERA_TIMEOUT_MS = 15_000;
@@ -131,7 +131,7 @@ export function useCamera(
 
       stopCamera(streamRef.current);
       onCapture({ status: "captured", photo, facialAnalysis });
-    } catch {
+    } catch (cause) {
       if (!controller.signal.aborted) {
         // Facial AI is supporting data only. A model/service failure must never
         // block the WHO anthropometric screening flow.
@@ -146,7 +146,8 @@ export function useCamera(
           photo,
           facialAnalysis: {
             ...UNAVAILABLE_FACIAL_ANALYSIS,
-            reason: "model_not_ready",
+            reason: modelAErrorReason(cause),
+            modelVersion: "model-a-v2.1",
           },
         });
       }

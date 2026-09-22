@@ -16,6 +16,18 @@ type ModelARejectResponse = {
   modelVersion?: string;
 };
 
+export class ModelARequestError extends Error {
+  code: string;
+  retryable: boolean;
+
+  constructor(message: string, code: string, retryable = false) {
+    super(message);
+    this.name = "ModelARequestError";
+    this.code = code;
+    this.retryable = retryable;
+  }
+}
+
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -24,6 +36,10 @@ function errorMessage(value: unknown): string | null {
   return record(value) && typeof value.message === "string"
     ? value.message
     : null;
+}
+
+function errorCode(value: unknown): string | null {
+  return record(value) && typeof value.code === "string" ? value.code : null;
 }
 
 function isReject(value: unknown): value is ModelARejectResponse {
@@ -49,33 +65,54 @@ function isOk(value: unknown): value is ModelAOkResponse {
   );
 }
 
-export async function analyzeFacePhoto(
+async function requestAnalysis(
   photo: Blob,
   ageMonths: number,
 ): Promise<FacialAnalysis> {
   const endpoint =
     process.env.NEXT_PUBLIC_MODEL_A_ENDPOINT || "/api/model-a-screening";
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": photo.type || "image/jpeg",
-      "X-Age-Months": String(ageMonths),
-    },
-    body: photo,
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": photo.type || "image/jpeg",
+        "X-Age-Months": String(ageMonths),
+      },
+      body: photo,
+      cache: "no-store",
+    });
+  } catch {
+    throw new ModelARequestError(
+      "Koneksi ke layanan Model A terputus.",
+      "network_error",
+      true,
+    );
+  }
 
   let payload: unknown;
   try {
     payload = await response.json();
   } catch {
-    throw new Error("Layanan analisis wajah tidak memberi respons yang valid.");
+    throw new ModelARequestError(
+      "Layanan Model A memberi respons yang tidak valid.",
+      "invalid_response",
+      response.status >= 500,
+    );
   }
 
   if (!response.ok) {
-    throw new Error(
+    let code = errorCode(payload) ?? "model_request_failed";
+    if (!errorCode(payload)) {
+      if (response.status === 413) code = "request_too_large";
+      else if (response.status >= 500) code = "model_server_error";
+    }
+
+    throw new ModelARequestError(
       errorMessage(payload) ?? "Layanan analisis wajah belum tersedia.",
+      code,
+      response.status >= 500 || response.status === 429,
     );
   }
 
@@ -90,7 +127,10 @@ export async function analyzeFacePhoto(
   }
 
   if (!isOk(payload)) {
-    throw new Error("Respons Model A tidak sesuai format yang diharapkan.");
+    throw new ModelARequestError(
+      "Respons Model A tidak sesuai format yang diharapkan.",
+      "invalid_response",
+    );
   }
 
   return {
@@ -100,6 +140,33 @@ export async function analyzeFacePhoto(
     reason: null,
     modelVersion: payload.modelVersion,
   };
+}
+
+export async function analyzeFacePhoto(
+  photo: Blob,
+  ageMonths: number,
+): Promise<FacialAnalysis> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await requestAnalysis(photo, ageMonths);
+    } catch (error) {
+      lastError = error;
+      const shouldRetry =
+        error instanceof ModelARequestError && error.retryable && attempt === 0;
+
+      if (!shouldRetry) throw error;
+      await new Promise((resolve) => window.setTimeout(resolve, 350));
+    }
+  }
+
+  throw lastError;
+}
+
+export function modelAErrorReason(error: unknown): string {
+  if (error instanceof ModelARequestError) return error.code;
+  return "model_request_failed";
 }
 
 export function faceRetryMessage(reason: string | null): string {

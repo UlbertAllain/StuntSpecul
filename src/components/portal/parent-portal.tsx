@@ -1,7 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   Baby,
   ChartNoAxesCombined,
@@ -39,6 +47,29 @@ const QUESTIONS = [
   "Kapan saya perlu berkonsultasi ke tenaga kesehatan?",
 ];
 
+const ASSISTANT_FAB_POSITION_KEY = "stuntspecula:assistant-fab-position";
+const ASSISTANT_FAB_MARGIN = 8;
+
+type AssistantFabPosition = {
+  left: number;
+  top: number;
+};
+
+type AssistantFabDrag = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  moved: boolean;
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), Math.max(min, max));
+}
+
 function completed(exams: Examination[]) {
   return exams.filter((exam) => exam.status === "completed");
 }
@@ -55,8 +86,53 @@ export function ParentPortal() {
   const [question, setQuestion] = useState("");
   const [consent, setConsent] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantFabPosition, setAssistantFabPosition] =
+    useState<AssistantFabPosition | null>(null);
   const [examSheetOpen, setExamSheetOpen] = useState(false);
   const [selectedChildId, setSelectedChildId] = useState("");
+  const assistantFabRef = useRef<HTMLButtonElement>(null);
+  const assistantFabDragRef = useRef<AssistantFabDrag | null>(null);
+  const suppressAssistantClickRef = useRef(false);
+
+  useEffect(() => {
+    function clampStoredPosition(position: AssistantFabPosition) {
+      const button = assistantFabRef.current;
+      const width = button?.offsetWidth ?? 112;
+      const height = button?.offsetHeight ?? 52;
+
+      return {
+        left: clamp(
+          position.left,
+          ASSISTANT_FAB_MARGIN,
+          window.innerWidth - width - ASSISTANT_FAB_MARGIN,
+        ),
+        top: clamp(
+          position.top,
+          ASSISTANT_FAB_MARGIN,
+          window.innerHeight - height - ASSISTANT_FAB_MARGIN,
+        ),
+      };
+    }
+
+    try {
+      const stored = sessionStorage.getItem(ASSISTANT_FAB_POSITION_KEY);
+      if (stored) {
+        const position = JSON.parse(stored) as AssistantFabPosition;
+        if (Number.isFinite(position.left) && Number.isFinite(position.top)) {
+          setAssistantFabPosition(clampStoredPosition(position));
+        }
+      }
+    } catch {}
+
+    const handleResize = () => {
+      setAssistantFabPosition((position) =>
+        position ? clampStoredPosition(position) : null,
+      );
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -220,6 +296,83 @@ export function ParentPortal() {
     }
   }
 
+  function beginAssistantDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    assistantFabDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function moveAssistantFab(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = assistantFabDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+    if (Math.hypot(deltaX, deltaY) > 4) drag.moved = true;
+
+    setAssistantFabPosition({
+      left: clamp(
+        drag.left + deltaX,
+        ASSISTANT_FAB_MARGIN,
+        window.innerWidth - drag.width - ASSISTANT_FAB_MARGIN,
+      ),
+      top: clamp(
+        drag.top + deltaY,
+        ASSISTANT_FAB_MARGIN,
+        window.innerHeight - drag.height - ASSISTANT_FAB_MARGIN,
+      ),
+    });
+  }
+
+  function endAssistantDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = assistantFabDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    assistantFabDragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    if (!drag.moved) return;
+
+    suppressAssistantClickRef.current = true;
+    setAssistantFabPosition((position) => {
+      if (position) {
+        try {
+          sessionStorage.setItem(
+            ASSISTANT_FAB_POSITION_KEY,
+            JSON.stringify(position),
+          );
+        } catch {}
+      }
+      return position;
+    });
+
+    window.setTimeout(() => {
+      suppressAssistantClickRef.current = false;
+    }, 0);
+  }
+
+  const assistantFabStyle: CSSProperties | undefined = assistantFabPosition
+    ? {
+        left: assistantFabPosition.left,
+        top: assistantFabPosition.top,
+        right: "auto",
+        bottom: "auto",
+      }
+    : undefined;
+
   if (loading)
     return (
       <PortalShell
@@ -327,9 +480,19 @@ export function ParentPortal() {
       </div>
 
       <button
+        ref={assistantFabRef}
         className="parent-ai-fab"
-        onClick={() => setAssistantOpen(true)}
-        aria-label="Buka Asisten Pertumbuhan"
+        style={assistantFabStyle}
+        onPointerDown={beginAssistantDrag}
+        onPointerMove={moveAssistantFab}
+        onPointerUp={endAssistantDrag}
+        onPointerCancel={endAssistantDrag}
+        onClick={() => {
+          if (suppressAssistantClickRef.current) return;
+          setAssistantOpen(true);
+        }}
+        aria-label="Buka Asisten Pertumbuhan. Tombol dapat digeser."
+        title="Geser untuk memindahkan, tekan untuk membuka Asisten"
       >
         <Sparkles size={20} />
         <span>Asisten</span>

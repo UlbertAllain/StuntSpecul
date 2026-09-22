@@ -158,6 +158,20 @@ export function facialReasonLabel(reason: string | null): string {
       return "Usia di luar cakupan Model A.";
     case "model_not_ready":
       return "Model analisis wajah belum tersedia.";
+    case "network_error":
+      return "Koneksi ke Model A terputus saat foto dikirim.";
+    case "request_too_large":
+      return "Ukuran foto terlalu besar untuk layanan Model A.";
+    case "model_runtime_not_ready":
+      return "Runtime Model A belum siap memproses foto.";
+    case "model_inference_failed":
+      return "Model A gagal memproses foto pada sesi ini.";
+    case "model_server_error":
+      return "Layanan Model A mengalami gangguan sementara.";
+    case "invalid_response":
+      return "Respons Model A tidak dapat dibaca.";
+    case "model_request_failed":
+      return "Permintaan ke Model A tidak berhasil.";
     default:
       return reason ? "Foto tidak dapat dianalisis." : "Belum tersedia.";
   }
