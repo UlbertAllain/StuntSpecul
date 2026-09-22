@@ -125,12 +125,12 @@ Data pemeriksaan yang diperlukan disimpan agar orang tua dapat melihat hasil dan
 
 ## Halaman Utama Sistem
 
-| Halaman | Digunakan untuk |
-| --- | --- |
-| `/` | Informasi umum StuntSpecula |
-| `/ortu` | Akun orang tua, mulai pemeriksaan, hasil, dan riwayat |
-| `/alat` | Layar utama alat StuntSpecula |
-| `/petugas` | Monitoring dan operasional petugas |
+| Halaman    | Digunakan untuk                                            |
+| ---------- | ---------------------------------------------------------- |
+| `/`        | Informasi umum StuntSpecula                                 |
+| `/ortu`    | Akun orang tua, mulai pemeriksaan, hasil, dan riwayat      |
+| `/alat`    | Layar utama alat StuntSpecula                              |
+| `/petugas` | Monitoring dan operasional petugas                         |
 
 ## Ringkasan Peran
 
