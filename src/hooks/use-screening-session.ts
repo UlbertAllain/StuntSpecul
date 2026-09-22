@@ -1,7 +1,11 @@
 "use client";
 
 import { useReducer, useState, useSyncExternalStore } from "react";
-import { createScreeningReport, readMeasurements } from "@/lib/screening";
+import {
+  createScreeningReport,
+  readMeasurements,
+  type Readings,
+} from "@/lib/screening";
 import { api, errorMessage } from "@/lib/api-client";
 import type { MirrorAssignment } from "@/lib/portal";
 import { INITIAL_SESSION, sessionReducer } from "@/lib/session";
@@ -56,11 +60,11 @@ export function useScreeningSession(
   );
   const active = !["welcome", "result"].includes(session.step);
 
-  async function complete() {
+  async function complete(readingsOverride?: Readings) {
     if (!session.child || !session.capture) return;
     const report = createScreeningReport(
       session.child,
-      readMeasurements(session.child),
+      readingsOverride ?? readMeasurements(session.child),
       session.capture,
     );
     const payload: ScreeningCompletion = {

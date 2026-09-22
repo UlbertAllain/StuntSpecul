@@ -41,7 +41,6 @@ import type { MirrorAssignment } from "@/lib/portal";
 import { errorMessage } from "@/lib/api-client";
 import {
   createSeededRandom,
-  demoMeasurementsEnabled,
   generateDemoMeasurements,
 } from "@/lib/demo-measurements";
 import { ExaminationStage } from "./examination-stage";
@@ -217,7 +216,21 @@ export function NutriMirror({
           </section>
         );
       case "analysis":
-        return <ProcessingStage paused={isPaused} onComplete={complete} />;
+        return (
+          <ProcessingStage
+            paused={isPaused}
+            onComplete={() =>
+              complete(
+                demoReadings
+                  ? {
+                      heightCm: demoReadings.heightCm,
+                      weightKg: demoReadings.weightKg,
+                    }
+                  : undefined,
+              )
+            }
+          />
+        );
       case "result":
         return (
           report && (
@@ -225,22 +238,22 @@ export function NutriMirror({
               report={report}
               onFinish={awaitingParentFinalize ? undefined : reset}
               awaitingParentFinalize={awaitingParentFinalize}
+              demoMeasurements={!!demoReadings}
             />
           )
         );
     }
   }
 
-  const demoReadings =
-    session.child && demoMeasurementsEnabled()
-      ? generateDemoMeasurements(
-          session.child,
-          createSeededRandom(
-            assignment?.id ??
-              `legacy:${session.child.ageMonths}:${session.child.sex}`,
-          ),
-        )
-      : null;
+  const demoReadings = session.child
+    ? generateDemoMeasurements(
+        session.child,
+        createSeededRandom(
+          assignment?.id ??
+            `legacy:${session.child.ageMonths}:${session.child.sex}`,
+        ),
+      )
+    : null;
   const resultLocked = awaitingParentFinalize && step === "result";
 
   return (
@@ -327,7 +340,16 @@ export function NutriMirror({
             <button
               className="text-button"
               disabled={saving}
-              onClick={complete}
+              onClick={() =>
+                complete(
+                  demoReadings
+                    ? {
+                        heightCm: demoReadings.heightCm,
+                        weightKg: demoReadings.weightKg,
+                      }
+                    : undefined,
+                )
+              }
             >
               Coba simpan lagi
             </button>

@@ -37,16 +37,21 @@ export function Results({
   report,
   onFinish,
   awaitingParentFinalize = false,
+  demoMeasurements = false,
 }: {
   report: ScreeningReport;
   onFinish?: () => void;
   awaitingParentFinalize?: boolean;
+  demoMeasurements?: boolean;
 }) {
   const [detail, setDetail] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const followUp = followUpForGrowthStatus(report.growthStatus);
   const facial = report.facialAnalysis;
+  const demoFace =
+    facial.reason === "demo_fallback" ||
+    facial.modelVersion === "demo-fallback";
 
   function save() {
     try {
@@ -110,6 +115,13 @@ export function Results({
         </div>
       </div>
 
+      {demoMeasurements && (
+        <p className="demo-reading-note">
+          Mode demo sensor aktif — angka sementara digunakan agar alur pemeriksaan
+          dapat diuji sampai sensor fisik terhubung.
+        </p>
+      )}
+
       <div
         className={`growth-result ${report.growthStatus === "unavailable" ? "unavailable-result" : ""}`}
       >
@@ -140,8 +152,10 @@ export function Results({
           Analisis wajah — pendukung
         </h2>
         <div>
-          <span>Model A V2.1</span>
-          <strong>{facialAnalysisLabel(facial.status)}</strong>
+          <span>{demoFace ? "Model A — mode demo" : "Model A V2.1"}</span>
+          <strong>
+            {demoFace ? "Alur demo tersedia" : facialAnalysisLabel(facial.status)}
+          </strong>
         </div>
         {facial.probability !== null && (
           <div>
@@ -153,8 +167,9 @@ export function Results({
           <p>{facialReasonLabel(facial.reason)}</p>
         )}
         <p>
-          Analisis wajah hanya menjadi informasi pendukung dan tidak menentukan
-          status stunting. Hasil utama tetap berasal dari TB/U WHO.
+          {demoFace
+            ? "Layanan Model A belum memberi hasil live. Pemeriksaan tetap berjalan dan hasil utama tetap berasal dari TB/U WHO."
+            : "Analisis wajah hanya menjadi informasi pendukung. Hasil utama tetap berasal dari TB/U WHO."}
         </p>
       </div>
 
@@ -222,7 +237,7 @@ export function Results({
       )}
 
       {awaitingParentFinalize ? (
-        <div className="growth-result">
+        <div className="session-status-card">
           <div>
             <span>Status sesi</span>
             <strong>Menunggu orang tua</strong>

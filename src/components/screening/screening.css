@@ -2036,3 +2036,115 @@
     font-size: 13px;
   }
 }
+
+
+/* Client demo: compact result layout without removing StuntSpecula identity. */
+.results-screen .result-intro {
+  grid-template-columns: minmax(0, 1fr) 112px;
+  align-items: center;
+  gap: 12px;
+}
+
+.results-screen .result-intro h1 {
+  font-size: clamp(2rem, 6vw, 2.75rem);
+}
+
+.results-screen .result-intro .mascot {
+  height: 125px;
+}
+
+.results-screen .result-identity {
+  margin: 8px 0 10px;
+}
+
+.results-screen .body-results {
+  padding: 8px 0 10px;
+}
+
+.results-screen .body-results strong {
+  font-size: 31px;
+}
+
+.demo-reading-note {
+  margin: -2px 0 14px;
+  color: #6a7f8e;
+  font-size: 10px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.results-screen .growth-result {
+  margin-bottom: 14px;
+}
+
+.results-screen .facial-results {
+  margin-top: 0;
+  padding-top: 14px;
+}
+
+.results-screen .facial-results h2 {
+  padding-bottom: 4px;
+}
+
+.results-screen .facial-results > div {
+  padding: 7px 0;
+}
+
+.results-screen .facial-results p {
+  margin-top: 7px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.results-screen .detail-link {
+  margin-top: 12px;
+}
+
+.session-status-card {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #cbd8e1;
+  border-radius: 14px;
+  background: #f7fbfe;
+}
+
+.session-status-card > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.session-status-card span {
+  color: #657b8b;
+  font-size: 11px;
+}
+
+.session-status-card strong {
+  font-size: 13px;
+}
+
+.session-status-card p {
+  margin-top: 7px;
+  color: #657b8b;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+@media (max-width: 480px) {
+  .results-screen .result-intro {
+    grid-template-columns: minmax(0, 1fr) 92px;
+  }
+
+  .results-screen .result-intro h1 {
+    font-size: 2rem;
+  }
+
+  .results-screen .result-intro .mascot {
+    height: 105px;
+  }
+
+  .results-screen .body-results strong {
+    font-size: 28px;
+  }
+}

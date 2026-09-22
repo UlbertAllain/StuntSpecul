@@ -146,7 +146,8 @@ export function useCamera(
           photo,
           facialAnalysis: {
             ...UNAVAILABLE_FACIAL_ANALYSIS,
-            reason: "model_not_ready",
+            reason: "demo_fallback",
+            modelVersion: "demo-fallback",
           },
         });
       }
