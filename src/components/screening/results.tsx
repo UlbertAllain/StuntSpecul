@@ -49,9 +49,6 @@ export function Results({
   const [error, setError] = useState("");
   const followUp = followUpForGrowthStatus(report.growthStatus);
   const facial = report.facialAnalysis;
-  const demoFace =
-    facial.reason === "demo_fallback" ||
-    facial.modelVersion === "demo-fallback";
 
   function save() {
     try {
@@ -117,8 +114,8 @@ export function Results({
 
       {demoMeasurements && (
         <p className="demo-reading-note">
-          Mode demo sensor aktif — angka sementara digunakan agar alur pemeriksaan
-          dapat diuji sampai sensor fisik terhubung.
+          Sensor fisik belum terhubung — nilai TB/BB sementara digunakan agar
+          alur pemeriksaan tetap dapat diuji.
         </p>
       )}
 
@@ -152,10 +149,8 @@ export function Results({
           Analisis wajah — pendukung
         </h2>
         <div>
-          <span>{demoFace ? "Model A — mode demo" : "Model A V2.1"}</span>
-          <strong>
-            {demoFace ? "Alur demo tersedia" : facialAnalysisLabel(facial.status)}
-          </strong>
+          <span>Model A V2.1</span>
+          <strong>{facialAnalysisLabel(facial.status)}</strong>
         </div>
         {facial.probability !== null && (
           <div>
@@ -167,8 +162,9 @@ export function Results({
           <p>{facialReasonLabel(facial.reason)}</p>
         )}
         <p>
-          {demoFace
-            ? "Layanan Model A belum memberi hasil live. Pemeriksaan tetap berjalan dan hasil utama tetap berasal dari TB/U WHO."
+          {facial.status === "unavailable" &&
+          facial.reason === "model_not_ready"
+            ? "Model A live belum memberi hasil pada sesi ini. Hasil utama tetap berasal dari TB/U WHO."
             : "Analisis wajah hanya menjadi informasi pendukung. Hasil utama tetap berasal dari TB/U WHO."}
         </p>
       </div>

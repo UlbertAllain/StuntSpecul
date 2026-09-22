@@ -2037,8 +2037,7 @@
   }
 }
 
-
-/* Client demo: compact result layout without removing StuntSpecula identity. */
+/* Temporary sensor readings + compact result layout. */
 .results-screen .result-intro {
   grid-template-columns: minmax(0, 1fr) 112px;
   align-items: center;
