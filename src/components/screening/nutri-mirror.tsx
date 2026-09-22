@@ -37,8 +37,8 @@ import type { MirrorAssignment } from "@/lib/portal";
 import { errorMessage } from "@/lib/api-client";
 import {
   createSeededRandom,
-  generateDemoMeasurements,
-} from "@/lib/demo-measurements";
+  generateFallbackMeasurements,
+} from "@/lib/fallback-measurements";
 import { ExaminationStage } from "./examination-stage";
 import { Mascot } from "./mascot";
 import { ProcessingStage } from "./processing-stage";
@@ -184,9 +184,9 @@ export function NutriMirror({
             onComplete={() => dispatch({ type: "advance", from: step })}
             reading={
               step === "height"
-                ? demoReadings?.heightCm
+                ? fallbackReadings?.heightCm
                 : step === "weight"
-                  ? demoReadings?.weightKg
+                  ? fallbackReadings?.weightKg
                   : null
             }
             soundEnabled={soundEnabled}
@@ -217,10 +217,10 @@ export function NutriMirror({
             paused={isPaused}
             onComplete={() =>
               complete(
-                demoReadings
+                fallbackReadings
                   ? {
-                      heightCm: demoReadings.heightCm,
-                      weightKg: demoReadings.weightKg,
+                      heightCm: fallbackReadings.heightCm,
+                      weightKg: fallbackReadings.weightKg,
                     }
                   : undefined,
               )
@@ -234,15 +234,15 @@ export function NutriMirror({
               report={report}
               onFinish={awaitingParentFinalize ? undefined : reset}
               awaitingParentFinalize={awaitingParentFinalize}
-              demoMeasurements={!!demoReadings}
+              temporaryMeasurements={!!fallbackReadings}
             />
           )
         );
     }
   }
 
-  const demoReadings = session.child
-    ? generateDemoMeasurements(
+  const fallbackReadings = session.child
+    ? generateFallbackMeasurements(
         session.child,
         createSeededRandom(
           assignment?.id ??
@@ -340,10 +340,10 @@ export function NutriMirror({
               disabled={saving}
               onClick={() =>
                 complete(
-                  demoReadings
+                  fallbackReadings
                     ? {
-                        heightCm: demoReadings.heightCm,
-                        weightKg: demoReadings.weightKg,
+                        heightCm: fallbackReadings.heightCm,
+                        weightKg: fallbackReadings.weightKg,
                       }
                     : undefined,
                 )

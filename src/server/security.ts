@@ -1,7 +1,5 @@
-import type { Database } from "./database";
 import { compare, hash } from "bcryptjs";
 import { z } from "zod";
-import { ApiError } from "./http";
 
 export const passwordSchema = z
   .string()
@@ -41,27 +39,6 @@ export async function digest(value: string) {
 export const hashPassword = (password: string) => hash(password, 12);
 export const verifyPassword = (password: string, encoded: string) =>
   compare(password, encoded);
-export async function rateLimit(
-  db: Database,
-  key: string,
-  limit: number,
-  windowSeconds: number,
-) {
-  const now = Date.now();
-  const bucket = Math.floor(now / (windowSeconds * 1000));
-  const row = await db
-    .prepare(
-      "INSERT INTO rate_limits (key,count,expires_at) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count",
-    )
-    .bind(`${key}:${bucket}`, now + windowSeconds * 1000)
-    .first<{ count: number }>();
-  if (!row || row.count > limit)
-    throw new ApiError(
-      429,
-      "Terlalu banyak permintaan. Coba lagi nanti.",
-      "rate_limited",
-    );
-}
 export async function requestKey(request: Request) {
   // Vercel overwrites this header; never trust a client-supplied Cloudflare identity.
   const address =

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { assessHeightForAge } from "../src/lib/growth.ts";
-import { generateDemoMeasurements } from "../src/lib/demo-measurements.ts";
+import { generateFallbackMeasurements } from "../src/lib/fallback-measurements.ts";
 import {
   childSchema,
   createScreeningReport,
@@ -74,15 +74,15 @@ test("WHO engine rejects unavailable, out-of-scope and biologically implausible 
   assert.equal(assessHeightForAge(36, "male", 200).growthStatus, "unavailable");
 });
 
-test("temporary demo measurements randomize plausible readings and let WHO classify the generated height", () => {
-  const severe = generateDemoMeasurements(
+test("temporary fallback measurements produce plausible readings and let WHO classify the generated height", () => {
+  const severe = generateFallbackMeasurements(
     { ageMonths: 39, sex: "male" },
     (() => {
       const values = [0, 0.5];
       return () => values.shift() ?? 0.5;
     })(),
   );
-  const normal = generateDemoMeasurements(
+  const normal = generateFallbackMeasurements(
     { ageMonths: 39, sex: "male" },
     (() => {
       const values = [1, 0.5];

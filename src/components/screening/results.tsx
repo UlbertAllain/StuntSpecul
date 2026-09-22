@@ -37,12 +37,12 @@ export function Results({
   report,
   onFinish,
   awaitingParentFinalize = false,
-  demoMeasurements = false,
+  temporaryMeasurements = false,
 }: {
   report: ScreeningReport;
   onFinish?: () => void;
   awaitingParentFinalize?: boolean;
-  demoMeasurements?: boolean;
+  temporaryMeasurements?: boolean;
 }) {
   const [detail, setDetail] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -115,8 +115,8 @@ export function Results({
         </div>
       </div>
 
-      {demoMeasurements && (
-        <p className="demo-reading-note">
+      {temporaryMeasurements && (
+        <p className="temporary-reading-note">
           Sensor fisik belum terhubung — nilai TB/BB sementara digunakan agar
           alur pemeriksaan tetap dapat diuji.
         </p>

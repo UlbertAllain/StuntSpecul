@@ -59,16 +59,6 @@ export type ChatMessage = {
   content: string;
   createdAt: number;
 };
-export type ParentView = {
-  result: Omit<
-    Examination,
-    "childId" | "childCode" | "deviceId" | "deviceName"
-  >;
-  expiresAt: number;
-  aiAvailable: boolean;
-  messages: ChatMessage[];
-};
-
 export type ParentAccountSummary = {
   id: string;
   name: string;

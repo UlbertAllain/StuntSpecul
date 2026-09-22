@@ -2,37 +2,35 @@
 
 ## Vercel
 
-Project menggunakan Next.js dan satu Python Function untuk Model A.
-
-Konfigurasi:
+Konfigurasi utama:
 
 - Framework: Next.js
-- Build command: `npm run build`
-- Output: `.next`
+- Build command: `npm run build:vercel`
 - Node.js: 22.x
-- Python Model A: dideklarasikan melalui `pyproject.toml`
+- Python runtime mengikuti `pyproject.toml`
 
-Environment produksi:
+Environment production:
 
 ```dotenv
-APP_ORIGIN=https://stuntspecula.vercel.app
-DATABASE_URL=libsql://DATABASE-ANDA.turso.io
-DATABASE_AUTH_TOKEN=TOKEN_DATABASE
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
 GEMINI_API_KEY=
 GEMINI_MODEL=
 ```
 
-Gunakan database libSQL remote untuk produksi. File SQLite lokal hanya untuk development.
+`APP_ORIGIN` opsional. Jika tidak diisi, production menggunakan origin request HTTPS.
 
-## Database
+## Firestore
 
-Jalankan migration terhadap database target sebelum aplikasi digunakan:
+Gunakan Firestore database default dalam Native mode. Tidak ada SQL migration yang perlu dijalankan.
 
-```powershell
-npm run db:migrate
-```
-
-Migration bersifat incremental dan dicatat pada tabel `app_migrations`. File migration yang sudah diterapkan tidak boleh diedit atau diganti nama.
+Admin pertama dibuat dari localhost saat Firestore masih kosong. Setelah itu admin membuat akun petugas, sedangkan orang tua mendaftar dari form login yang sama.
 
 ## Model A
 
@@ -45,28 +43,21 @@ models/
 └─ mobilenetv3_stunting_v2.onnx.data
 ```
 
-Endpoint production:
+Endpoint:
 
 ```text
 GET  /api/model-a-screening
 POST /api/model-a-screening
 ```
 
-Sebelum deploy, pastikan ketiga runtime asset tersebut memang ikut dalam branch yang akan dideploy.
-
 ## Smoke check
 
-Setelah deploy:
+1. `GET /api/health` → `ready: true` dan `databaseProvider: "firestore"`.
+2. `GET /api/config` berhasil.
+3. `GET /api/model-a-screening` → `ready: true`.
+4. Login parent, petugas, dan admin sesuai role.
+5. Mulai pemeriksaan dari parent dan jalankan `/alat`.
+6. Pastikan WHO tersimpan sebagai hasil utama dan Model A sebagai pendukung.
+7. Coba upload foto profil melalui Cloudinary signed upload.
 
-1. `GET /api/health` harus memberi `ready: true`, `databaseReady: true`, dan `modelASchemaReady: true`.
-2. `GET /api/config` harus berhasil.
-3. `GET /api/model-a-screening` harus memberi `ready: true`.
-4. Login `/petugas`.
-5. Mulai pemeriksaan dan buka `/alat`.
-6. Selesaikan tinggi → berat → wajah.
-7. Pastikan hasil WHO tersimpan dan hasil wajah tampil sebagai data pendukung.
-8. Pastikan portal `/ortu` dapat membaca riwayat yang sama.
-
-Jika endpoint Model A menunjukkan `dependenciesReady: true` tetapi `filesReady: false`, runtime Python sudah tersedia tetapi tiga asset di folder `models/` belum ikut ke deployment. Jalankan installer Model A, commit ketiga asset runtime, lalu deploy ulang.
-
-Jika terjadi error, cek DevTools Network dan Vercel Logs. Jangan menyalin password, cookie, token database, atau API key ke log publik.
+Jangan menaruh Firebase private key atau Cloudinary API secret di source code.

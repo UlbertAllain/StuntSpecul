@@ -64,7 +64,7 @@ export function useScreeningSession(
     if (!session.child || !session.capture) return;
     const report = createScreeningReport(
       session.child,
-      readingsOverride ?? readMeasurements(session.child),
+      readingsOverride ?? readMeasurements(),
       session.capture,
     );
     const payload: ScreeningCompletion = {

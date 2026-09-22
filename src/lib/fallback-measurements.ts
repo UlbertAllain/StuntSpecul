@@ -1,11 +1,11 @@
 import { heightForAgeAtZScore, type Sex } from "./growth.ts";
 
-export type DemoMeasurementInput = {
+export type FallbackMeasurementInput = {
   ageMonths: number;
   sex: Sex;
 };
 
-export type DemoMeasurements = {
+export type FallbackMeasurements = {
   heightCm: number;
   weightKg: number;
   generatedZScore: number;
@@ -30,8 +30,8 @@ export function createSeededRandom(seed: string): RandomSource {
   };
 }
 
-const MIN_DEMO_Z = -3.6;
-const MAX_DEMO_Z = 1.4;
+const MIN_FALLBACK_Z = -3.6;
+const MAX_FALLBACK_Z = 1.4;
 const MIN_WEIGHT_FACTOR = 0.88;
 const MAX_WEIGHT_FACTOR = 1.12;
 
@@ -45,18 +45,18 @@ function randomBetween(min: number, max: number, random: RandomSource): number {
   return min + (max - min) * normalizedRandom(random);
 }
 
-export function demoMeasurementsEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_DEMO_MEASUREMENTS === "true";
+export function fallbackMeasurementsEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_FALLBACK_MEASUREMENTS === "true";
 }
 
-export function generateDemoMeasurements(
-  child: DemoMeasurementInput,
+export function generateFallbackMeasurements(
+  child: FallbackMeasurementInput,
   random: RandomSource = Math.random,
-): DemoMeasurements {
-  // Development-only readings are randomized for each examination.
+): FallbackMeasurements {
+  // Temporary readings are randomized for each examination.
   // The WHO engine still receives only the resulting height and independently
-  // decides the TB/U category; the demo generator does not pick a status label.
-  const generatedZScore = randomBetween(MIN_DEMO_Z, MAX_DEMO_Z, random);
+  // decides the TB/U category; the fallback generator does not pick a status label.
+  const generatedZScore = randomBetween(MIN_FALLBACK_Z, MAX_FALLBACK_Z, random);
   const heightCm = heightForAgeAtZScore(
     child.ageMonths,
     child.sex,
@@ -64,7 +64,7 @@ export function generateDemoMeasurements(
   );
 
   if (heightCm === null) {
-    throw new Error("Usia di luar cakupan data demo pengukuran.");
+    throw new Error("Usia di luar cakupan data pengukuran sementara.");
   }
 
   const baseWeight =

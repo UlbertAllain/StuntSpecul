@@ -429,6 +429,60 @@ export function ParentGrowthInsights({
 
   return (
     <section className="parent-growth-insight mb-8 space-y-6">
+      <div>
+        <div className="section-heading">
+          <div>
+            <h3>Grafik perkembangan</h3>
+            <p className="portal-note">
+              Menampilkan maksimal enam pemeriksaan terakhir agar perubahan
+              mudah dibaca.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-2">
+          <GrowthLineChart
+            title="Tinggi badan"
+            description="Perubahan tinggi anak dari waktu ke waktu."
+            unit="cm"
+            values={heightValues}
+            decimals={1}
+          />
+          <GrowthLineChart
+            title="Berat badan"
+            description="Perubahan berat anak dari setiap pemeriksaan."
+            unit="kg"
+            values={weightValues}
+            decimals={1}
+          />
+          <div className="xl:col-span-2">
+            <GrowthLineChart
+              title="TB/U"
+              description="Perubahan nilai Z-score tinggi badan menurut umur."
+              unit="SD"
+              values={zValues}
+              decimals={2}
+              referenceLines={[
+                { value: -2, label: "-2 SD" },
+                { value: -3, label: "-3 SD" },
+              ]}
+            />
+          </div>
+        </div>
+
+        {heightValues.length > 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-3">
+            <p className="portal-note">
+              Data grafik: {formatMonth(heightValues[0].date)} —{" "}
+              {formatMonth(heightValues[heightValues.length - 1].date)}
+            </p>
+            <span className="text-xs font-bold text-[var(--muted-foreground)]">
+              Maks. {MAX_POINTS} pemeriksaan
+            </span>
+          </div>
+        )}
+      </div>
+
       <div className="rounded-[1.75rem] border border-[var(--border)] bg-[linear-gradient(135deg,#f2f9ff_0%,#ffffff_58%,#fff5f8_100%)] p-6 md:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -584,60 +638,6 @@ export function ParentGrowthInsights({
           </div>
         </div>
       </article>
-
-      <div>
-        <div className="section-heading">
-          <div>
-            <h3>Grafik perkembangan</h3>
-            <p className="portal-note">
-              Menampilkan maksimal enam pemeriksaan terakhir agar perubahan
-              mudah dibaca.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-5 xl:grid-cols-2">
-          <GrowthLineChart
-            title="Tinggi badan"
-            description="Perubahan tinggi anak dari waktu ke waktu."
-            unit="cm"
-            values={heightValues}
-            decimals={1}
-          />
-          <GrowthLineChart
-            title="Berat badan"
-            description="Perubahan berat anak dari setiap pemeriksaan."
-            unit="kg"
-            values={weightValues}
-            decimals={1}
-          />
-          <div className="xl:col-span-2">
-            <GrowthLineChart
-              title="TB/U"
-              description="Perubahan nilai Z-score tinggi badan menurut umur."
-              unit="SD"
-              values={zValues}
-              decimals={2}
-              referenceLines={[
-                { value: -2, label: "-2 SD" },
-                { value: -3, label: "-3 SD" },
-              ]}
-            />
-          </div>
-        </div>
-
-        {heightValues.length > 0 && (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-3">
-            <p className="portal-note">
-              Data grafik: {formatMonth(heightValues[0].date)} —{" "}
-              {formatMonth(heightValues[heightValues.length - 1].date)}
-            </p>
-            <span className="text-xs font-bold text-[var(--muted-foreground)]">
-              Maks. {MAX_POINTS} pemeriksaan
-            </span>
-          </div>
-        )}
-      </div>
     </section>
   );
 }
