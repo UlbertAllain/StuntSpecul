@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import type {
   ChildProfile,
@@ -1019,6 +1020,87 @@ async function parentView(request: Request, env: Env) {
   });
 }
 
+async function uploadParentProfilePhoto(request: Request, env: Env) {
+  const parent = await requireParent(request, env);
+  const cloudName = env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = env.CLOUDINARY_API_KEY;
+  const apiSecret = env.CLOUDINARY_API_SECRET;
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new ApiError(
+      503,
+      "Upload foto profil belum dikonfigurasi.",
+      "cloudinary_not_configured",
+    );
+  }
+
+  if (!request.headers.get("content-type")?.startsWith("multipart/form-data")) {
+    throw new ApiError(415, "Gunakan file gambar untuk foto profil.");
+  }
+
+  const form = await request.formData();
+  const file = form.get("file");
+
+  if (!(file instanceof File)) {
+    throw new ApiError(422, "Pilih foto profil terlebih dahulu.");
+  }
+
+  if (!file.type.startsWith("image/")) {
+    throw new ApiError(422, "File foto profil harus berupa gambar.");
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new ApiError(413, "Ukuran foto maksimal 5 MB.");
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const folder = `stuntspecula/profile/${parent.id}`;
+  const signature = createHash("sha1")
+    .update(`folder=${folder}&timestamp=${timestamp}${apiSecret}`)
+    .digest("hex");
+
+  const upload = new FormData();
+  upload.append("file", file);
+  upload.append("api_key", apiKey);
+  upload.append("timestamp", String(timestamp));
+  upload.append("folder", folder);
+  upload.append("signature", signature);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${encodeURIComponent(
+      cloudName,
+    )}/image/upload`,
+    {
+      method: "POST",
+      body: upload,
+    },
+  );
+
+  const payload = (await response.json().catch(() => null)) as {
+    secure_url?: string;
+    public_id?: string;
+    error?: { message?: string };
+  } | null;
+
+  if (!response.ok || !payload?.secure_url || !payload.public_id) {
+    console.error(
+      "Cloudinary profile upload failed",
+      response.status,
+      payload?.error?.message || "Unknown Cloudinary error",
+    );
+    throw new ApiError(
+      502,
+      "Foto profil gagal diunggah. Silakan coba lagi.",
+      "profile_upload_failed",
+    );
+  }
+
+  return ok({
+    secureUrl: payload.secure_url,
+    publicId: payload.public_id,
+  });
+}
+
 async function updateParentProfile(request: Request, env: Env) {
   const parent = await requireParent(request, env);
   const input = await body(
@@ -1825,6 +1907,8 @@ export async function routeFirestore(
       return parentView(request, env);
     case "PATCH /api/parent-account/profile":
       return updateParentProfile(request, env);
+    case "POST /api/uploads/profile-photo":
+      return uploadParentProfilePhoto(request, env);
     case "GET /api/parent-account/messages":
       return parentMessages(request, env);
     case "POST /api/parent-account/chat":

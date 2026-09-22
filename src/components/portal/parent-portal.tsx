@@ -1164,7 +1164,7 @@ function ParentProfile({
         )}
       </section>
       <p className="portal-note profile-note">
-        Foto profil disimpan melalui Cloudinary. Data pemeriksaan tidak dapat
+        Foto profil membantu membedakan akun. Data pemeriksaan tidak dapat
         diubah dari halaman profil.
       </p>
     </>

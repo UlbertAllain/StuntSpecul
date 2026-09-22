@@ -114,5 +114,8 @@ export function applicationConfig(values: Variables, request: Request) {
     ALLOW_LOCAL_SETUP: !isProduction && requestIsLocal,
     GEMINI_API_KEY: values.GEMINI_API_KEY?.trim(),
     GEMINI_MODEL: values.GEMINI_MODEL?.trim(),
+    CLOUDINARY_CLOUD_NAME: values.CLOUDINARY_CLOUD_NAME?.trim(),
+    CLOUDINARY_API_KEY: values.CLOUDINARY_API_KEY?.trim(),
+    CLOUDINARY_API_SECRET: values.CLOUDINARY_API_SECRET?.trim(),
   };
 }

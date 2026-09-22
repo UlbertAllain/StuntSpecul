@@ -1792,23 +1792,6 @@
   box-shadow: none;
 }
 
-.parent-demo-banner {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  border: 1px solid #e6c562;
-  border-radius: 16px;
-  padding: 13px 15px;
-  background: linear-gradient(135deg, #fff8db, #fffdf7);
-  color: #735a17;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.parent-demo-banner strong {
-  font-weight: 900;
-}
-
 .parent-calibration-card {
   display: grid;
   gap: 22px;
@@ -3875,5 +3858,125 @@
   .ref-staff-row button {
     grid-column: 1 / -1;
     width: 100%;
+  }
+}
+
+/* Parent reference cleanup: flat cards, subtle borders, no legacy heavy shadows. */
+.portal-shell--parent {
+  background:
+    radial-gradient(
+      circle at 8% 2%,
+      rgba(205, 235, 255, 0.72),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 92% 4%,
+      rgba(255, 224, 236, 0.68),
+      transparent 31%
+    ),
+    linear-gradient(180deg, #f7fbff 0%, #fffdf8 48%, #fff8fb 100%) !important;
+}
+
+.portal-shell--parent .portal-nav {
+  border: 1px solid #dce7ef !important;
+  border-radius: 15px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: none !important;
+}
+
+.portal-shell--parent .portal-nav button {
+  border: 0 !important;
+  border-radius: 11px !important;
+  box-shadow: none !important;
+}
+
+.portal-shell--parent .portal-nav button[aria-current] {
+  border: 0 !important;
+  background: #ffe5ef !important;
+  color: #315f87 !important;
+  box-shadow: none !important;
+}
+
+.portal-shell--parent .parent-mobile-start > span {
+  border: 3px solid white !important;
+  background: linear-gradient(135deg, #70aee0, #ecacc7) !important;
+  box-shadow: 0 5px 16px rgba(58, 93, 119, 0.16) !important;
+}
+
+.portal-shell--parent .portal-card,
+.portal-shell--parent .mobile-dashboard-card,
+.portal-shell--parent .parent-info-card,
+.portal-shell--parent .parent-growth-card,
+.portal-shell--parent .parent-flat-history-card,
+.portal-shell--parent .parent-profile-hero,
+.portal-shell--parent .profile-menu-card,
+.portal-shell--parent .parent-calibration-card {
+  border: 1px solid #dce7ef !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: none !important;
+}
+
+.portal-shell--parent .parent-profile-hero {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 18px 0 14px !important;
+}
+
+.portal-shell--parent .profile-menu-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.portal-shell--parent .profile-menu-card > div {
+  padding: 14px 2px !important;
+  border-top: 0 !important;
+  border-bottom: 1px solid #dfe8ef !important;
+}
+
+.portal-shell--parent .parent-growth-insight article,
+.portal-shell--parent .parent-growth-insight > div,
+.portal-shell--parent .parent-growth-insight .parent-calibration-card {
+  border-width: 1px !important;
+  border-color: #dce7ef !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+}
+
+.portal-shell--parent .parent-growth-insight > div {
+  background: rgba(255, 255, 255, 0.96) !important;
+}
+
+.portal-shell--parent .parent-growth-insight article {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
+
+.portal-shell--parent .parent-latest-metrics article {
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 12px !important;
+}
+
+.portal-shell--parent .parent-flat-history-card {
+  padding: 15px !important;
+}
+
+.portal-shell--parent .parent-ai-fab {
+  border: 1px solid #d7e3eb !important;
+  background: white !important;
+  box-shadow: 0 6px 18px rgba(42, 71, 93, 0.14) !important;
+}
+
+@media (max-width: 760px) {
+  .portal-shell--parent .portal-main {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .portal-shell--parent .parent-growth-insight {
+    gap: 14px !important;
   }
 }

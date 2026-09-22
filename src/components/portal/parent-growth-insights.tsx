@@ -10,12 +10,8 @@ import {
   Scale,
 } from "lucide-react";
 
-import {
-  assessHeightForAge,
-  growthStatusLabel,
-  type GrowthStatus,
-} from "@/lib/growth";
-import { ageInMonths, type ChildProfile, type Examination } from "@/lib/portal";
+import { growthStatusLabel, type GrowthStatus } from "@/lib/growth";
+import type { ChildProfile, Examination } from "@/lib/portal";
 import { formatReading } from "@/lib/screening";
 
 const MAX_POINTS = 6;
@@ -110,96 +106,6 @@ function zTrend(latest: Examination, previous: Examination | undefined) {
     title: "Nilai TB/U sama dengan pemeriksaan sebelumnya",
     text: "Belum ada perubahan nilai TB/U dibanding pemeriksaan sebelumnya.",
   };
-}
-
-function demoHeight(ageMonths: number, sex: "male" | "female") {
-  const base = sex === "male" ? 87.1 : 85.7;
-  const monthlyGrowth = sex === "male" ? 0.65 : 0.68;
-  return Number(
-    (base + Math.max(0, ageMonths - 24) * monthlyGrowth).toFixed(1),
-  );
-}
-
-function demoWeight(ageMonths: number) {
-  return Number((12.4 + Math.max(0, ageMonths - 24) * 0.18).toFixed(1));
-}
-
-function demoExamination(
-  child: ChildProfile,
-  ageMonths: number,
-  heightCm: number,
-  weightKg: number,
-  timestamp: number,
-  index: number,
-): Examination {
-  const assessment = assessHeightForAge(ageMonths, child.sex, heightCm);
-  return {
-    id: `demo-${child.id}-${index}`,
-    childId: child.id,
-    childName: child.name,
-    childCode: child.code,
-    ageMonths,
-    sex: child.sex,
-    deviceId: "demo",
-    deviceName: "Visualisasi demo",
-    status: "completed",
-    heightCm,
-    weightKg,
-    bmi: Number((weightKg / (heightCm / 100) ** 2).toFixed(1)),
-    heightForAgeZ: assessment.heightForAgeZ,
-    captureStatus: "skipped",
-    facialStatus: null,
-    facialProbability: null,
-    facialReason: null,
-    facialModelVersion: null,
-    growthStatus: assessment.growthStatus,
-    createdAt: timestamp,
-    completedAt: timestamp,
-    finalizedAt: timestamp,
-  };
-}
-
-function displaySeries(
-  examinations: Examination[],
-  child: ChildProfile | null,
-) {
-  const real = sameChildExams(examinations);
-  if (real.length >= 2 || !child) return { exams: real, demo: false };
-
-  const currentAge = real[0]?.ageMonths ?? ageInMonths(child.birthDate);
-  if (currentAge < 24 || currentAge > 59) return { exams: real, demo: false };
-
-  const latestHeight = real[0]?.heightCm ?? demoHeight(currentAge, child.sex);
-  const latestWeight = real[0]?.weightKg ?? demoWeight(currentAge);
-  const latestTimestamp =
-    real[0]?.completedAt || real[0]?.createdAt || Date.now();
-
-  const generated = [1, 2, 3].map((monthsBack, index) => {
-    const age = Math.max(24, currentAge - monthsBack);
-    const timestamp = latestTimestamp - monthsBack * 30 * 24 * 60 * 60 * 1000;
-    const height = Number(
-      Math.max(
-        30,
-        latestHeight - monthsBack * (child.sex === "male" ? 0.65 : 0.68),
-      ).toFixed(1),
-    );
-    const weight = Number(
-      Math.max(1, latestWeight - monthsBack * 0.18).toFixed(1),
-    );
-    return demoExamination(child, age, height, weight, timestamp, index);
-  });
-
-  if (real[0]) return { exams: [real[0], ...generated], demo: true };
-
-  const current = demoExamination(
-    child,
-    currentAge,
-    latestHeight,
-    latestWeight,
-    latestTimestamp,
-    3,
-  );
-  return { exams: [current, ...generated], demo: true };
 }
 
 function riskLabel(status: GrowthStatus) {
@@ -495,13 +401,11 @@ function GrowthLineChart({
 
 export function ParentGrowthInsights({
   examinations,
-  child,
 }: {
   examinations: Examination[];
   child: ChildProfile | null;
 }) {
-  const series = displaySeries(examinations, child);
-  const childExams = series.exams;
+  const childExams = sameChildExams(examinations);
   const latest = childExams[0];
 
   if (!latest)
@@ -510,7 +414,7 @@ export function ParentGrowthInsights({
         <ChartNoAxesCombined />
         <h3>Belum ada data untuk divisualisasikan</h3>
         <p>
-          Tambahkan profil anak usia 24–59 bulan untuk melihat contoh insight.
+          Insight akan tampil setelah anak memiliki hasil pemeriksaan pertama.
         </p>
       </div>
     );
@@ -524,17 +428,7 @@ export function ParentGrowthInsights({
   const zValues = metricValues(childExams, "heightForAgeZ");
 
   return (
-    <section className="mb-8 space-y-6">
-      {series.demo && (
-        <div className="parent-demo-banner">
-          <strong>Mode demo grafik</strong>
-          <span>
-            Titik sebelum pemeriksaan asli adalah data simulasi tampilan dan
-            tidak disimpan ke database.
-          </span>
-        </div>
-      )}
-
+    <section className="parent-growth-insight mb-8 space-y-6">
       <div className="rounded-[1.75rem] border border-[var(--border)] bg-[linear-gradient(135deg,#f2f9ff_0%,#ffffff_58%,#fff5f8_100%)] p-6 md:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -550,9 +444,7 @@ export function ParentGrowthInsights({
             </p>
           </div>
           <span className="w-fit rounded-full border border-[var(--border)] bg-white px-4 py-2 text-xs font-extrabold text-[var(--muted-foreground)]">
-            {series.demo
-              ? "Visualisasi demo"
-              : `${childExams.length} pemeriksaan tersimpan`}
+            {childExams.length} pemeriksaan tersimpan
           </span>
         </div>
 
@@ -663,11 +555,7 @@ export function ParentGrowthInsights({
       <article className="parent-calibration-card">
         <div className="parent-calibration-copy">
           <span>KALIBRASI TB/U</span>
-          <h3>
-            {series.demo
-              ? "Simulasi pembacaan pertumbuhan"
-              : "Pembacaan terbaru"}
-          </h3>
+          <h3>Pembacaan terbaru</h3>
           <p>
             Usia {latest.ageMonths} bulan · TB {formatReading(latest.heightCm)}{" "}
             cm · BB {formatReading(latest.weightKg)} kg
