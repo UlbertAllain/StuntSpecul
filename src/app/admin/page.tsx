@@ -1,5 +1,5 @@
-import { StaffDashboard } from "@/components/portal/dashboard";
+import { AdminDashboard } from "@/components/portal/dashboard";
 
 export default function AdminPage() {
-  return <StaffDashboard mode="admin" />;
+  return <AdminDashboard />;
 }

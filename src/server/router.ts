@@ -12,11 +12,16 @@ import * as unifiedAuth from "./unified-auth";
 import { health } from "./health";
 import { chat } from "./ai";
 import { idSchema } from "./security";
+import { routeFirestore } from "./firestore-app";
 
 export async function route(request: Request, env: Env): Promise<Response> {
   sameOrigin(request, env);
   const path = new URL(request.url).pathname.replace(/\/$/, "");
   const method = request.method;
+  if (env.FIRESTORE) {
+    return routeFirestore(request, env, path, method);
+  }
+
   const key = `${method} ${path}`;
   switch (key) {
     case "GET /api/health":

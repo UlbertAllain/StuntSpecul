@@ -846,16 +846,6 @@ function ParentHome({
           </div>
         )}
       </section>
-
-      <button className="parent-home-start" onClick={onStart}>
-        <span>
-          <Play size={22} />
-        </span>
-        <div>
-          <strong>Mulai pemeriksaan</strong>
-          <small>Mulai sesi dari HP orang tua.</small>
-        </div>
-      </button>
     </>
   );
 }

@@ -63,50 +63,54 @@ export function applicationConfig(values: Variables, request: Request) {
   const requestUrl = new URL(request.url);
   const requestIsLocal = LOOPBACK.has(requestUrl.hostname);
   const isProduction = values.NODE_ENV === "production";
-
   const configured = values.APP_ORIGIN?.trim();
 
-  // Local development, including `vercel dev`, may use HTTP localhost.
-  // Production must always use the explicitly configured HTTPS public origin.
-  const candidate =
-    configured || (!isProduction && requestIsLocal ? requestUrl.origin : "");
+  let origin = requestUrl.origin;
 
-  let origin: URL;
+  if (configured) {
+    let parsed: URL;
+    try {
+      parsed = new URL(configured);
+    } catch {
+      throw new ApiError(
+        503,
+        "Alamat aplikasi belum valid.",
+        "app_origin_invalid",
+      );
+    }
 
-  try {
-    origin = new URL(candidate);
-  } catch {
+    const originIsLocal = LOOPBACK.has(parsed.hostname);
+    if (
+      parsed.username ||
+      parsed.password ||
+      parsed.search ||
+      parsed.hash ||
+      parsed.pathname !== "/" ||
+      (parsed.protocol !== "https:" &&
+        !(!isProduction && originIsLocal && parsed.protocol === "http:"))
+    ) {
+      throw new ApiError(
+        503,
+        "Alamat aplikasi belum valid.",
+        "app_origin_invalid",
+      );
+    }
+
+    origin = parsed.origin;
+  } else if (isProduction && requestUrl.protocol !== "https:") {
     throw new ApiError(
       503,
-      "Alamat aplikasi belum dikonfigurasi oleh pengelola.",
+      "Aplikasi production harus menggunakan HTTPS.",
       "app_origin_invalid",
     );
   }
 
-  const originIsLocal = LOOPBACK.has(origin.hostname);
-
-  if (
-    origin.username ||
-    origin.password ||
-    origin.search ||
-    origin.hash ||
-    origin.pathname !== "/" ||
-    (origin.protocol !== "https:" &&
-      !(!isProduction && originIsLocal && origin.protocol === "http:"))
-  )
-    throw new ApiError(
-      503,
-      "Alamat aplikasi belum valid.",
-      "app_origin_invalid",
-    );
-
-  // When running locally, same-origin checks must follow the actual local
-  // request origin instead of a production APP_ORIGIN copied into env files.
-  const appOrigin =
-    !isProduction && requestIsLocal ? requestUrl.origin : origin.origin;
+  if (!isProduction && requestIsLocal) {
+    origin = requestUrl.origin;
+  }
 
   return {
-    APP_ORIGIN: appOrigin,
+    APP_ORIGIN: origin,
     ALLOW_LOCAL_SETUP: !isProduction && requestIsLocal,
     GEMINI_API_KEY: values.GEMINI_API_KEY?.trim(),
     GEMINI_MODEL: values.GEMINI_MODEL?.trim(),

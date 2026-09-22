@@ -10,14 +10,24 @@ function run(command, args) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
+const requiredFirebase = [
+  "FIREBASE_PROJECT_ID",
+  "FIREBASE_CLIENT_EMAIL",
+  "FIREBASE_PRIVATE_KEY",
+];
+
 if (process.env.VERCEL_ENV === "production") {
+  const missing = requiredFirebase.filter((name) => !process.env[name]?.trim());
+
+  if (missing.length) {
+    console.error(
+      `[vercel-build] Missing Firebase environment variables: ${missing.join(", ")}`,
+    );
+    process.exit(1);
+  }
+
   console.log(
-    "[vercel-build] Applying/verifying production database migrations...",
-  );
-  run(process.execPath, ["scripts/migrate.mjs"]);
-} else {
-  console.log(
-    `[vercel-build] Skip production migration for VERCEL_ENV=${process.env.VERCEL_ENV || "local"}.`,
+    "[vercel-build] Firestore is the production database. No SQL migration is required.",
   );
 }
 

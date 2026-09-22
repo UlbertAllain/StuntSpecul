@@ -93,7 +93,7 @@ try {
   });
   const missing = await request("/config");
   assert.equal(missing.status, 503);
-  assert.equal((await missing.json()).code, "database_not_configured");
+  assert.equal((await missing.json()).code, "firebase_not_configured");
   assert.equal(missing.headers.get("x-content-type-options"), "nosniff");
   assert.match(missing.headers.get("cache-control"), /no-store/);
   for (const asset of [

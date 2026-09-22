@@ -12,7 +12,13 @@ type LoginResult = {
   redirectTo: "/ortu" | "/petugas" | "/admin";
 };
 
-type Mode = "login" | "register";
+type Config = {
+  needsSetup: boolean;
+  canSetup: boolean;
+  facility: string;
+};
+
+type Mode = "login" | "register" | "setup";
 
 export function UnifiedLogin() {
   const router = useRouter();
@@ -20,12 +26,31 @@ export function UnifiedLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [config, setConfig] = useState<Config | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
 
     async function detectSession() {
+      try {
+        const appConfig = await api<Config>("/config", {
+          signal: controller.signal,
+        });
+        setConfig(appConfig);
+        if (appConfig.needsSetup && appConfig.canSetup) {
+          setMode("setup");
+          setChecking(false);
+          return;
+        }
+      } catch (cause) {
+        if (!controller.signal.aborted) {
+          setError(errorMessage(cause));
+          setChecking(false);
+        }
+        return;
+      }
+
       try {
         const staff = await api<{ role: "admin" | "staff" }>("/auth/me", {
           signal: controller.signal,
@@ -71,6 +96,20 @@ export function UnifiedLogin() {
     const form = new FormData(event.currentTarget);
 
     try {
+      if (mode === "setup") {
+        await api("/auth/setup", {
+          method: "POST",
+          body: {
+            facility: String(form.get("facility") || "StuntSpecula"),
+            name: String(form.get("name") || ""),
+            email: String(form.get("email") || ""),
+            password: String(form.get("password") || ""),
+          },
+        });
+        router.replace("/admin");
+        return;
+      }
+
       if (mode === "login") {
         const result = await api<LoginResult>("/auth/unified-login", {
           method: "POST",
@@ -126,19 +165,46 @@ export function UnifiedLogin() {
         </div>
 
         <div className="unified-auth-copy">
-          <h1>{mode === "login" ? "Selamat datang" : "Buat akun orang tua"}</h1>
+          <h1>
+            {mode === "login"
+              ? "Selamat datang"
+              : mode === "setup"
+                ? "Buat admin pertama"
+                : "Buat akun orang tua"}
+          </h1>
           <p>
             {mode === "login"
               ? "Masuk dengan satu akun. Sistem akan membuka halaman sesuai peran Anda."
-              : "Daftarkan akun orang tua dan profil anak pertama."}
+              : mode === "setup"
+                ? "Setup ini hanya muncul di localhost saat Firestore masih kosong."
+                : "Daftarkan akun orang tua dan profil anak pertama."}
           </p>
         </div>
 
         <form className="unified-auth-form" onSubmit={submit}>
-          {mode === "register" && (
+          {mode === "setup" && (
             <>
               <label>
-                Nama orang tua
+                Nama fasilitas
+                <span className="unified-input">
+                  <UserRound size={18} />
+                  <input
+                    name="facility"
+                    required
+                    minLength={2}
+                    maxLength={80}
+                    defaultValue={config?.facility || "StuntSpecula"}
+                    placeholder="Nama fasilitas"
+                  />
+                </span>
+              </label>
+            </>
+          )}
+
+          {(mode === "register" || mode === "setup") && (
+            <>
+              <label>
+                {mode === "setup" ? "Nama admin" : "Nama orang tua"}
                 <span className="unified-input">
                   <UserRound size={18} />
                   <input
@@ -152,36 +218,40 @@ export function UnifiedLogin() {
                 </span>
               </label>
 
-              <label>
-                Nama anak
-                <span className="unified-input">
-                  <UserRound size={18} />
-                  <input
-                    name="childName"
-                    required
-                    minLength={2}
-                    maxLength={80}
-                    placeholder="Nama anak"
-                  />
-                </span>
-              </label>
+              {mode === "register" && (
+                <label>
+                  Nama anak
+                  <span className="unified-input">
+                    <UserRound size={18} />
+                    <input
+                      name="childName"
+                      required
+                      minLength={2}
+                      maxLength={80}
+                      placeholder="Nama anak"
+                    />
+                  </span>
+                </label>
+              )}
 
-              <div className="unified-auth-grid">
-                <label>
-                  Tanggal lahir
-                  <input name="birthDate" type="date" required />
-                </label>
-                <label>
-                  Jenis kelamin
-                  <select name="sex" required defaultValue="">
-                    <option value="" disabled>
-                      Pilih
-                    </option>
-                    <option value="male">Laki-laki</option>
-                    <option value="female">Perempuan</option>
-                  </select>
-                </label>
-              </div>
+              {mode === "register" && (
+                <div className="unified-auth-grid">
+                  <label>
+                    Tanggal lahir
+                    <input name="birthDate" type="date" required />
+                  </label>
+                  <label>
+                    Jenis kelamin
+                    <select name="sex" required defaultValue="">
+                      <option value="" disabled>
+                        Pilih
+                      </option>
+                      <option value="male">Laki-laki</option>
+                      <option value="female">Perempuan</option>
+                    </select>
+                  </label>
+                </div>
+              )}
             </>
           )}
 
@@ -208,7 +278,7 @@ export function UnifiedLogin() {
                 name="password"
                 type={showPassword ? "text" : "password"}
                 required
-                minLength={mode === "register" ? 12 : 1}
+                minLength={mode === "login" ? 1 : 12}
                 maxLength={72}
                 autoComplete={
                   mode === "login" ? "current-password" : "new-password"
@@ -230,22 +300,30 @@ export function UnifiedLogin() {
           {error && <p className="unified-auth-error">{error}</p>}
 
           <button className="unified-auth-submit" disabled={busy}>
-            {busy ? "Memproses…" : mode === "login" ? "Login" : "Buat akun"}
+            {busy
+              ? "Memproses…"
+              : mode === "login"
+                ? "Login"
+                : mode === "setup"
+                  ? "Buat admin"
+                  : "Buat akun"}
           </button>
         </form>
 
-        <button
-          className="unified-auth-switch"
-          type="button"
-          onClick={() => {
-            setError("");
-            setMode((value) => (value === "login" ? "register" : "login"));
-          }}
-        >
-          {mode === "login"
-            ? "Orang tua baru? Buat akun"
-            : "Sudah punya akun? Login"}
-        </button>
+        {mode !== "setup" && (
+          <button
+            className="unified-auth-switch"
+            type="button"
+            onClick={() => {
+              setError("");
+              setMode((value) => (value === "login" ? "register" : "login"));
+            }}
+          >
+            {mode === "login"
+              ? "Orang tua baru? Buat akun"
+              : "Sudah punya akun? Login"}
+          </button>
+        )}
 
         <p className="unified-auth-note">
           Petugas dan admin menggunakan form login yang sama. Akun petugas

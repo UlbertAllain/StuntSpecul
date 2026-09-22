@@ -7,8 +7,9 @@ import {
   History,
   Home,
   LogOut,
-  Settings,
+  MonitorCog,
   UserRound,
+  UserRoundCog,
   UsersRound,
 } from "lucide-react";
 import { api, ClientError, errorMessage } from "@/lib/api-client";
@@ -21,53 +22,22 @@ import { DeviceMonitoringPanel } from "./device-monitoring";
 import { InsightsPanel } from "./insights";
 import { SettingsPanel } from "./settings";
 
-type DashboardMode = "staff" | "admin";
-type DashboardTab = "home" | "children" | "history" | "insights" | "account";
+type StaffTab = "home" | "children" | "history" | "insights" | "profile";
+type AdminTab = "device" | "staff";
 
-function AccountPanel({
-  user,
-  onLogout,
-}: {
-  user: Staff;
-  onLogout: () => Promise<void>;
-}) {
-  return (
-    <section className="portal-card staff-profile-card">
-      <div className="staff-profile-avatar">
-        {user.name.slice(0, 1).toUpperCase()}
-      </div>
-      <div className="staff-profile-copy">
-        <span>{user.role === "admin" ? "ADMIN" : "PETUGAS"}</span>
-        <h2>{user.name}</h2>
-        <p>{user.email}</p>
-      </div>
-      <button className="portal-secondary" onClick={() => void onLogout()}>
-        <LogOut size={18} />
-        Keluar
-      </button>
-    </section>
-  );
-}
-
-export function StaffDashboard({ mode = "staff" }: { mode?: DashboardMode }) {
+function useStaffSession(expected: "staff" | "admin") {
   const router = useRouter();
   const [user, setUser] = useState<Staff | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<DashboardTab>("home");
   const [error, setError] = useState("");
-  const [facility, setFacility] = useState("StuntSpecula");
 
   useEffect(() => {
     const controller = new AbortController();
 
     api<Staff>("/auth/me", { signal: controller.signal })
       .then((value) => {
-        if (mode === "admin" && value.role !== "admin") {
-          router.replace("/petugas");
-          return;
-        }
-        if (mode === "staff" && value.role === "admin") {
-          router.replace("/admin");
+        if (value.role !== expected) {
+          router.replace(value.role === "admin" ? "/admin" : "/petugas");
           return;
         }
         setUser(value);
@@ -87,12 +57,8 @@ export function StaffDashboard({ mode = "staff" }: { mode?: DashboardMode }) {
         if (!controller.signal.aborted) setLoading(false);
       });
 
-    api<{ facility: string }>("/config", { signal: controller.signal })
-      .then((value) => setFacility(value.facility))
-      .catch(() => {});
-
     return () => controller.abort();
-  }, [mode, router]);
+  }, [expected, router]);
 
   async function logout() {
     try {
@@ -102,63 +68,74 @@ export function StaffDashboard({ mode = "staff" }: { mode?: DashboardMode }) {
     }
   }
 
+  return { user, loading, error, logout };
+}
+
+function ProfilePanel({
+  user,
+  onLogout,
+}: {
+  user: Staff;
+  onLogout: () => Promise<void>;
+}) {
+  return (
+    <section className="ref-card staff-profile-card">
+      <div className="staff-profile-avatar">
+        {user.name.slice(0, 1).toUpperCase()}
+      </div>
+      <div className="staff-profile-copy">
+        <span>PETUGAS</span>
+        <h2>{user.name}</h2>
+        <p>{user.email}</p>
+      </div>
+      <button className="portal-secondary" onClick={() => void onLogout()}>
+        <LogOut size={18} /> Keluar
+      </button>
+    </section>
+  );
+}
+
+export function StaffDashboard() {
+  const { user, loading, error, logout } = useStaffSession("staff");
+  const [tab, setTab] = useState<StaffTab>("home");
+
   if (loading || !user) {
     return (
-      <PortalShell
-        tone="staff"
-        heading={loading ? "Menyiapkan akun" : "Mengalihkan ke login"}
-      >
-        <Message>{loading ? "Memeriksa sesi…" : "Sebentar…"}</Message>
+      <PortalShell tone="staff" heading="Petugas">
+        <Message>{loading ? "Memeriksa sesi…" : "Mengalihkan…"}</Message>
       </PortalShell>
     );
   }
 
-  const admin = user.role === "admin";
+  const items = [
+    ["home", Home, "Beranda"],
+    ["children", UsersRound, "Data anak"],
+    ["history", History, "Riwayat"],
+    ["insights", BarChart3, "Insight"],
+    ["profile", UserRound, "Profil"],
+  ] as const;
 
   return (
     <PortalShell
       tone="staff"
       heading={`Halo, ${user.name}`}
-      subtitle={facility}
+      subtitle="Pantau pemeriksaan dan data pertumbuhan anak dengan cepat."
       actions={
         <button className="portal-text portal-logout-desktop" onClick={logout}>
-          <LogOut size={18} />
-          Keluar
+          <LogOut size={18} /> Keluar
         </button>
       }
     >
-      <nav className="portal-nav staff-desktop-nav" aria-label="Menu dashboard">
-        <button
-          aria-current={tab === "home" ? "page" : undefined}
-          onClick={() => setTab("home")}
-        >
-          <Home /> Beranda
-        </button>
-        <button
-          aria-current={tab === "children" ? "page" : undefined}
-          onClick={() => setTab("children")}
-        >
-          <UsersRound /> Data anak
-        </button>
-        <button
-          aria-current={tab === "history" ? "page" : undefined}
-          onClick={() => setTab("history")}
-        >
-          <History /> Riwayat
-        </button>
-        <button
-          aria-current={tab === "insights" ? "page" : undefined}
-          onClick={() => setTab("insights")}
-        >
-          <BarChart3 /> Insight
-        </button>
-        <button
-          aria-current={tab === "account" ? "page" : undefined}
-          onClick={() => setTab("account")}
-        >
-          {admin ? <Settings /> : <UserRound />}
-          {admin ? "Admin" : "Profil"}
-        </button>
+      <nav className="portal-nav staff-desktop-nav" aria-label="Menu petugas">
+        {items.map(([key, Icon, label]) => (
+          <button
+            key={key}
+            aria-current={tab === key ? "page" : undefined}
+            onClick={() => setTab(key)}
+          >
+            <Icon /> {label}
+          </button>
+        ))}
       </nav>
 
       {error && <Message error>{error}</Message>}
@@ -168,55 +145,68 @@ export function StaffDashboard({ mode = "staff" }: { mode?: DashboardMode }) {
         {tab === "children" && <ChildrenPanel />}
         {tab === "history" && <ExaminationHistory />}
         {tab === "insights" && <InsightsPanel />}
-        {tab === "account" &&
-          (admin ? (
-            <div className="admin-one-page">
-              <DeviceMonitoringPanel />
-              <SettingsPanel user={user} />
-              <AccountPanel user={user} onLogout={logout} />
-            </div>
-          ) : (
-            <AccountPanel user={user} onLogout={logout} />
-          ))}
+        {tab === "profile" && <ProfilePanel user={user} onLogout={logout} />}
       </div>
 
-      <nav className="staff-mobile-nav" aria-label="Navigasi dashboard">
+      <nav className="staff-mobile-nav" aria-label="Navigasi petugas">
+        {items.map(([key, Icon, label]) => (
+          <button
+            key={key}
+            aria-current={tab === key ? "page" : undefined}
+            onClick={() => setTab(key)}
+          >
+            <Icon />
+            <span>{label === "Data anak" ? "Anak" : label}</span>
+          </button>
+        ))}
+      </nav>
+    </PortalShell>
+  );
+}
+
+export function AdminDashboard() {
+  const { user, loading, error, logout } = useStaffSession("admin");
+  const [tab, setTab] = useState<AdminTab>("device");
+
+  if (loading || !user) {
+    return (
+      <PortalShell tone="staff" heading="Admin">
+        <Message>{loading ? "Memeriksa sesi…" : "Mengalihkan…"}</Message>
+      </PortalShell>
+    );
+  }
+
+  return (
+    <PortalShell
+      tone="staff"
+      heading="Admin StuntSpecula"
+      subtitle="Kelola perangkat dan akun petugas."
+      actions={
+        <button className="portal-text" onClick={logout}>
+          <LogOut size={18} /> Keluar
+        </button>
+      }
+    >
+      <nav className="portal-nav admin-role-nav" aria-label="Menu admin">
         <button
-          aria-current={tab === "home" ? "page" : undefined}
-          onClick={() => setTab("home")}
+          aria-current={tab === "device" ? "page" : undefined}
+          onClick={() => setTab("device")}
         >
-          <Home />
-          <span>Home</span>
+          <MonitorCog /> Monitoring alat
         </button>
         <button
-          aria-current={tab === "children" ? "page" : undefined}
-          onClick={() => setTab("children")}
+          aria-current={tab === "staff" ? "page" : undefined}
+          onClick={() => setTab("staff")}
         >
-          <UsersRound />
-          <span>Anak</span>
-        </button>
-        <button
-          aria-current={tab === "history" ? "page" : undefined}
-          onClick={() => setTab("history")}
-        >
-          <History />
-          <span>Riwayat</span>
-        </button>
-        <button
-          aria-current={tab === "insights" ? "page" : undefined}
-          onClick={() => setTab("insights")}
-        >
-          <BarChart3 />
-          <span>Insight</span>
-        </button>
-        <button
-          aria-current={tab === "account" ? "page" : undefined}
-          onClick={() => setTab("account")}
-        >
-          {admin ? <Settings /> : <UserRound />}
-          <span>{admin ? "Admin" : "Profil"}</span>
+          <UserRoundCog /> Kelola petugas
         </button>
       </nav>
+
+      {error && <Message error>{error}</Message>}
+      <div className="portal-content admin-portal-content">
+        {tab === "device" && <DeviceMonitoringPanel />}
+        {tab === "staff" && <SettingsPanel />}
+      </div>
     </PortalShell>
   );
 }

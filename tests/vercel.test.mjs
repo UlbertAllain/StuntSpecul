@@ -25,7 +25,7 @@ after(async () => {
   if (working) await rm(working, { recursive: true, force: true });
 });
 
-test("production rejects local/missing database and missing application origin", () => {
+test("legacy SQL config stays validated while production origin can follow the request URL", () => {
   for (const values of [
     {},
     { DATABASE_URL: "file:local.db", NODE_ENV: "production" },
@@ -39,13 +39,12 @@ test("production rejects local/missing database and missing application origin",
       () => config.databaseConfig(values),
       (error) => error.status === 503,
     );
-  assert.throws(
-    () =>
-      config.applicationConfig(
-        { NODE_ENV: "production" },
-        new Request("https://example.test/api/config"),
-      ),
-    (error) => error.code === "app_origin_invalid",
+  assert.equal(
+    config.applicationConfig(
+      { NODE_ENV: "production" },
+      new Request("https://example.test/api/config"),
+    ).APP_ORIGIN,
+    "https://example.test",
   );
   assert.equal(
     config.databaseConfig({ DATABASE_URL: "file:local.db" }).url,

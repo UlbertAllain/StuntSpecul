@@ -26,7 +26,6 @@ function rows<T>(result: ResultSet): QueryResult<T> {
   };
 }
 
-// Preserve the existing query contract while letting the SDK own transport and transactions.
 export function createDatabase(client: QueryClient): Database {
   const queries = new WeakMap<PreparedStatement, InStatement>();
   function prepare(sql: string, args: InValue[] = []): PreparedStatement {
@@ -55,8 +54,22 @@ export function createDatabase(client: QueryClient): Database {
         if (!query) throw new Error("Statement belongs to another database");
         return query;
       });
-      // A write batch is atomic: failed QR claims/setup/chat inserts roll back together.
       return (await client.batch(batch, "write")).map((result) => rows(result));
+    },
+  };
+}
+
+export function unavailableDatabase(): Database {
+  const unavailable = () => {
+    throw new Error(
+      "SQL database is disabled because Firestore is the active data provider.",
+    );
+  };
+
+  return {
+    prepare: unavailable,
+    async batch() {
+      return unavailable();
     },
   };
 }
