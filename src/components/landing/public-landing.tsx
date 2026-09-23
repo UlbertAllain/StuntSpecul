@@ -3,37 +3,154 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
-  CheckCircle2,
-  HeartPulse,
-  History,
+  Camera,
+  ChevronDown,
+  Heart,
+  Menu,
+  PlayCircle,
   ShieldCheck,
-  UsersRound,
+  Sparkles,
+  UserRoundPlus,
 } from "lucide-react";
+
+import "./landing.css";
 
 const STEPS = [
   {
-    icon: UsersRound,
-    title: "Pilih profil anak",
-    text: "Orang tua memilih anak dari akun yang sudah terdaftar.",
+    icon: UserRoundPlus,
+    title: "Buat akun",
+    text: "Daftarkan akun orang tua dan profil anak untuk memulai pemeriksaan.",
   },
   {
-    icon: HeartPulse,
-    title: "Lakukan pemeriksaan",
-    text: "Tinggi, berat, dan wajah diproses melalui alat StuntSpecula.",
+    icon: Camera,
+    title: "Lakukan skrining",
+    text: "Ikuti pemeriksaan tinggi, berat, dan wajah melalui alat StuntSpecula.",
   },
   {
     icon: BarChart3,
     title: "Lihat hasil",
-    text: "TB/U WHO menjadi hasil utama dan Model A menjadi informasi pendukung.",
+    text: "Hasil pertumbuhan dan riwayat pemeriksaan tampil langsung di akun.",
   },
 ] as const;
 
+const FAQS = [
+  {
+    question: "Apa itu StuntSpecula?",
+    answer:
+      "StuntSpecula adalah sistem skrining pertumbuhan anak yang membantu orang tua dan petugas memantau tinggi, berat, TB/U WHO, serta informasi pendukung dari analisis wajah.",
+  },
+  {
+    question: "Bagaimana hasil pertumbuhan ditentukan?",
+    answer:
+      "Hasil utama menggunakan tinggi badan menurut umur atau TB/U WHO. Analisis wajah Model A hanya menjadi informasi pendukung dan tidak menentukan status stunting.",
+  },
+  {
+    question: "Siapa yang memulai pemeriksaan?",
+    answer:
+      "Orang tua memulai sesi dari akun mereka, kemudian anak mengikuti proses pemeriksaan pada alat StuntSpecula.",
+  },
+  {
+    question: "Apakah hasil pemeriksaan tersimpan?",
+    answer:
+      "Ya. Hasil yang sudah selesai tersimpan di akun orang tua sehingga perkembangan anak dapat dilihat kembali dari riwayat.",
+  },
+] as const;
+
+function AppPhone({ variant }: { variant: "growth" | "scan" | "assistant" }) {
+  if (variant === "scan") {
+    return (
+      <div className="stunt-phone stunt-phone--scan" aria-hidden="true">
+        <div className="stunt-phone-notch" />
+        <div className="stunt-phone-bar">
+          <span>‹</span>
+          <strong>Growth Scan</strong>
+          <span>◉</span>
+        </div>
+        <div className="stunt-scan-area">
+          <span className="stunt-scan-corner stunt-scan-corner--a" />
+          <span className="stunt-scan-corner stunt-scan-corner--b" />
+          <span className="stunt-scan-corner stunt-scan-corner--c" />
+          <span className="stunt-scan-corner stunt-scan-corner--d" />
+          <div className="stunt-child-silhouette">
+            <span className="stunt-child-head" />
+            <span className="stunt-child-body" />
+          </div>
+        </div>
+        <span className="stunt-phone-action">Ambil gambar</span>
+        <span className="stunt-phone-secondary">Kalibrasi tinggi</span>
+      </div>
+    );
+  }
+
+  if (variant === "assistant") {
+    return (
+      <div className="stunt-phone stunt-phone--assistant" aria-hidden="true">
+        <div className="stunt-phone-notch" />
+        <div className="stunt-phone-bar">
+          <span>‹</span>
+          <strong>Asisten</strong>
+          <span>•••</span>
+        </div>
+        <div className="stunt-chat">
+          <div className="stunt-chat-bubble stunt-chat-bubble--bot">
+            Hai! Aku bantu jelaskan hasil pemeriksaan anak dengan bahasa yang
+            mudah dipahami.
+          </div>
+          <div className="stunt-chat-bubble stunt-chat-bubble--user">
+            Bagaimana hasil pertumbuhannya?
+          </div>
+          <div className="stunt-chat-bubble stunt-chat-bubble--bot">
+            Hasil utama tetap mengikuti TB/U WHO. Riwayatnya bisa dipantau dari
+            akun orang tua.
+          </div>
+        </div>
+        <div className="stunt-chat-input">Ketik pesan…</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="stunt-phone stunt-phone--growth" aria-hidden="true">
+      <div className="stunt-phone-notch" />
+      <div className="stunt-phone-bar">
+        <span>☰</span>
+        <strong>Halo, Orang Tua!</strong>
+        <span>◌</span>
+      </div>
+      <div className="stunt-profile-preview">
+        <small>PROFIL PERTUMBUHAN</small>
+        <strong>Elsa</strong>
+        <span>3 tahun 3 bulan</span>
+      </div>
+      <div className="stunt-mini-chart">
+        <svg viewBox="0 0 200 90" preserveAspectRatio="none">
+          <path d="M5 78 C36 70 54 58 80 55 S132 37 195 16" />
+        </svg>
+      </div>
+      <div className="stunt-mini-metrics">
+        <span>
+          <small>Tinggi</small>
+          <b>93.5</b>
+        </span>
+        <span>
+          <small>Berat</small>
+          <b>18.9</b>
+        </span>
+        <span>
+          <small>TB/U</small>
+          <b>Pantau</b>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function PublicLanding() {
   return (
-    <main className="public-ref-page">
-      <header className="public-ref-header">
-        <div className="public-ref-header-inner">
-          <Link href="/" aria-label="StuntSpecula">
+    <main className="stunt-landing">
+      <header className="stunt-header">
+        <div className="stunt-header-inner">
+          <Link className="stunt-brand" href="/" aria-label="StuntSpecula">
             <Image
               src="/images/stuntspecula-logo.jpeg"
               alt="StuntSpecula"
@@ -43,164 +160,259 @@ export function PublicLanding() {
             />
           </Link>
 
-          <nav aria-label="Navigasi utama">
+          <nav className="stunt-desktop-nav" aria-label="Navigasi utama">
+            <a href="#beranda">Beranda</a>
+            <a href="#preview">Fitur</a>
             <a href="#cara-kerja">Cara kerja</a>
-            <a href="#fitur">Fitur</a>
-            <a href="#tentang">Tentang</a>
+            <a href="#faq">FAQ</a>
           </nav>
 
-          <Link className="public-ref-login" href="/login">
-            Masuk <ArrowRight size={17} />
+          <Link className="stunt-login-button" href="/login">
+            Masuk / Daftar <ArrowRight size={17} />
           </Link>
+
+          <details className="stunt-mobile-menu">
+            <summary aria-label="Buka menu">
+              <Menu />
+            </summary>
+            <div className="stunt-mobile-menu-panel">
+              <Link className="stunt-mobile-menu-brand" href="/">
+                <Image
+                  src="/images/stuntspecula-logo.jpeg"
+                  alt="StuntSpecula"
+                  width={1536}
+                  height={1024}
+                />
+              </Link>
+              <a href="#beranda">Beranda</a>
+              <a href="#preview">Fitur</a>
+              <a href="#cara-kerja">Cara kerja</a>
+              <a href="#faq">FAQ</a>
+              <Link className="stunt-mobile-menu-login" href="/login">
+                Masuk / Daftar <ArrowRight size={17} />
+              </Link>
+            </div>
+          </details>
         </div>
       </header>
 
-      <section className="public-ref-hero">
-        <div className="public-ref-glow public-ref-glow-blue" />
-        <div className="public-ref-glow public-ref-glow-pink" />
+      <section id="beranda" className="stunt-hero">
+        <div className="stunt-orb stunt-orb--blue" />
+        <div className="stunt-orb stunt-orb--pink" />
 
-        <div className="public-ref-hero-inner">
-          <div className="public-ref-copy">
-            <span className="public-ref-eyebrow">
-              CHILD GROWTH TRACKING & PREVENTION
+        <div className="stunt-hero-inner">
+          <div className="stunt-hero-copy">
+            <span className="stunt-eyebrow">
+              PANTAU · CEGAH · TUMBUH BERSAMA
             </span>
             <h1>
-              Pantau tumbuh kembang anak
-              <span> lebih mudah dari satu tempat.</span>
+              Setiap Anak
+              <br />
+              Berhak Tumbuh
+              <strong> Lebih Baik</strong>
             </h1>
             <p>
-              StuntSpecula membantu orang tua dan petugas menjalankan skrining
-              pertumbuhan anak dengan alur yang sederhana, hasil yang mudah
-              dibaca, dan riwayat yang tersimpan rapi.
+              StuntSpecula membantu orang tua memantau pertumbuhan anak sejak
+              dini melalui proses skrining yang sederhana dan hasil yang mudah
+              dibaca.
             </p>
-            <a className="public-ref-secondary" href="#cara-kerja">
-              Lihat cara kerja <ArrowRight size={17} />
-            </a>
+
+            <div className="stunt-hero-actions">
+              <Link className="stunt-primary-button" href="/login">
+                Mulai Sekarang <ArrowRight size={18} />
+              </Link>
+              <a className="stunt-ghost-button" href="#preview">
+                <PlayCircle size={19} />
+                Lihat Tampilan
+              </a>
+            </div>
+
+            <div className="stunt-hero-benefits">
+              <div>
+                <span className="stunt-benefit-icon stunt-benefit-icon--pink">
+                  <Heart />
+                </span>
+                <p>Untuk masa depan tumbuh kembang anak yang lebih sehat</p>
+              </div>
+              <div>
+                <span className="stunt-benefit-icon stunt-benefit-icon--blue">
+                  <ShieldCheck />
+                </span>
+                <p>Hasil pertumbuhan utama berdasarkan standar WHO</p>
+              </div>
+              <div>
+                <span className="stunt-benefit-icon stunt-benefit-icon--mint">
+                  <Sparkles />
+                </span>
+                <p>Alur pemeriksaan dibuat sederhana untuk penggunaan harian</p>
+              </div>
+            </div>
           </div>
 
-          <div className="public-ref-phone-card">
-            <div className="public-ref-phone-top">
-              <span>Ringkasan pertumbuhan</span>
-              <span className="public-ref-avatar">A</span>
-            </div>
-            <div className="public-ref-chart" aria-hidden="true">
-              <svg viewBox="0 0 320 150" preserveAspectRatio="none">
-                <path d="M8 126 C65 112 96 95 135 82 S205 62 312 28" />
-              </svg>
-            </div>
-            <div className="public-ref-metrics">
-              <article>
-                <small>Tinggi</small>
-                <strong>95.4</strong>
-                <span>cm</span>
-              </article>
-              <article>
-                <small>Berat</small>
-                <strong>14.2</strong>
-                <span>kg</span>
-              </article>
-              <article>
-                <small>TB/U</small>
-                <strong>Normal</strong>
-                <span>WHO</span>
-              </article>
+          <div className="stunt-hero-visual" aria-label="Preview aplikasi">
+            <span className="stunt-float-label stunt-float-label--one">
+              Pantau pertumbuhan
+            </span>
+            <span className="stunt-float-label stunt-float-label--two">
+              Skrining mudah
+            </span>
+            <span className="stunt-float-label stunt-float-label--three">
+              Hasil tersimpan
+            </span>
+            <div className="stunt-phone-stack">
+              <div className="stunt-phone-wrap stunt-phone-wrap--left">
+                <AppPhone variant="growth" />
+              </div>
+              <div className="stunt-phone-wrap stunt-phone-wrap--center">
+                <AppPhone variant="scan" />
+              </div>
+              <div className="stunt-phone-wrap stunt-phone-wrap--right">
+                <AppPhone variant="assistant" />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="cara-kerja" className="public-ref-section">
-        <div className="public-ref-section-head">
-          <span>CARA KERJA</span>
-          <h2>Tiga langkah, tanpa alur yang berbelit.</h2>
+      <section id="preview" className="stunt-preview-section">
+        <div className="stunt-section-copy">
+          <span className="stunt-eyebrow stunt-eyebrow--pink">
+            SEKILAS APLIKASI
+          </span>
+          <h2>Pemantauan pertumbuhan yang mudah dibaca.</h2>
           <p>
-            Pemeriksaan dibuat langsung dan mudah dipahami baik dari HP orang
-            tua maupun dashboard petugas.
+            Dari hasil skrining sampai riwayat pertumbuhan, informasi utama
+            ditampilkan langsung tanpa alur yang berbelit.
           </p>
         </div>
 
-        <div className="public-ref-step-grid">
+        <div className="stunt-preview-stage">
+          <div className="stunt-preview-phone stunt-preview-phone--one">
+            <AppPhone variant="growth" />
+          </div>
+          <div className="stunt-preview-phone stunt-preview-phone--two">
+            <AppPhone variant="scan" />
+          </div>
+          <div className="stunt-preview-phone stunt-preview-phone--three">
+            <AppPhone variant="assistant" />
+          </div>
+        </div>
+      </section>
+
+      <section id="cara-kerja" className="stunt-steps-section">
+        <div className="stunt-section-copy">
+          <span className="stunt-eyebrow">CARA KERJA</span>
+          <h2>Tiga langkah mudah untuk mulai.</h2>
+          <p>
+            Pemeriksaan dibuat ringkas agar orang tua dapat mengikuti alurnya
+            langsung dari HP.
+          </p>
+        </div>
+
+        <div className="stunt-step-list">
           {STEPS.map(({ icon: Icon, title, text }, index) => (
-            <article key={title}>
-              <span className="public-ref-step-number">0{index + 1}</span>
-              <span className="public-ref-step-icon">
-                <Icon />
-              </span>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </article>
+            <div className="stunt-step-wrap" key={title}>
+              <article className="stunt-step-card">
+                <span className="stunt-step-number">{index + 1}</span>
+                <span className="stunt-step-icon">
+                  <Icon />
+                </span>
+                <div>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </div>
+              </article>
+              {index < STEPS.length - 1 && (
+                <span className="stunt-step-arrow" aria-hidden="true">
+                  ↓
+                </span>
+              )}
+            </div>
           ))}
         </div>
       </section>
 
-      <section id="fitur" className="public-ref-feature-wrap">
-        <div className="public-ref-feature-card">
-          <div>
-            <span className="public-ref-eyebrow">UNTUK ORANG TUA</span>
-            <h2>Riwayat anak langsung terbaca.</h2>
-            <p>
-              Tinggi, berat, TB/U, insight, dan hasil pendukung ditampilkan
-              tanpa perlu masuk ke banyak halaman detail.
-            </p>
-          </div>
-          <div className="public-ref-feature-list">
-            <div>
-              <History />
-              <span>Riwayat pemeriksaan tersimpan</span>
-            </div>
-            <div>
-              <BarChart3 />
-              <span>Perkembangan mudah dibaca</span>
-            </div>
-            <div>
-              <CheckCircle2 />
-              <span>Hasil utama tetap berdasarkan WHO</span>
-            </div>
-          </div>
+      <section id="faq" className="stunt-faq-section">
+        <div className="stunt-section-copy">
+          <span className="stunt-eyebrow">PERTANYAAN YANG SERING DIAJUKAN</span>
+          <h2>FAQ</h2>
         </div>
 
-        <div className="public-ref-feature-card public-ref-feature-card-pink">
-          <div>
-            <span className="public-ref-eyebrow">UNTUK PETUGAS</span>
-            <h2>Operasional tetap sederhana.</h2>
+        <div className="stunt-faq-layout">
+          <div className="stunt-faq-list">
+            {FAQS.map((item, index) => (
+              <details
+                className="stunt-faq-item"
+                key={item.question}
+                open={index === 0}
+              >
+                <summary>
+                  <span>{item.question}</span>
+                  <ChevronDown />
+                </summary>
+                <p>{item.answer}</p>
+              </details>
+            ))}
+          </div>
+
+          <aside className="stunt-cta-card">
+            <span className="stunt-eyebrow stunt-eyebrow--pink">
+              BERSAMA CEGAH STUNTING
+            </span>
+            <h2>
+              Mulai pantau tumbuh kembang anak bersama
+              <strong> StuntSpecula</strong>
+            </h2>
             <p>
-              Petugas fokus pada data anak, pemeriksaan, riwayat, dan insight.
-              Monitoring alat serta pengelolaan petugas hanya tersedia untuk
-              admin.
+              Mulai dari satu akun orang tua, jalankan pemeriksaan, lalu pantau
+              hasilnya dari waktu ke waktu.
             </p>
-          </div>
-          <div className="public-ref-feature-list">
-            <div>
-              <UsersRound />
-              <span>Data anak langsung terlihat</span>
-            </div>
-            <div>
-              <HeartPulse />
-              <span>Status pemeriksaan terpantau</span>
-            </div>
-            <div>
-              <ShieldCheck />
-              <span>Akses dibatasi sesuai role</span>
-            </div>
-          </div>
+            <Image
+              src="/images/mimo-cheer.png"
+              alt="Mimo, maskot StuntSpecula"
+              width={600}
+              height={600}
+              className="stunt-cta-mimo"
+            />
+            <Link
+              className="stunt-primary-button stunt-cta-button"
+              href="/login"
+            >
+              Daftar Sekarang <ArrowRight size={18} />
+            </Link>
+          </aside>
         </div>
       </section>
 
-      <section id="tentang" className="public-ref-note">
-        <ShieldCheck />
-        <div>
-          <h2>Skrining, bukan diagnosis medis.</h2>
+      <footer className="stunt-footer">
+        <div className="stunt-footer-brand">
+          <Image
+            src="/images/stuntspecula-logo.jpeg"
+            alt="StuntSpecula"
+            width={1536}
+            height={1024}
+          />
           <p>
-            TB/U WHO tetap menjadi dasar hasil pertumbuhan. Analisis wajah hanya
-            berfungsi sebagai informasi pendukung dan tidak menggantikan
-            pemeriksaan tenaga kesehatan.
+            Pantau pertumbuhan anak dengan alur yang sederhana dan mudah dibaca.
           </p>
         </div>
-      </section>
 
-      <footer className="public-ref-footer">
-        <span>StuntSpecula</span>
-        <span>Child Growth Tracking & Prevention</span>
+        <nav className="stunt-footer-links" aria-label="Navigasi footer">
+          <a href="#preview">Fitur</a>
+          <a href="#cara-kerja">Cara kerja</a>
+          <a href="#faq">FAQ</a>
+          <Link href="/login">Masuk</Link>
+        </nav>
+
+        <div className="stunt-footer-social" aria-label="Media sosial">
+          <span aria-label="Instagram">IG</span>
+          <span aria-label="YouTube">YT</span>
+          <span aria-label="LinkedIn">in</span>
+        </div>
+
+        <p className="stunt-footer-copy">
+          © 2026 StuntSpecula. Semua hak dilindungi.
+        </p>
       </footer>
     </main>
   );
