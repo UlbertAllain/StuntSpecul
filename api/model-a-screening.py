@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
@@ -31,6 +32,16 @@ _detector: Any | None = None
 _session: Any | None = None
 _runtime_lock = threading.Lock()
 _dependency_error: str | None = None
+_runtime_warmed = False
+
+
+def _log_runtime_error(context: str, exc: Exception) -> None:
+    # Keep child images/request bodies out of logs; record only runtime diagnostics.
+    print(
+        f"[model-a] {context}: {type(exc).__name__}: {exc}",
+        file=sys.stderr,
+        flush=True,
+    )
 
 
 def _json(handler: BaseHTTPRequestHandler, status: int, payload: dict[str, Any]) -> None:
@@ -387,8 +398,12 @@ def _infer(image_bytes: bytes, age_months: int) -> dict[str, Any]:
             "modelVersion": MODEL_VERSION,
         }
 
-    encoded = np.frombuffer(image_bytes, dtype=np.uint8)
-    image = cv2.imdecode(encoded, cv2.IMREAD_COLOR)
+    # A serverless POST can land on a fresh instance that has never received
+    # the GET health check. Initialize dependencies before using module globals.
+    cv2_module, np_module, _ = _load_dependencies()
+
+    encoded = np_module.frombuffer(image_bytes, dtype=np_module.uint8)
+    image = cv2_module.imdecode(encoded, cv2_module.IMREAD_COLOR)
 
     if image is None or image.size == 0:
         return {
@@ -450,17 +465,52 @@ def _infer(image_bytes: bytes, age_months: int) -> dict[str, Any]:
     }
 
 
+def _warmup_runtime() -> None:
+    global _runtime_warmed
+
+    if _runtime_warmed:
+        return
+
+    detector, session = _load_runtime()
+    _, np_module, _ = _load_dependencies()
+
+    # Validate that both ONNX runtimes can execute, not merely that files/imports exist.
+    blank_face_frame = np_module.zeros((320, 320, 3), dtype=np_module.uint8)
+    dummy_classifier_input = np_module.zeros((1, 3, 224, 224), dtype=np_module.float32)
+
+    with _runtime_lock:
+        detector.setInputSize((320, 320))
+        detector.detect(blank_face_frame)
+        input_name = session.get_inputs()[0].name
+        session.run(None, {input_name: dummy_classifier_input})
+
+    _runtime_warmed = True
+
+
 class handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         status = _runtime_status()
+        runtime_ready = False
+        runtime_error = None
+
+        if status["ready"]:
+            try:
+                _warmup_runtime()
+                runtime_ready = True
+            except Exception as exc:
+                _log_runtime_error("runtime warmup failed", exc)
+                runtime_error = "model_runtime_init_failed"
+
         _json(
             self,
             200,
             {
                 "service": MODEL_VERSION,
-                "ready": status["ready"],
+                "ready": status["ready"] and runtime_ready,
                 "filesReady": status["filesReady"],
                 "dependenciesReady": status["dependenciesReady"],
+                "runtimeReady": runtime_ready,
+                "runtimeError": runtime_error,
                 "dependencyError": status["dependencyError"],
                 "dependencyVersions": status["dependencyVersions"],
                 "modelDir": str(MODEL_DIR),
@@ -492,7 +542,8 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             result = _infer(image_bytes, age_months)
-        except FileNotFoundError:
+        except FileNotFoundError as exc:
+            _log_runtime_error("model files missing", exc)
             _json(
                 self,
                 503,
@@ -503,17 +554,18 @@ class handler(BaseHTTPRequestHandler):
             )
             return
         except RuntimeError as exc:
+            _log_runtime_error("runtime unavailable", exc)
             _json(
                 self,
                 503,
                 {
                     "message": "Runtime Model A belum siap.",
                     "code": "model_runtime_not_ready",
-                    "detail": str(exc),
                 },
             )
             return
-        except Exception:
+        except Exception as exc:
+            _log_runtime_error("inference failed", exc)
             _json(
                 self,
                 500,
