@@ -885,6 +885,7 @@ function ParentHistory({ examinations }: { examinations: Examination[] }) {
           </p>
         </div>
       </div>
+
       {examinations.length === 0 ? (
         <div className="portal-empty">
           <h3>Belum ada riwayat</h3>
@@ -894,27 +895,35 @@ function ParentHistory({ examinations }: { examinations: Examination[] }) {
         <div className="parent-flat-history">
           {examinations.map((exam) => (
             <article key={exam.id} className="parent-flat-history-card">
-              <div>
-                <strong>
-                  {new Date(
-                    exam.completedAt || exam.createdAt,
-                  ).toLocaleDateString("id-ID", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </strong>
-                <span>{growthStatusLabel(exam.growthStatus)}</span>
+              <div className="parent-history-head">
+                <div>
+                  <strong>
+                    {new Date(
+                      exam.completedAt || exam.createdAt,
+                    ).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </strong>
+                </div>
+
+                <span className="parent-history-status">
+                  {growthStatusLabel(exam.growthStatus)}
+                </span>
               </div>
-              <dl>
+
+              <dl className="parent-history-metrics">
                 <div>
                   <dt>Tinggi</dt>
                   <dd>{formatReading(exam.heightCm)} cm</dd>
                 </div>
+
                 <div>
                   <dt>Berat</dt>
                   <dd>{formatReading(exam.weightKg)} kg</dd>
                 </div>
+
                 <div>
                   <dt>Model A</dt>
                   <dd>
