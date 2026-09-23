@@ -4,12 +4,17 @@ import {
   ArrowRight,
   BarChart3,
   Camera,
+  ChartNoAxesCombined,
   ChevronDown,
   Heart,
+  Home,
   Menu,
+  Play,
   PlayCircle,
   ShieldCheck,
   Sparkles,
+  TrendingUp,
+  UserRound,
   UserRoundPlus,
 } from "lucide-react";
 
@@ -56,91 +61,195 @@ const FAQS = [
   },
 ] as const;
 
-function AppPhone({ variant }: { variant: "growth" | "scan" | "assistant" }) {
-  if (variant === "scan") {
-    return (
-      <div className="stunt-phone stunt-phone--scan" aria-hidden="true">
-        <div className="stunt-phone-notch" />
-        <div className="stunt-phone-bar">
-          <span>‹</span>
-          <strong>Growth Scan</strong>
-          <span>◉</span>
-        </div>
-        <div className="stunt-scan-area">
-          <span className="stunt-scan-corner stunt-scan-corner--a" />
-          <span className="stunt-scan-corner stunt-scan-corner--b" />
-          <span className="stunt-scan-corner stunt-scan-corner--c" />
-          <span className="stunt-scan-corner stunt-scan-corner--d" />
-          <div className="stunt-child-silhouette">
-            <span className="stunt-child-head" />
-            <span className="stunt-child-body" />
-          </div>
-        </div>
-        <span className="stunt-phone-action">Ambil gambar</span>
-        <span className="stunt-phone-secondary">Kalibrasi tinggi</span>
-      </div>
-    );
-  }
-
-  if (variant === "assistant") {
-    return (
-      <div className="stunt-phone stunt-phone--assistant" aria-hidden="true">
-        <div className="stunt-phone-notch" />
-        <div className="stunt-phone-bar">
-          <span>‹</span>
-          <strong>Asisten</strong>
-          <span>•••</span>
-        </div>
-        <div className="stunt-chat">
-          <div className="stunt-chat-bubble stunt-chat-bubble--bot">
-            Hai! Aku bantu jelaskan hasil pemeriksaan anak dengan bahasa yang
-            mudah dipahami.
-          </div>
-          <div className="stunt-chat-bubble stunt-chat-bubble--user">
-            Bagaimana hasil pertumbuhannya?
-          </div>
-          <div className="stunt-chat-bubble stunt-chat-bubble--bot">
-            Hasil utama tetap mengikuti TB/U WHO. Riwayatnya bisa dipantau dari
-            akun orang tua.
-          </div>
-        </div>
-        <div className="stunt-chat-input">Ketik pesan…</div>
-      </div>
-    );
-  }
-
+function ParentAppPreview() {
   return (
-    <div className="stunt-phone stunt-phone--growth" aria-hidden="true">
-      <div className="stunt-phone-notch" />
-      <div className="stunt-phone-bar">
-        <span>☰</span>
-        <strong>Halo, Orang Tua!</strong>
-        <span>◌</span>
+    <div className="stunt-real-phone" aria-label="Preview portal orang tua">
+      <div className="stunt-real-phone-status">
+        <span>9:41</span>
+        <span>● ● ●</span>
       </div>
-      <div className="stunt-profile-preview">
-        <small>PROFIL PERTUMBUHAN</small>
-        <strong>Elsa</strong>
-        <span>3 tahun 3 bulan</span>
+
+      <div className="stunt-real-phone-screen">
+        <div className="stunt-real-phone-head">
+          <div>
+            <span>RUANG ORANG TUA</span>
+            <strong>Halo, Noell!</strong>
+          </div>
+          <span className="stunt-real-avatar">N</span>
+        </div>
+
+        <section className="stunt-real-growth-card">
+          <div className="stunt-real-growth-head">
+            <div>
+              <small>PROFIL PERTUMBUHAN</small>
+              <strong>Elsa</strong>
+              <span>3 tahun 3 bulan · Laki-laki</span>
+            </div>
+            <span className="stunt-real-child-avatar">E</span>
+          </div>
+
+          <div className="stunt-real-chart">
+            <svg viewBox="0 0 240 94" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="hero-chart" x1="0" x2="1">
+                  <stop offset="0%" stopColor="#72b8e6" />
+                  <stop offset="100%" stopColor="#ff9fc3" />
+                </linearGradient>
+              </defs>
+              <path d="M6 78 C42 73 61 62 88 58 S145 42 174 34 S210 24 234 13" />
+            </svg>
+            <span>Perkembangan tinggi badan</span>
+          </div>
+
+          <div className="stunt-real-metrics">
+            <article>
+              <span>Tinggi</span>
+              <strong>93.5</strong>
+              <small>cm</small>
+            </article>
+            <article>
+              <span>Berat</span>
+              <strong>18.9</strong>
+              <small>kg</small>
+            </article>
+            <article>
+              <span>TB/U</span>
+              <strong>Dalam rentang</strong>
+            </article>
+          </div>
+        </section>
+
+        <section className="stunt-real-summary">
+          <div className="stunt-real-summary-title">
+            <TrendingUp size={16} />
+            <div>
+              <strong>Ringkasan terbaru</strong>
+              <span>Pemeriksaan 23/09/2026</span>
+            </div>
+          </div>
+          <div className="stunt-real-summary-line">
+            <span>Status pertumbuhan</span>
+            <strong>Dalam rentang</strong>
+          </div>
+          <div className="stunt-real-summary-line">
+            <span>Analisis wajah</span>
+            <strong>Informasi pendukung</strong>
+          </div>
+        </section>
+
+        <button className="stunt-real-assistant" aria-label="Asisten">
+          <Image src="/images/mimo-cheer.png" alt="" width={96} height={96} />
+        </button>
       </div>
-      <div className="stunt-mini-chart">
-        <svg viewBox="0 0 200 90" preserveAspectRatio="none">
-          <path d="M5 78 C36 70 54 58 80 55 S132 37 195 16" />
+
+      <nav className="stunt-real-bottom-nav" aria-label="Preview navigasi">
+        <span className="active">
+          <Home />
+          <small>Beranda</small>
+        </span>
+        <span>
+          <TrendingUp />
+          <small>Insight</small>
+        </span>
+        <span className="start">
+          <i>
+            <Play />
+          </i>
+          <small>Mulai</small>
+        </span>
+        <span>
+          <ChartNoAxesCombined />
+          <small>Riwayat</small>
+        </span>
+        <span>
+          <UserRound />
+          <small>Profil</small>
+        </span>
+      </nav>
+    </div>
+  );
+}
+
+function GrowthPreview() {
+  return (
+    <div className="stunt-bento">
+      <article className="stunt-bento-who">
+        <span>HASIL PERTUMBUHAN WHO</span>
+        <div>
+          <strong>Dalam rentang</strong>
+          <small>TB/U -1.42 SD</small>
+        </div>
+        <p>
+          Hasil utama menggunakan tinggi badan menurut umur sesuai standar WHO.
+        </p>
+      </article>
+
+      <article className="stunt-bento-metric stunt-bento-height">
+        <span>Tinggi</span>
+        <strong>93.5</strong>
+        <small>cm</small>
+      </article>
+
+      <article className="stunt-bento-metric stunt-bento-weight">
+        <span>Berat</span>
+        <strong>18.9</strong>
+        <small>kg</small>
+      </article>
+
+      <article className="stunt-bento-chart">
+        <div className="stunt-bento-card-head">
+          <div>
+            <span>PERKEMBANGAN</span>
+            <strong>Tinggi badan</strong>
+          </div>
+          <small>6 pemeriksaan</small>
+        </div>
+        <svg viewBox="0 0 320 130" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="bento-line" x1="0" x2="1">
+              <stop offset="0%" stopColor="#72b8e6" />
+              <stop offset="100%" stopColor="#e891b5" />
+            </linearGradient>
+            <linearGradient id="bento-area" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#72b8e6" stopOpacity="0.26" />
+              <stop offset="100%" stopColor="#72b8e6" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path
+            className="area"
+            d="M8 112 C58 103 80 88 118 82 S184 61 226 49 S273 34 312 21 L312 124 L8 124 Z"
+          />
+          <path d="M8 112 C58 103 80 88 118 82 S184 61 226 49 S273 34 312 21" />
+          <circle cx="8" cy="112" r="4" />
+          <circle cx="118" cy="82" r="4" />
+          <circle cx="226" cy="49" r="4" />
+          <circle cx="312" cy="21" r="4" />
         </svg>
-      </div>
-      <div className="stunt-mini-metrics">
-        <span>
-          <small>Tinggi</small>
-          <b>93.5</b>
-        </span>
-        <span>
-          <small>Berat</small>
-          <b>18.9</b>
-        </span>
-        <span>
-          <small>TB/U</small>
-          <b>Pantau</b>
-        </span>
-      </div>
+      </article>
+
+      <article className="stunt-bento-history">
+        <div className="stunt-bento-card-head">
+          <div>
+            <span>RIWAYAT TERBARU</span>
+            <strong>23 Sep 2026</strong>
+          </div>
+          <small>Selesai</small>
+        </div>
+        <div className="stunt-bento-history-grid">
+          <div>
+            <span>Tinggi</span>
+            <strong>93.5 cm</strong>
+          </div>
+          <div>
+            <span>Berat</span>
+            <strong>18.9 kg</strong>
+          </div>
+          <div>
+            <span>Model A</span>
+            <strong>Informasi pendukung</strong>
+          </div>
+        </div>
+      </article>
     </div>
   );
 }
@@ -221,9 +330,9 @@ export function PublicLanding() {
               <Link className="stunt-primary-button" href="/login">
                 Mulai Sekarang <ArrowRight size={18} />
               </Link>
-              <a className="stunt-ghost-button" href="#preview">
+              <a className="stunt-ghost-button" href="#cara-kerja">
                 <PlayCircle size={19} />
-                Lihat Tampilan
+                Lihat Cara Kerja
               </a>
             </div>
 
@@ -232,44 +341,33 @@ export function PublicLanding() {
                 <span className="stunt-benefit-icon stunt-benefit-icon--pink">
                   <Heart />
                 </span>
-                <p>Untuk masa depan tumbuh kembang anak yang lebih sehat</p>
+                <p>Riwayat pertumbuhan tersimpan di akun orang tua</p>
               </div>
               <div>
                 <span className="stunt-benefit-icon stunt-benefit-icon--blue">
                   <ShieldCheck />
                 </span>
-                <p>Hasil pertumbuhan utama berdasarkan standar WHO</p>
+                <p>Hasil utama tetap berdasarkan standar TB/U WHO</p>
               </div>
               <div>
                 <span className="stunt-benefit-icon stunt-benefit-icon--mint">
                   <Sparkles />
                 </span>
-                <p>Alur pemeriksaan dibuat sederhana untuk penggunaan harian</p>
+                <p>Alur pemeriksaan sederhana dan mudah dibaca di HP</p>
               </div>
             </div>
           </div>
 
-          <div className="stunt-hero-visual" aria-label="Preview aplikasi">
-            <span className="stunt-float-label stunt-float-label--one">
-              Pantau pertumbuhan
-            </span>
-            <span className="stunt-float-label stunt-float-label--two">
-              Skrining mudah
-            </span>
-            <span className="stunt-float-label stunt-float-label--three">
-              Hasil tersimpan
-            </span>
-            <div className="stunt-phone-stack">
-              <div className="stunt-phone-wrap stunt-phone-wrap--left">
-                <AppPhone variant="growth" />
-              </div>
-              <div className="stunt-phone-wrap stunt-phone-wrap--center">
-                <AppPhone variant="scan" />
-              </div>
-              <div className="stunt-phone-wrap stunt-phone-wrap--right">
-                <AppPhone variant="assistant" />
-              </div>
-            </div>
+          <div className="stunt-hero-product">
+            <span className="stunt-product-badge">PORTAL ORANG TUA</span>
+            <ParentAppPreview />
+            <Image
+              src="/images/mimo-cheer.png"
+              alt=""
+              width={180}
+              height={180}
+              className="stunt-hero-mimo"
+            />
           </div>
         </div>
       </section>
@@ -277,26 +375,15 @@ export function PublicLanding() {
       <section id="preview" className="stunt-preview-section">
         <div className="stunt-section-copy">
           <span className="stunt-eyebrow stunt-eyebrow--pink">
-            SEKILAS APLIKASI
+            LANGSUNG TERBACA
           </span>
-          <h2>Pemantauan pertumbuhan yang mudah dibaca.</h2>
+          <h2>Semua yang penting, langsung terlihat.</h2>
           <p>
-            Dari hasil skrining sampai riwayat pertumbuhan, informasi utama
-            ditampilkan langsung tanpa alur yang berbelit.
+            Hasil utama, perkembangan tinggi dan berat, serta riwayat
+            pemeriksaan disusun dalam satu tampilan yang mudah dipindai.
           </p>
         </div>
-
-        <div className="stunt-preview-stage">
-          <div className="stunt-preview-phone stunt-preview-phone--one">
-            <AppPhone variant="growth" />
-          </div>
-          <div className="stunt-preview-phone stunt-preview-phone--two">
-            <AppPhone variant="scan" />
-          </div>
-          <div className="stunt-preview-phone stunt-preview-phone--three">
-            <AppPhone variant="assistant" />
-          </div>
-        </div>
+        <GrowthPreview />
       </section>
 
       <section id="cara-kerja" className="stunt-steps-section">
