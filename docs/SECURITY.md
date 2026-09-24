@@ -24,7 +24,7 @@ Client-side role check hanya untuk UX. Server tetap menjadi authorization source
 
 Google OAuth menggunakan authorization code flow, server-side client secret, state cookie untuk CSRF protection, verified email check, dan temporary registration token.
 
-GOOGLE_CLIENT_SECRET tidak boleh memakai prefix NEXT_PUBLIC_.
+GOOGLE*CLIENT_SECRET tidak boleh memakai prefix NEXT_PUBLIC*.
 
 ## Rate limiting
 

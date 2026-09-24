@@ -59,8 +59,7 @@ export function UnifiedLogin() {
       not_configured:
         "Google belum terhubung ke konfigurasi aplikasi. Gunakan email dan password terlebih dahulu.",
       cancelled: "Proses Google dibatalkan.",
-      session_expired:
-        "Sesi Google kedaluwarsa. Silakan coba kembali.",
+      session_expired: "Sesi Google kedaluwarsa. Silakan coba kembali.",
       not_registered:
         "Akun Google ini belum terdaftar. Pilih Buat akun lalu lanjutkan dengan Google.",
       failed: "Proses Google belum berhasil. Silakan coba kembali.",

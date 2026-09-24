@@ -1,6 +1,6 @@
 # API Reference
 
-Semua endpoint Next.js berada di /api/* dan mengembalikan JSON kecuali OAuth redirect.
+Semua endpoint Next.js berada di /api/\* dan mengembalikan JSON kecuali OAuth redirect.
 
 Format sukses umum:
 

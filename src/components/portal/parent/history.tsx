@@ -4,7 +4,11 @@ import type { Examination } from "@/lib/portal";
 import { growthStatusLabel } from "@/lib/growth";
 import { formatReading } from "@/lib/screening";
 
-export function ParentHistory({ examinations }: { examinations: Examination[] }) {
+export function ParentHistory({
+  examinations,
+}: {
+  examinations: Examination[];
+}) {
   return (
     <>
       <div className="section-heading compact-section-heading">
@@ -74,4 +78,3 @@ export function ParentHistory({ examinations }: { examinations: Examination[] })
     </>
   );
 }
-

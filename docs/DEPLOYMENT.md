@@ -114,4 +114,4 @@ Jika deployment terbaru gagal secara fungsional, identifikasi commit terakhir ya
 
 ## Secrets
 
-Jangan expose secret sebagai NEXT_PUBLIC_*.
+Jangan expose secret sebagai NEXT*PUBLIC*\*.

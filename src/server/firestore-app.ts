@@ -333,8 +333,6 @@ async function signInParent(
   );
 }
 
-
-
 function googleCookie(
   request: Request,
   env: Env,
@@ -443,9 +441,8 @@ async function googleOAuthStart(request: Request, env: Env) {
   );
 
   const url = new URL(request.url);
-  const intent = url.searchParams.get("intent") === "register"
-    ? "register"
-    : "login";
+  const intent =
+    url.searchParams.get("intent") === "register" ? "register" : "login";
   const state = token();
   const redirectUri = `${env.APP_ORIGIN}/api/auth/google/callback`;
   const authorize = new URL("https://accounts.google.com/o/oauth2/v2/auth");
@@ -547,10 +544,13 @@ async function googleOAuthCallback(request: Request, env: Env) {
     if (staff?.active) {
       const { id, ...record } = staff;
       const session = await signInStaff(request, env, id, record);
-      return redirectResponse(`${env.APP_ORIGIN}${record.role === "admin" ? "/admin" : "/petugas"}`, [
-        session.headers.get("set-cookie") || "",
-        googleStateCookie(request, env, "", 0),
-      ]);
+      return redirectResponse(
+        `${env.APP_ORIGIN}${record.role === "admin" ? "/admin" : "/petugas"}`,
+        [
+          session.headers.get("set-cookie") || "",
+          googleStateCookie(request, env, "", 0),
+        ],
+      );
     }
 
     const parent = await getParentByEmail(env, profile.data.email);
@@ -582,19 +582,11 @@ async function googleOAuthCallback(request: Request, env: Env) {
       { precondition: { exists: false } },
     );
 
-    return redirectResponse(
-      `${env.APP_ORIGIN}/login?google=register_ready`,
-      [
-        googleStateCookie(request, env, "", 0),
-        googleIntentCookie(request, env, "", 0),
-        googleRegisterCookie(
-          request,
-          env,
-          pendingToken,
-          GOOGLE_OAUTH_SECONDS,
-        ),
-      ],
-    );
+    return redirectResponse(`${env.APP_ORIGIN}/login?google=register_ready`, [
+      googleStateCookie(request, env, "", 0),
+      googleIntentCookie(request, env, "", 0),
+      googleRegisterCookie(request, env, pendingToken, GOOGLE_OAUTH_SECONDS),
+    ]);
   } catch (error) {
     console.error(
       "Google OAuth failed:",
@@ -603,8 +595,6 @@ async function googleOAuthCallback(request: Request, env: Env) {
     return googleLoginRedirect(request, env, "failed", true);
   }
 }
-
-
 
 async function pendingGoogleRegistration(request: Request, env: Env) {
   const raw = cookie(request, GOOGLE_REGISTER_COOKIE);
@@ -620,7 +610,10 @@ async function pendingGoogleRegistration(request: Request, env: Env) {
   const pending = await store(env).get<GoogleRegistrationRecord>(path);
 
   if (!pending || pending.data.expiresAt <= Date.now()) {
-    if (pending) await store(env).delete(path).catch(() => {});
+    if (pending)
+      await store(env)
+        .delete(path)
+        .catch(() => {});
     throw new ApiError(
       401,
       "Sesi pendaftaran Google sudah berakhir. Silakan mulai lagi.",
@@ -717,7 +710,9 @@ async function registerParentWithGoogle(request: Request, env: Env) {
     throw error;
   }
 
-  await store(env).delete(path).catch(() => {});
+  await store(env)
+    .delete(path)
+    .catch(() => {});
   const response = await signInParent(request, env, parentId, parent);
 
   return ok(
@@ -1191,10 +1186,7 @@ async function unifiedLogin(request: Request, env: Env) {
     }
   }
 
-  await verifyPassword(
-    input.password,
-    DUMMY_PASSWORD_HASH,
-  );
+  await verifyPassword(input.password, DUMMY_PASSWORD_HASH);
   throw new ApiError(401, "Email atau password tidak sesuai.");
 }
 
