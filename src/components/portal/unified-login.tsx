@@ -42,8 +42,6 @@ export function UnifiedLogin() {
     );
     if (!googleResult) return;
 
-    window.history.replaceState(null, "", window.location.pathname);
-
     if (googleResult === "register_ready") {
       setMode("register");
       api<GoogleRegistration>("/auth/google/pending")
@@ -54,6 +52,8 @@ export function UnifiedLogin() {
         .catch((cause) => setError(errorMessage(cause)));
       return;
     }
+
+    window.history.replaceState(null, "", window.location.pathname);
 
     const googleMessages: Record<string, string> = {
       not_configured:
@@ -422,6 +422,7 @@ export function UnifiedLogin() {
             onClick={() => {
               setError("");
               setGoogleRegistration(null);
+              window.history.replaceState(null, "", window.location.pathname);
               setMode((value) => (value === "login" ? "register" : "login"));
             }}
           >

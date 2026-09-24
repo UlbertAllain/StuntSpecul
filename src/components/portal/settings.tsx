@@ -103,7 +103,7 @@ export function SettingsPanel() {
                 name="password"
                 type="password"
                 required
-                minLength={12}
+                minLength={8}
                 maxLength={72}
                 autoComplete="new-password"
               />
