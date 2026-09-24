@@ -43,9 +43,9 @@ export function UnifiedLogin() {
     if (!googleResult) return;
 
     if (googleResult === "register_ready") {
-      setMode("register");
       api<GoogleRegistration>("/auth/google/pending")
         .then((account) => {
+          setMode("register");
           setGoogleRegistration(account);
           setError("");
         })
@@ -65,11 +65,11 @@ export function UnifiedLogin() {
         "Akun Google ini belum terdaftar. Pilih Buat akun lalu lanjutkan dengan Google.",
       failed: "Proses Google belum berhasil. Silakan coba kembali.",
     };
-
-    setError(
+    const message =
       googleMessages[googleResult] ||
-        "Proses Google belum berhasil. Silakan coba kembali.",
-    );
+      "Proses Google belum berhasil. Silakan coba kembali.";
+
+    queueMicrotask(() => setError(message));
   }, []);
 
   useEffect(() => {
