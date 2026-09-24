@@ -40,7 +40,11 @@ const SYSTEM_SCREENING_STAFF_ID = "guest-screening-system";
 const DAY = 24 * 60 * 60 * 1000;
 const ONLINE_WINDOW_MS = 15_000;
 const GOOGLE_OAUTH_STATE_COOKIE = "ss_google_oauth";
+const GOOGLE_OAUTH_INTENT_COOKIE = "ss_google_oauth_intent";
+const GOOGLE_REGISTER_COOKIE = "ss_google_register";
 const GOOGLE_OAUTH_SECONDS = 10 * 60;
+const DUMMY_PASSWORD_HASH =
+  "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxDwbuCVXBQ0DPGCXRWrTjfRBha";
 
 type StaffRecord = {
   name: string;
@@ -54,7 +58,7 @@ type StaffRecord = {
 type ParentRecord = {
   name: string;
   email: string;
-  passwordHash: string;
+  passwordHash: string | null;
   avatarUrl: string | null;
   avatarPublicId: string | null;
   active: boolean;
@@ -97,6 +101,13 @@ type ExamRecord = {
 
 type SessionRecord = {
   userId: string;
+  expiresAt: number;
+  createdAt: number;
+};
+
+type GoogleRegistrationRecord = {
+  name: string;
+  email: string;
   expiresAt: number;
   createdAt: number;
 };
@@ -324,17 +335,67 @@ async function signInParent(
 
 
 
+function googleCookie(
+  request: Request,
+  env: Env,
+  name: string,
+  value: string,
+  seconds: number,
+  path = "/",
+) {
+  const secure = (env.APP_ORIGIN || request.url).startsWith("https://")
+    ? "; Secure"
+    : "";
+
+  return `${name}=${encodeURIComponent(value)}; Path=${path}; HttpOnly; SameSite=Lax; Max-Age=${seconds}${secure}`;
+}
+
 function googleStateCookie(
   request: Request,
   env: Env,
   value: string,
   seconds: number,
 ) {
-  const secure = (env.APP_ORIGIN || request.url).startsWith("https://")
-    ? "; Secure"
-    : "";
+  return googleCookie(
+    request,
+    env,
+    GOOGLE_OAUTH_STATE_COOKIE,
+    value,
+    seconds,
+    "/api/auth/google",
+  );
+}
 
-  return `${GOOGLE_OAUTH_STATE_COOKIE}=${value}; Path=/api/auth/google; HttpOnly; SameSite=Lax; Max-Age=${seconds}${secure}`;
+function googleIntentCookie(
+  request: Request,
+  env: Env,
+  value: "login" | "register" | "",
+  seconds: number,
+) {
+  return googleCookie(
+    request,
+    env,
+    GOOGLE_OAUTH_INTENT_COOKIE,
+    value,
+    seconds,
+    "/api/auth/google",
+  );
+}
+
+function googleRegisterCookie(
+  request: Request,
+  env: Env,
+  value: string,
+  seconds: number,
+) {
+  return googleCookie(
+    request,
+    env,
+    GOOGLE_REGISTER_COOKIE,
+    value,
+    seconds,
+    "/",
+  );
 }
 
 function redirectResponse(location: string, cookies: string[] = []) {
@@ -357,7 +418,10 @@ function googleLoginRedirect(
   clearState = false,
 ) {
   const cookies = clearState
-    ? [googleStateCookie(request, env, "", 0)]
+    ? [
+        googleStateCookie(request, env, "", 0),
+        googleIntentCookie(request, env, "", 0),
+      ]
     : [];
 
   return redirectResponse(
@@ -378,6 +442,10 @@ async function googleOAuthStart(request: Request, env: Env) {
     900,
   );
 
+  const url = new URL(request.url);
+  const intent = url.searchParams.get("intent") === "register"
+    ? "register"
+    : "login";
   const state = token();
   const redirectUri = `${env.APP_ORIGIN}/api/auth/google/callback`;
   const authorize = new URL("https://accounts.google.com/o/oauth2/v2/auth");
@@ -391,6 +459,7 @@ async function googleOAuthStart(request: Request, env: Env) {
 
   return redirectResponse(authorize.toString(), [
     googleStateCookie(request, env, state, GOOGLE_OAUTH_SECONDS),
+    googleIntentCookie(request, env, intent, GOOGLE_OAUTH_SECONDS),
   ]);
 }
 
@@ -407,6 +476,10 @@ async function googleOAuthCallback(request: Request, env: Env) {
   const code = url.searchParams.get("code") || "";
   const state = url.searchParams.get("state") || "";
   const expectedState = cookie(request, GOOGLE_OAUTH_STATE_COOKIE);
+  const intent =
+    cookie(request, GOOGLE_OAUTH_INTENT_COOKIE) === "register"
+      ? "register"
+      : "login";
 
   if (
     !code ||
@@ -461,6 +534,7 @@ async function googleOAuthCallback(request: Request, env: Env) {
       .object({
         email: emailSchema,
         email_verified: z.boolean(),
+        name: z.string().trim().min(1).max(80).optional(),
       })
       .passthrough()
       .safeParse(await profileResponse.json());
@@ -489,7 +563,38 @@ async function googleOAuthCallback(request: Request, env: Env) {
       ]);
     }
 
-    return googleLoginRedirect(request, env, "not_registered", true);
+    if (intent !== "register") {
+      return googleLoginRedirect(request, env, "not_registered", true);
+    }
+
+    const pendingToken = token();
+    const parsedName = nameSchema.safeParse(profile.data.name || "");
+    const pending: GoogleRegistrationRecord = {
+      name: parsedName.success ? parsedName.data : "Pengguna Google",
+      email: profile.data.email,
+      expiresAt: Date.now() + GOOGLE_OAUTH_SECONDS * 1000,
+      createdAt: Date.now(),
+    };
+
+    await store(env).set(
+      `googleRegistrations/${await digest(pendingToken)}`,
+      pending,
+      { precondition: { exists: false } },
+    );
+
+    return redirectResponse(
+      `${env.APP_ORIGIN}/login?google=register_ready`,
+      [
+        googleStateCookie(request, env, "", 0),
+        googleIntentCookie(request, env, "", 0),
+        googleRegisterCookie(
+          request,
+          env,
+          pendingToken,
+          GOOGLE_OAUTH_SECONDS,
+        ),
+      ],
+    );
   } catch (error) {
     console.error(
       "Google OAuth failed:",
@@ -497,6 +602,136 @@ async function googleOAuthCallback(request: Request, env: Env) {
     );
     return googleLoginRedirect(request, env, "failed", true);
   }
+}
+
+
+
+async function pendingGoogleRegistration(request: Request, env: Env) {
+  const raw = cookie(request, GOOGLE_REGISTER_COOKIE);
+  if (!/^[a-f0-9]{64}$/.test(raw)) {
+    throw new ApiError(
+      401,
+      "Sesi pendaftaran Google sudah berakhir. Silakan mulai lagi.",
+      "google_registration_expired",
+    );
+  }
+
+  const path = `googleRegistrations/${await digest(raw)}`;
+  const pending = await store(env).get<GoogleRegistrationRecord>(path);
+
+  if (!pending || pending.data.expiresAt <= Date.now()) {
+    if (pending) await store(env).delete(path).catch(() => {});
+    throw new ApiError(
+      401,
+      "Sesi pendaftaran Google sudah berakhir. Silakan mulai lagi.",
+      "google_registration_expired",
+    );
+  }
+
+  return { path, pending: pending.data };
+}
+
+async function googleRegistrationStatus(request: Request, env: Env) {
+  const { pending } = await pendingGoogleRegistration(request, env);
+  return ok({ name: pending.name, email: pending.email });
+}
+
+async function registerParentWithGoogle(request: Request, env: Env) {
+  await rateLimit(
+    env,
+    `parent-register-google:${await requestKey(request)}`,
+    6,
+    3600,
+  );
+
+  const { path, pending } = await pendingGoogleRegistration(request, env);
+  const input = await body(
+    request,
+    z.object({ child: childRegistrationSchema }).strict(),
+  );
+
+  const months = ageInMonths(input.child.birthDate);
+  if (months < 0 || months > 59) {
+    throw new ApiError(
+      422,
+      "Profil pertumbuhan ditujukan untuk anak usia 0–59 bulan.",
+    );
+  }
+
+  if (await getStaffByEmail(env, pending.email)) {
+    throw new ApiError(
+      409,
+      "Email Google ini sudah digunakan akun petugas atau admin.",
+    );
+  }
+
+  if (await getParentByEmail(env, pending.email)) {
+    throw new ApiError(409, "Email sudah terdaftar. Silakan masuk.");
+  }
+
+  const parentId = crypto.randomUUID();
+  const childId = crypto.randomUUID();
+  const now = Date.now();
+  const parent: ParentRecord = {
+    name: pending.name,
+    email: pending.email,
+    passwordHash: null,
+    avatarUrl: null,
+    avatarPublicId: null,
+    active: true,
+    createdAt: now,
+  };
+  const child: ChildRecord = {
+    id: childId,
+    code: `ST-${childId.slice(0, 8).toUpperCase()}`,
+    name: input.child.name,
+    birthDate: input.child.birthDate,
+    sex: input.child.sex,
+    guardian: pending.name,
+    createdAt: now,
+    parentId,
+  };
+
+  try {
+    await store(env).commit([
+      {
+        path: `parents/${parentId}`,
+        data: parent,
+        precondition: { exists: false },
+      },
+      {
+        path: `parentEmails/${await emailIndex(pending.email)}`,
+        data: { parentId },
+        precondition: { exists: false },
+      },
+      {
+        path: `children/${childId}`,
+        data: child,
+        precondition: { exists: false },
+      },
+    ]);
+  } catch (error) {
+    if (preconditionConflict(error)) {
+      throw new ApiError(409, "Email atau profil sudah terdaftar.");
+    }
+    throw error;
+  }
+
+  await store(env).delete(path).catch(() => {});
+  const response = await signInParent(request, env, parentId, parent);
+
+  return ok(
+    {
+      id: parentId,
+      name: parent.name,
+      email: parent.email,
+      avatarUrl: null,
+    },
+    201,
+    {
+      "Set-Cookie": response.headers.get("set-cookie") || "",
+    },
+  );
 }
 
 async function requireStaff(
@@ -895,8 +1130,7 @@ async function staffLogin(request: Request, env: Env) {
   const user = await getStaffByEmail(env, input.email);
   const valid = await verifyPassword(
     input.password,
-    user?.passwordHash ||
-      "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxDwbuCVXBQ0DPGCXRWrTjfRBha",
+    user?.passwordHash || DUMMY_PASSWORD_HASH,
   );
 
   if (!user || !valid || !user.active) {
@@ -936,7 +1170,10 @@ async function unifiedLogin(request: Request, env: Env) {
 
   const parent = await getParentByEmail(env, input.email);
   if (parent && parent.active) {
-    const valid = await verifyPassword(input.password, parent.passwordHash);
+    const valid = await verifyPassword(
+      input.password,
+      parent.passwordHash || DUMMY_PASSWORD_HASH,
+    );
     if (valid) {
       const { id, ...record } = parent;
       const response = await signInParent(request, env, id, record);
@@ -956,7 +1193,7 @@ async function unifiedLogin(request: Request, env: Env) {
 
   await verifyPassword(
     input.password,
-    "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxDwbuCVXBQ0DPGCXRWrTjfRBha",
+    DUMMY_PASSWORD_HASH,
   );
   throw new ApiError(401, "Email atau password tidak sesuai.");
 }
@@ -1155,8 +1392,7 @@ async function parentLogin(request: Request, env: Env) {
   const parent = await getParentByEmail(env, input.email);
   const valid = await verifyPassword(
     input.password,
-    parent?.passwordHash ||
-      "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxDwbuCVXBQ0DPGCXRWrTjfRBha",
+    parent?.passwordHash || DUMMY_PASSWORD_HASH,
   );
   if (!parent || !valid || !parent.active) {
     throw new ApiError(401, "Email atau password tidak sesuai.");
@@ -2050,6 +2286,8 @@ export async function routeFirestore(
       return googleOAuthStart(request, env);
     case "GET /api/auth/google/callback":
       return googleOAuthCallback(request, env);
+    case "GET /api/auth/google/pending":
+      return googleRegistrationStatus(request, env);
     case "POST /api/auth/logout":
       return staffLogout(request, env);
     case "GET /api/auth/me":
@@ -2084,6 +2322,8 @@ export async function routeFirestore(
       return stationCancel(request, env);
     case "POST /api/parent-account/register":
       return registerParent(request, env);
+    case "POST /api/parent-account/register-google":
+      return registerParentWithGoogle(request, env);
     case "POST /api/parent-account/login":
       return parentLogin(request, env);
     case "POST /api/parent-account/logout":

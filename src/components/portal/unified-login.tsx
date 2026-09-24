@@ -20,6 +20,11 @@ type Config = {
 
 type Mode = "login" | "register" | "setup";
 
+type GoogleRegistration = {
+  name: string;
+  email: string;
+};
+
 export function UnifiedLogin() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
@@ -27,6 +32,8 @@ export function UnifiedLogin() {
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(true);
   const [config, setConfig] = useState<Config | null>(null);
+  const [googleRegistration, setGoogleRegistration] =
+    useState<GoogleRegistration | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -35,22 +42,34 @@ export function UnifiedLogin() {
     );
     if (!googleResult) return;
 
+    window.history.replaceState(null, "", window.location.pathname);
+
+    if (googleResult === "register_ready") {
+      setMode("register");
+      api<GoogleRegistration>("/auth/google/pending")
+        .then((account) => {
+          setGoogleRegistration(account);
+          setError("");
+        })
+        .catch((cause) => setError(errorMessage(cause)));
+      return;
+    }
+
     const googleMessages: Record<string, string> = {
       not_configured:
-        "Login Google belum aktif. Gunakan email dan password terlebih dahulu.",
-      cancelled: "Login Google dibatalkan.",
+        "Google belum terhubung ke konfigurasi aplikasi. Gunakan email dan password terlebih dahulu.",
+      cancelled: "Proses Google dibatalkan.",
       session_expired:
-        "Sesi login Google kedaluwarsa. Silakan coba kembali.",
+        "Sesi Google kedaluwarsa. Silakan coba kembali.",
       not_registered:
-        "Akun Google ini belum terdaftar. Buat akun terlebih dahulu dengan email yang sama.",
-      failed: "Login Google belum berhasil. Silakan coba kembali.",
+        "Akun Google ini belum terdaftar. Pilih Buat akun lalu lanjutkan dengan Google.",
+      failed: "Proses Google belum berhasil. Silakan coba kembali.",
     };
 
     setError(
       googleMessages[googleResult] ||
-        "Login Google belum berhasil. Silakan coba kembali.",
+        "Proses Google belum berhasil. Silakan coba kembali.",
     );
-    window.history.replaceState(null, "", window.location.pathname);
   }, []);
 
   useEffect(() => {
@@ -146,19 +165,28 @@ export function UnifiedLogin() {
         return;
       }
 
-      await api("/parent-account/register", {
-        method: "POST",
-        body: {
-          name: String(form.get("name") || ""),
-          email: String(form.get("email") || ""),
-          password: String(form.get("password") || ""),
-          child: {
-            name: String(form.get("childName") || ""),
-            birthDate: String(form.get("birthDate") || ""),
-            sex: String(form.get("sex") || ""),
+      const child = {
+        name: String(form.get("childName") || ""),
+        birthDate: String(form.get("birthDate") || ""),
+        sex: String(form.get("sex") || ""),
+      };
+
+      if (googleRegistration) {
+        await api("/parent-account/register-google", {
+          method: "POST",
+          body: { child },
+        });
+      } else {
+        await api("/parent-account/register", {
+          method: "POST",
+          body: {
+            name: String(form.get("name") || ""),
+            email: String(form.get("email") || ""),
+            password: String(form.get("password") || ""),
+            child,
           },
-        },
-      });
+        });
+      }
       router.replace("/ortu");
     } catch (cause) {
       setError(errorMessage(cause));
@@ -194,14 +222,18 @@ export function UnifiedLogin() {
               ? "Selamat datang"
               : mode === "setup"
                 ? "Buat admin pertama"
-                : "Buat akun orang tua"}
+                : googleRegistration
+                  ? "Lengkapi profil anak"
+                  : "Buat akun orang tua"}
           </h1>
           <p>
             {mode === "login"
               ? "Masuk dengan satu akun. Sistem akan membuka halaman sesuai peran Anda."
               : mode === "setup"
                 ? "Setup ini hanya muncul di localhost saat Firestore masih kosong."
-                : "Daftarkan akun orang tua dan profil anak pertama."}
+                : googleRegistration
+                  ? `Google terhubung sebagai ${googleRegistration.email}. Lengkapi profil anak untuk menyelesaikan pendaftaran.`
+                  : "Daftarkan akun orang tua dan profil anak pertama."}
           </p>
         </div>
 
@@ -227,20 +259,22 @@ export function UnifiedLogin() {
 
           {(mode === "register" || mode === "setup") && (
             <>
-              <label>
-                {mode === "setup" ? "Nama admin" : "Nama orang tua"}
-                <span className="unified-input">
-                  <UserRound size={18} />
-                  <input
-                    name="name"
-                    required
-                    minLength={2}
-                    maxLength={80}
-                    autoComplete="name"
-                    placeholder="Nama lengkap"
-                  />
-                </span>
-              </label>
+              {(mode === "setup" || !googleRegistration) && (
+                <label>
+                  {mode === "setup" ? "Nama admin" : "Nama orang tua"}
+                  <span className="unified-input">
+                    <UserRound size={18} />
+                    <input
+                      name="name"
+                      required
+                      minLength={2}
+                      maxLength={80}
+                      autoComplete="name"
+                      placeholder="Nama lengkap"
+                    />
+                  </span>
+                </label>
+              )}
 
               {mode === "register" && (
                 <label>
@@ -279,49 +313,55 @@ export function UnifiedLogin() {
             </>
           )}
 
-          <label>
-            Email
-            <span className="unified-input">
-              <Mail size={18} />
-              <input
-                name="email"
-                type="email"
-                required
-                maxLength={160}
-                autoComplete="username"
-                placeholder="nama@email.com"
-              />
-            </span>
-          </label>
+          {(mode !== "register" || !googleRegistration) && (
+            <>
+              <label>
+                Email
+                <span className="unified-input">
+                  <Mail size={18} />
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    maxLength={160}
+                    autoComplete="username"
+                    placeholder="nama@email.com"
+                  />
+                </span>
+              </label>
 
-          <label>
-            Password
-            <span className="unified-input">
-              <LockKeyhole size={18} />
-              <input
-                name="password"
-                type={showPassword ? "text" : "password"}
-                required
-                minLength={mode === "login" ? 1 : mode === "register" ? 8 : 12}
-                maxLength={72}
-                autoComplete={
-                  mode === "login" ? "current-password" : "new-password"
-                }
-                placeholder={
-                  mode === "register" ? "Minimal 8 karakter" : "Password"
-                }
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((value) => !value)}
-                aria-label={
-                  showPassword ? "Sembunyikan password" : "Tampilkan password"
-                }
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </span>
-          </label>
+              <label>
+                Password
+                <span className="unified-input">
+                  <LockKeyhole size={18} />
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={mode === "login" ? 1 : 8}
+                    maxLength={72}
+                    autoComplete={
+                      mode === "login" ? "current-password" : "new-password"
+                    }
+                    placeholder={
+                      mode === "login" ? "Password" : "Minimal 8 karakter"
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((value) => !value)}
+                    aria-label={
+                      showPassword
+                        ? "Sembunyikan password"
+                        : "Tampilkan password"
+                    }
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </span>
+              </label>
+            </>
+          )}
 
           {error && <p className="unified-auth-error">{error}</p>}
 
@@ -332,16 +372,21 @@ export function UnifiedLogin() {
                 ? "Login"
                 : mode === "setup"
                   ? "Buat admin"
-                  : "Buat akun"}
+                  : googleRegistration
+                    ? "Selesaikan pendaftaran"
+                    : "Buat akun"}
           </button>
         </form>
 
-        {mode === "login" && (
+        {mode !== "setup" && !googleRegistration && (
           <>
             <div className="unified-auth-divider" aria-hidden="true">
               <span>atau</span>
             </div>
-            <a className="unified-auth-google" href="/api/auth/google/start">
+            <a
+              className="unified-auth-google"
+              href={`/api/auth/google/start?intent=${mode === "register" ? "register" : "login"}`}
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   fill="currentColor"
@@ -363,7 +408,9 @@ export function UnifiedLogin() {
                   opacity=".9"
                 />
               </svg>
-              Masuk dengan Google
+              {mode === "register"
+                ? "Daftar dengan Google"
+                : "Masuk dengan Google"}
             </a>
           </>
         )}
@@ -374,6 +421,7 @@ export function UnifiedLogin() {
             type="button"
             onClick={() => {
               setError("");
+              setGoogleRegistration(null);
               setMode((value) => (value === "login" ? "register" : "login"));
             }}
           >

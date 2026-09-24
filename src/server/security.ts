@@ -11,13 +11,10 @@ const passwordBytesSchema = (minimum: number, message: string) =>
     );
 
 export const passwordSchema = passwordBytesSchema(
-  12,
-  "Password minimal 12 karakter.",
-);
-export const parentPasswordSchema = passwordBytesSchema(
   8,
   "Password minimal 8 karakter.",
 );
+export const parentPasswordSchema = passwordSchema;
 export const loginPasswordSchema = passwordBytesSchema(
   1,
   "Password wajib diisi.",

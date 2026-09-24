@@ -43,7 +43,11 @@ OAuth Google bersifat opsional. Jika diaktifkan, buat OAuth 2.0 Web Client di Go
 https://stuntspecula.vercel.app/api/auth/google/callback
 ```
 
-Isi `GOOGLE_CLIENT_ID` dan `GOOGLE_CLIENT_SECRET` di environment production. Login Google hanya menautkan email yang sudah terdaftar sebagai akun StuntSpecula; registrasi profil anak tetap dilakukan melalui form registrasi.
+Isi `GOOGLE_CLIENT_ID` dan `GOOGLE_CLIENT_SECRET` di environment production. Provider Google boleh tetap diaktifkan di Firebase Authentication, tetapi aplikasi menggunakan callback server-side agar tetap kompatibel dengan session StuntSpecula yang ada.
+
+- Login Google akan masuk ke akun parent/staff/admin jika email sudah terdaftar.
+- Registrasi Google tersedia untuk akun orang tua baru. Setelah OAuth berhasil, pengguna hanya melengkapi profil anak.
+- Staff dan admin tetap dibuat melalui alur administrasi yang ada; setelah emailnya terdaftar, akun tersebut dapat masuk dengan Google.
 
 ## Model A
 
