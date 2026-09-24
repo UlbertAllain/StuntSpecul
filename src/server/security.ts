@@ -1,13 +1,27 @@
 import { compare, hash } from "bcryptjs";
 import { z } from "zod";
 
-export const passwordSchema = z
-  .string()
-  .min(12, "Password minimal 12 karakter.")
-  .refine(
-    (v) => new TextEncoder().encode(v).length <= 72,
-    "Password maksimal 72 byte.",
-  );
+const passwordBytesSchema = (minimum: number, message: string) =>
+  z
+    .string()
+    .min(minimum, message)
+    .refine(
+      (v) => new TextEncoder().encode(v).length <= 72,
+      "Password maksimal 72 byte.",
+    );
+
+export const passwordSchema = passwordBytesSchema(
+  12,
+  "Password minimal 12 karakter.",
+);
+export const parentPasswordSchema = passwordBytesSchema(
+  8,
+  "Password minimal 8 karakter.",
+);
+export const loginPasswordSchema = passwordBytesSchema(
+  1,
+  "Password wajib diisi.",
+);
 export const tokenSchema = z
   .string()
   .regex(/^[a-f0-9]{64}$/, "Kode akses tidak valid.");

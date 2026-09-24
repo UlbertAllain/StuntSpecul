@@ -30,6 +30,30 @@ export function UnifiedLogin() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const googleResult = new URLSearchParams(window.location.search).get(
+      "google",
+    );
+    if (!googleResult) return;
+
+    const googleMessages: Record<string, string> = {
+      not_configured:
+        "Login Google belum aktif. Gunakan email dan password terlebih dahulu.",
+      cancelled: "Login Google dibatalkan.",
+      session_expired:
+        "Sesi login Google kedaluwarsa. Silakan coba kembali.",
+      not_registered:
+        "Akun Google ini belum terdaftar. Buat akun terlebih dahulu dengan email yang sama.",
+      failed: "Login Google belum berhasil. Silakan coba kembali.",
+    };
+
+    setError(
+      googleMessages[googleResult] ||
+        "Login Google belum berhasil. Silakan coba kembali.",
+    );
+    window.history.replaceState(null, "", window.location.pathname);
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
 
     async function detectSession() {
@@ -278,12 +302,14 @@ export function UnifiedLogin() {
                 name="password"
                 type={showPassword ? "text" : "password"}
                 required
-                minLength={mode === "login" ? 1 : 12}
+                minLength={mode === "login" ? 1 : mode === "register" ? 8 : 12}
                 maxLength={72}
                 autoComplete={
                   mode === "login" ? "current-password" : "new-password"
                 }
-                placeholder="Password"
+                placeholder={
+                  mode === "register" ? "Minimal 8 karakter" : "Password"
+                }
               />
               <button
                 type="button"
@@ -310,6 +336,38 @@ export function UnifiedLogin() {
           </button>
         </form>
 
+        {mode === "login" && (
+          <>
+            <div className="unified-auth-divider" aria-hidden="true">
+              <span>atau</span>
+            </div>
+            <a className="unified-auth-google" href="/api/auth/google/start">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M21.35 12.21c0-.72-.06-1.25-.2-1.8H12v3.3h5.37a4.6 4.6 0 0 1-1.99 2.93v2.14h3.22c1.88-1.73 2.75-4.28 2.75-6.57Z"
+                />
+                <path
+                  fill="currentColor"
+                  d="M12 21.7c2.7 0 4.96-.89 6.6-2.92l-3.22-2.14c-.89.6-2.03.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.09v2.21A9.97 9.97 0 0 0 12 21.7Z"
+                  opacity=".78"
+                />
+                <path
+                  fill="currentColor"
+                  d="M6.41 13.48A6 6 0 0 1 6.1 11.6c0-.65.11-1.29.31-1.88V7.5H3.09A9.98 9.98 0 0 0 2 11.6c0 1.48.35 2.88 1.09 4.09l3.32-2.21Z"
+                  opacity=".58"
+                />
+                <path
+                  fill="currentColor"
+                  d="M12 5.6c1.47 0 2.79.5 3.83 1.49l2.87-2.87C16.95 2.59 14.7 1.5 12 1.5A9.97 9.97 0 0 0 3.09 7.5l3.32 2.22C7.2 7.36 9.4 5.6 12 5.6Z"
+                  opacity=".9"
+                />
+              </svg>
+              Masuk dengan Google
+            </a>
+          </>
+        )}
+
         {mode !== "setup" && (
           <button
             className="unified-auth-switch"
@@ -320,7 +378,7 @@ export function UnifiedLogin() {
             }}
           >
             {mode === "login"
-              ? "Orang tua baru? Buat akun"
+              ? "Pengguna baru? Buat akun"
               : "Sudah punya akun? Login"}
           </button>
         )}

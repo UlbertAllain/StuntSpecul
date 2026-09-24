@@ -22,6 +22,9 @@ CLOUDINARY_API_SECRET=
 
 GEMINI_API_KEY=
 GEMINI_MODEL=
+
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 ```
 
 `APP_ORIGIN` opsional. Jika tidak diisi, production menggunakan origin request HTTPS.
@@ -31,6 +34,16 @@ GEMINI_MODEL=
 Gunakan Firestore database default dalam Native mode. Tidak ada SQL migration yang perlu dijalankan.
 
 Admin pertama dibuat dari localhost saat Firestore masih kosong. Setelah itu admin membuat akun petugas, sedangkan orang tua mendaftar dari form login yang sama.
+
+## Login Google
+
+OAuth Google bersifat opsional. Jika diaktifkan, buat OAuth 2.0 Web Client di Google Cloud Console lalu tambahkan redirect URI production:
+
+```text
+https://stuntspecula.vercel.app/api/auth/google/callback
+```
+
+Isi `GOOGLE_CLIENT_ID` dan `GOOGLE_CLIENT_SECRET` di environment production. Login Google hanya menautkan email yang sudah terdaftar sebagai akun StuntSpecula; registrasi profil anak tetap dilakukan melalui form registrasi.
 
 ## Model A
 

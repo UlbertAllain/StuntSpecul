@@ -61,5 +61,7 @@ export function applicationConfig(values: Variables, request: Request) {
     CLOUDINARY_CLOUD_NAME: values.CLOUDINARY_CLOUD_NAME?.trim(),
     CLOUDINARY_API_KEY: values.CLOUDINARY_API_KEY?.trim(),
     CLOUDINARY_API_SECRET: values.CLOUDINARY_API_SECRET?.trim(),
+    GOOGLE_CLIENT_ID: values.GOOGLE_CLIENT_ID?.trim(),
+    GOOGLE_CLIENT_SECRET: values.GOOGLE_CLIENT_SECRET?.trim(),
   };
 }

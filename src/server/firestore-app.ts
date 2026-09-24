@@ -20,7 +20,9 @@ import {
   emailSchema,
   hashPassword,
   idSchema,
+  loginPasswordSchema,
   nameSchema,
+  parentPasswordSchema,
   passwordSchema,
   requestKey,
   token,
@@ -37,6 +39,8 @@ const STATION_NAME = "StuntSpecula Station 01";
 const SYSTEM_SCREENING_STAFF_ID = "guest-screening-system";
 const DAY = 24 * 60 * 60 * 1000;
 const ONLINE_WINDOW_MS = 15_000;
+const GOOGLE_OAUTH_STATE_COOKIE = "ss_google_oauth";
+const GOOGLE_OAUTH_SECONDS = 10 * 60;
 
 type StaffRecord = {
   name: string;
@@ -316,6 +320,183 @@ async function signInParent(
       ),
     },
   );
+}
+
+
+
+function googleStateCookie(
+  request: Request,
+  env: Env,
+  value: string,
+  seconds: number,
+) {
+  const secure = (env.APP_ORIGIN || request.url).startsWith("https://")
+    ? "; Secure"
+    : "";
+
+  return `${GOOGLE_OAUTH_STATE_COOKIE}=${value}; Path=/api/auth/google; HttpOnly; SameSite=Lax; Max-Age=${seconds}${secure}`;
+}
+
+function redirectResponse(location: string, cookies: string[] = []) {
+  const headers = new Headers({
+    Location: location,
+    "Cache-Control": "no-store",
+  });
+
+  for (const value of cookies) {
+    if (value) headers.append("Set-Cookie", value);
+  }
+
+  return new Response(null, { status: 302, headers });
+}
+
+function googleLoginRedirect(
+  request: Request,
+  env: Env,
+  code: string,
+  clearState = false,
+) {
+  const cookies = clearState
+    ? [googleStateCookie(request, env, "", 0)]
+    : [];
+
+  return redirectResponse(
+    `${env.APP_ORIGIN}/login?google=${encodeURIComponent(code)}`,
+    cookies,
+  );
+}
+
+async function googleOAuthStart(request: Request, env: Env) {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    return googleLoginRedirect(request, env, "not_configured");
+  }
+
+  await rateLimit(
+    env,
+    `google-login-start:${await requestKey(request)}`,
+    20,
+    900,
+  );
+
+  const state = token();
+  const redirectUri = `${env.APP_ORIGIN}/api/auth/google/callback`;
+  const authorize = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+
+  authorize.searchParams.set("client_id", env.GOOGLE_CLIENT_ID);
+  authorize.searchParams.set("redirect_uri", redirectUri);
+  authorize.searchParams.set("response_type", "code");
+  authorize.searchParams.set("scope", "openid email profile");
+  authorize.searchParams.set("state", state);
+  authorize.searchParams.set("prompt", "select_account");
+
+  return redirectResponse(authorize.toString(), [
+    googleStateCookie(request, env, state, GOOGLE_OAUTH_SECONDS),
+  ]);
+}
+
+async function googleOAuthCallback(request: Request, env: Env) {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    return googleLoginRedirect(request, env, "not_configured", true);
+  }
+
+  const url = new URL(request.url);
+  if (url.searchParams.get("error")) {
+    return googleLoginRedirect(request, env, "cancelled", true);
+  }
+
+  const code = url.searchParams.get("code") || "";
+  const state = url.searchParams.get("state") || "";
+  const expectedState = cookie(request, GOOGLE_OAUTH_STATE_COOKIE);
+
+  if (
+    !code ||
+    !/^[a-f0-9]{64}$/.test(state) ||
+    !/^[a-f0-9]{64}$/.test(expectedState) ||
+    state !== expectedState
+  ) {
+    return googleLoginRedirect(request, env, "session_expired", true);
+  }
+
+  try {
+    const redirectUri = `${env.APP_ORIGIN}/api/auth/google/callback`;
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: env.GOOGLE_CLIENT_ID,
+        client_secret: env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      throw new Error("Google token exchange failed.");
+    }
+
+    const tokenPayload = z
+      .object({ access_token: z.string().min(1) })
+      .passthrough()
+      .safeParse(await tokenResponse.json());
+
+    if (!tokenPayload.success) {
+      throw new Error("Google token response is invalid.");
+    }
+
+    const profileResponse = await fetch(
+      "https://openidconnect.googleapis.com/v1/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${tokenPayload.data.access_token}`,
+        },
+      },
+    );
+
+    if (!profileResponse.ok) {
+      throw new Error("Google profile lookup failed.");
+    }
+
+    const profile = z
+      .object({
+        email: emailSchema,
+        email_verified: z.boolean(),
+      })
+      .passthrough()
+      .safeParse(await profileResponse.json());
+
+    if (!profile.success || !profile.data.email_verified) {
+      throw new Error("Google email is not verified.");
+    }
+
+    const staff = await getStaffByEmail(env, profile.data.email);
+    if (staff?.active) {
+      const { id, ...record } = staff;
+      const session = await signInStaff(request, env, id, record);
+      return redirectResponse(`${env.APP_ORIGIN}${record.role === "admin" ? "/admin" : "/petugas"}`, [
+        session.headers.get("set-cookie") || "",
+        googleStateCookie(request, env, "", 0),
+      ]);
+    }
+
+    const parent = await getParentByEmail(env, profile.data.email);
+    if (parent?.active) {
+      const { id, ...record } = parent;
+      const session = await signInParent(request, env, id, record);
+      return redirectResponse(`${env.APP_ORIGIN}/ortu`, [
+        session.headers.get("set-cookie") || "",
+        googleStateCookie(request, env, "", 0),
+      ]);
+    }
+
+    return googleLoginRedirect(request, env, "not_registered", true);
+  } catch (error) {
+    console.error(
+      "Google OAuth failed:",
+      error instanceof Error ? error.message : "unknown error",
+    );
+    return googleLoginRedirect(request, env, "failed", true);
+  }
 }
 
 async function requireStaff(
@@ -708,7 +889,7 @@ async function staffLogin(request: Request, env: Env) {
   await rateLimit(env, `login-ip:${await requestKey(request)}`, 12, 900);
   const input = await body(
     request,
-    z.object({ email: emailSchema, password: passwordSchema }),
+    z.object({ email: emailSchema, password: loginPasswordSchema }),
   );
 
   const user = await getStaffByEmail(env, input.email);
@@ -730,7 +911,7 @@ async function unifiedLogin(request: Request, env: Env) {
   await rateLimit(env, `unified-login:${await requestKey(request)}`, 12, 900);
   const input = await body(
     request,
-    z.object({ email: emailSchema, password: passwordSchema }),
+    z.object({ email: emailSchema, password: loginPasswordSchema }),
   );
 
   const staff = await getStaffByEmail(env, input.email);
@@ -897,7 +1078,7 @@ async function registerParent(request: Request, env: Env) {
       .object({
         name: nameSchema,
         email: emailSchema,
-        password: passwordSchema,
+        password: parentPasswordSchema,
         child: childRegistrationSchema,
       })
       .strict(),
@@ -969,7 +1150,7 @@ async function parentLogin(request: Request, env: Env) {
   await rateLimit(env, `parent-login:${await requestKey(request)}`, 12, 900);
   const input = await body(
     request,
-    z.object({ email: emailSchema, password: passwordSchema }),
+    z.object({ email: emailSchema, password: loginPasswordSchema }),
   );
   const parent = await getParentByEmail(env, input.email);
   const valid = await verifyPassword(
@@ -1865,6 +2046,10 @@ export async function routeFirestore(
       return staffLogin(request, env);
     case "POST /api/auth/unified-login":
       return unifiedLogin(request, env);
+    case "GET /api/auth/google/start":
+      return googleOAuthStart(request, env);
+    case "GET /api/auth/google/callback":
+      return googleOAuthCallback(request, env);
     case "POST /api/auth/logout":
       return staffLogout(request, env);
     case "GET /api/auth/me":
