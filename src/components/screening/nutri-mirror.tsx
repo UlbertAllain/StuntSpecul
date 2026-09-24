@@ -32,6 +32,7 @@ import {
 import { useMimoAudio } from "@/hooks/use-mimo-audio";
 import { stopMimoStageCue } from "@/lib/mimo-audio";
 import { STEP_PROGRESS, type Step } from "@/lib/session";
+import type { Readings } from "@/lib/screening";
 import { CameraStep } from "./camera-step";
 import type { MirrorAssignment } from "@/lib/portal";
 import { errorMessage } from "@/lib/api-client";
@@ -77,6 +78,8 @@ export function NutriMirror({
   onBegin,
   onComplete,
   onFinish,
+  hardwareMode = false,
+  hardwareMeasurements = null,
   waitingLabel = "Petugas menyiapkan pemeriksaan.",
   awaitingParentFinalize = false,
 }: {
@@ -85,6 +88,8 @@ export function NutriMirror({
   onBegin?: () => void;
   onComplete?: (payload: ScreeningCompletion) => Promise<void>;
   onFinish?: (cancel: boolean) => Promise<void>;
+  hardwareMode?: boolean;
+  hardwareMeasurements?: Readings | null;
   waitingLabel?: string;
   awaitingParentFinalize?: boolean;
 }) {
@@ -184,12 +189,13 @@ export function NutriMirror({
             onComplete={() => dispatch({ type: "advance", from: step })}
             reading={
               step === "height"
-                ? fallbackReadings?.heightCm
+                ? effectiveReadings?.heightCm
                 : step === "weight"
-                  ? fallbackReadings?.weightKg
+                  ? effectiveReadings?.weightKg
                   : null
             }
             soundEnabled={soundEnabled}
+            readingSource={hardwareMode ? "sensor" : "demo"}
           />
         );
       case "camera":
@@ -217,10 +223,10 @@ export function NutriMirror({
             paused={isPaused}
             onComplete={() =>
               complete(
-                fallbackReadings
+                effectiveReadings
                   ? {
-                      heightCm: fallbackReadings.heightCm,
-                      weightKg: fallbackReadings.weightKg,
+                      heightCm: effectiveReadings.heightCm,
+                      weightKg: effectiveReadings.weightKg,
                     }
                   : undefined,
               )
@@ -234,14 +240,14 @@ export function NutriMirror({
               report={report}
               onFinish={awaitingParentFinalize ? undefined : reset}
               awaitingParentFinalize={awaitingParentFinalize}
-              temporaryMeasurements={!!fallbackReadings}
+              temporaryMeasurements={!hardwareMode && !!demoReadings}
             />
           )
         );
     }
   }
 
-  const fallbackReadings = session.child
+  const demoReadings = session.child
     ? generateFallbackMeasurements(
         session.child,
         createSeededRandom(
@@ -250,6 +256,12 @@ export function NutriMirror({
         ),
       )
     : null;
+  const effectiveReadings = hardwareMode
+    ? {
+        heightCm: hardwareMeasurements?.heightCm ?? null,
+        weightKg: hardwareMeasurements?.weightKg ?? null,
+      }
+    : demoReadings;
   const resultLocked = awaitingParentFinalize && step === "result";
 
   return (
@@ -340,10 +352,10 @@ export function NutriMirror({
               disabled={saving}
               onClick={() =>
                 complete(
-                  fallbackReadings
+                  effectiveReadings
                     ? {
-                        heightCm: fallbackReadings.heightCm,
-                        weightKg: fallbackReadings.weightKg,
+                        heightCm: effectiveReadings.heightCm,
+                        weightKg: effectiveReadings.weightKg,
                       }
                     : undefined,
                 )

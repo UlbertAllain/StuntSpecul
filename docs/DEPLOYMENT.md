@@ -53,6 +53,16 @@ Authorized redirect URI:
 
 Provider Google pada Firebase Authentication boleh aktif, tetapi aplikasi saat ini menggunakan OAuth server-side dan StuntSpecula session.
 
+### IoT
+
+    IOT_API_KEY=
+
+Gunakan random key minimal 32 byte. Generate contoh:
+
+    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+Key yang sama dipasang pada firmware ESP32. Jangan memakai prefix NEXT*PUBLIC*.
+
 ## Model A production files
 
     models/
@@ -107,6 +117,8 @@ Functional smoke:
 6. Hasil muncul di parent.
 7. Monitoring petugas berubah.
 8. Admin functions bekerja.
+9. GET /api/iot/session tanpa Bearer token menghasilkan 401 jika IOT_API_KEY terkonfigurasi.
+10. ESP32 heartbeat membuat status alat online di halaman admin.
 
 ## Rollback
 

@@ -73,6 +73,20 @@ Format error:
 
 Legacy mirror examination action endpoints masih tersedia untuk compatibility internal tetapi bukan flow utama.
 
+## IoT
+
+Semua endpoint berikut menggunakan header:
+
+    Authorization: Bearer <IOT_API_KEY>
+
+- GET /api/iot/session — poll active examination dan update device lastSeen.
+- POST /api/iot/session/claim — claim examination menjadi running.
+- POST /api/iot/measurements — kirim tinggi dan/atau berat.
+- POST /api/iot/heartbeat — kirim firmware/sensor health.
+- POST /api/iot/session/cancel — cancel active queued/running session.
+
+IoT request tidak menggunakan browser same-origin guard karena diautentikasi dengan Bearer key. Detail payload ada di IOT_INTEGRATION.md.
+
 ## Model A
 
 Python function:
@@ -84,7 +98,8 @@ Detail ada di MODEL_A.md.
 
 ## HTTP rules
 
-- Mutating Next.js API request harus same-origin.
+- Mutating browser API request harus same-origin.
+- /api/iot/\* menggunakan Bearer IOT_API_KEY sebagai device authentication.
 - JSON body dibatasi ukuran.
 - Validation menggunakan Zod.
 - Auth/role diverifikasi server-side.

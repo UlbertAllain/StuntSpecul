@@ -63,5 +63,6 @@ export function applicationConfig(values: Variables, request: Request) {
     CLOUDINARY_API_SECRET: values.CLOUDINARY_API_SECRET?.trim(),
     GOOGLE_CLIENT_ID: values.GOOGLE_CLIENT_ID?.trim(),
     GOOGLE_CLIENT_SECRET: values.GOOGLE_CLIENT_SECRET?.trim(),
+    IOT_API_KEY: values.IOT_API_KEY?.trim(),
   };
 }

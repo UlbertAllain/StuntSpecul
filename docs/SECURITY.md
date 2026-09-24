@@ -26,6 +26,16 @@ Google OAuth menggunakan authorization code flow, server-side client secret, sta
 
 GOOGLE*CLIENT_SECRET tidak boleh memakai prefix NEXT_PUBLIC*.
 
+## IoT authentication
+
+ESP32 tidak menggunakan cookie/browser Origin. Semua endpoint /api/iot/\* wajib memanggil device authentication dengan:
+
+    Authorization: Bearer <IOT_API_KEY>
+
+Key dibandingkan menggunakan digest dan constant-time comparison. Jika IOT_API_KEY belum dikonfigurasi, endpoint fail closed dengan 503.
+
+IOT*API_KEY adalah server secret dan tidak boleh memakai prefix NEXT_PUBLIC*.
+
 ## Rate limiting
 
 Endpoint auth, registration, dan chat memiliki rate limit berbasis request identity dan time window. Counter disimpan di Firestore.
@@ -48,6 +58,7 @@ Secret hanya boleh berada di environment:
 - Cloudinary API secret
 - Gemini API key
 - Google client secret
+- IoT API key
 
 Jangan commit file environment, credential JSON, service-account file, atau API secret.
 

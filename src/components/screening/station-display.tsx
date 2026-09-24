@@ -12,16 +12,27 @@ type StationActive = {
   status: "queued" | "running" | "completed";
   cameraEnabled: boolean;
   createdAt: number;
+  heightCm: number | null;
+  weightKg: number | null;
+  measurementUpdatedAt: number | null;
 };
 
 type StationState = {
   active: StationActive | null;
+  device: {
+    online: boolean;
+    lastSeen: number | null;
+    firmwareVersion: string | null;
+    heightSensor: "ok" | "error" | "unknown";
+    weightSensor: "ok" | "error" | "unknown";
+  };
 };
 
 export function StationDisplay() {
   const [state, setState] = useState<StationState | null>(null);
   const [assignment, setAssignment] = useState<MirrorAssignment | null>(null);
   const [busy, setBusy] = useState(false);
+  const [hardwareMode, setHardwareMode] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -39,6 +50,7 @@ export function StationDisplay() {
 
         setState(value);
         setError("");
+        if (value.device.online) setHardwareMode(true);
 
         if (value.active && value.active.status !== "completed") {
           setBusy(true);
@@ -86,9 +98,12 @@ export function StationDisplay() {
         });
         if (controller.signal.aborted) return;
 
+        setState(value);
+        if (value.device.online) setHardwareMode(true);
+
         if (!value.active) {
           setAssignment(null);
-          setState({ active: null });
+          setHardwareMode(false);
           setError("");
           return;
         }
@@ -124,7 +139,8 @@ export function StationDisplay() {
     }
 
     setAssignment(null);
-    setState({ active: null });
+    setState(null);
+    setHardwareMode(false);
     setError("");
   }
 
@@ -136,6 +152,15 @@ export function StationDisplay() {
         canBegin
         onComplete={saveCompletion}
         onFinish={finish}
+        hardwareMode={hardwareMode}
+        hardwareMeasurements={
+          state?.active
+            ? {
+                heightCm: state.active.heightCm,
+                weightKg: state.active.weightKg,
+              }
+            : null
+        }
         awaitingParentFinalize
       />
     );

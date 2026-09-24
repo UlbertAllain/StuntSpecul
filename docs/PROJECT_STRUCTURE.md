@@ -158,6 +158,7 @@ Server-only code:
 - `firestore-app.ts`: application/business flow dan authorization
 - `firestore.ts`: Firestore REST adapter
 - `security.ts`: password, token, request identity
+- `iot-auth.ts`: Bearer authentication khusus ESP32
 - `http.ts`: response/error/request parsing
 - `gemini.ts`: Gemini adapter
 - `env.ts`: environment contract

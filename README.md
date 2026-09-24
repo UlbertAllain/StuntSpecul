@@ -93,6 +93,7 @@ node tests/deployment-smoke.mjs
 - [Project Structure](docs/PROJECT_STRUCTURE.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Authentication](docs/AUTHENTICATION.md)
+- [IoT Integration](docs/IOT_INTEGRATION.md)
 - [Screening Flow](docs/SCREENING_FLOW.md)
 - [Data Model](docs/DATA_MODEL.md)
 - [API](docs/API.md)

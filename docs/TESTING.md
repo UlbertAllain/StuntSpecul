@@ -44,6 +44,7 @@ Auto-format:
 - tests/screening.test.mjs — screening calculation dan contract.
 - tests/session.test.mjs — screening state machine.
 - tests/security.test.mjs — password/auth validation.
+- tests/iot-auth.test.mjs — ESP32 Bearer authentication.
 - tests/vercel.test.mjs — Vercel/runtime config.
 - tests/deployment-smoke.mjs — repository/deployment smoke checks.
 

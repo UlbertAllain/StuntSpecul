@@ -31,12 +31,14 @@ export function ExaminationStage({
   paused,
   onComplete,
   reading,
+  readingSource = "demo",
   soundEnabled = false,
 }: {
   phase: MeasurementPhase;
   paused: boolean;
   onComplete: () => void;
   reading?: number | null;
+  readingSource?: "sensor" | "demo";
   soundEnabled?: boolean;
 }) {
   function finishStage() {
@@ -110,8 +112,12 @@ export function ExaminationStage({
             <span>
               {finished
                 ? reading !== null && reading !== undefined
-                  ? "Data demo sementara"
-                  : "Sensor belum terhubung"
+                  ? readingSource === "sensor"
+                    ? "Data sensor"
+                    : "Data demo sementara"
+                  : readingSource === "sensor"
+                    ? "Data sensor belum diterima"
+                    : "Sensor belum terhubung"
                 : paused
                   ? "Pengukuran dijeda"
                   : "Tahan posisi sebentar"}

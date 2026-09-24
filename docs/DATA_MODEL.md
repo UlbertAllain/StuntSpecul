@@ -83,6 +83,8 @@ Index lookup:
 - cameraEnabled
 - heightCm
 - weightKg
+- measurementUpdatedAt
+- measurementSource: iot atau null
 - bmi
 - captureStatus
 - facialStatus
@@ -116,7 +118,15 @@ Single-station coordination record.
 
 ### `devices/{id}`
 
-Status perangkat untuk monitoring admin.
+Status hardware ESP32 untuk monitoring admin:
+
+- name
+- active
+- lastSeen
+- firmwareVersion
+- heightSensor
+- weightSensor
+- createdAt
 
 ### `parentMessages/{id}`
 

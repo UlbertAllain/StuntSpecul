@@ -11,4 +11,5 @@ export interface Env {
   CLOUDINARY_API_SECRET?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  IOT_API_KEY?: string;
 }

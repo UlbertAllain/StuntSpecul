@@ -65,7 +65,13 @@ weight
 
 ## Measurements
 
-Current software dapat menggunakan fallback measurement generator ketika hardware reading belum tersedia. Ini harus dianggap development/hardware-integration fallback, bukan pengganti sensor production.
+ESP32 mengirim tinggi/berat melalui /api/iot/measurements. Selama sesi aktif, halaman /alat membaca nilai yang sudah tersimpan melalui station state.
+
+Jika perangkat IoT online, hasil sensor menjadi sumber utama dan backend memprioritaskan nilai IoT saat examination diselesaikan.
+
+Fallback measurement generator hanya digunakan ketika hardware belum aktif dan tetap harus dianggap development/demo fallback, bukan pengganti sensor production.
+
+Detail firmware ada di IOT_INTEGRATION.md.
 
 ## Camera
 

@@ -15,6 +15,7 @@ import {
   type FirestoreRest,
 } from "./firestore";
 import { ApiError, body, cookie, ok, sessionCookie } from "./http";
+import { requireIotApiKey } from "./iot-auth";
 import {
   digest,
   emailSchema,
@@ -83,6 +84,8 @@ type ExamRecord = {
   cameraEnabled: boolean;
   heightCm: number | null;
   weightKg: number | null;
+  measurementUpdatedAt: number | null;
+  measurementSource: "iot" | null;
   bmi: number | null;
   captureStatus: "captured" | "skipped" | "failed" | null;
   facialStatus:
@@ -121,6 +124,9 @@ type DeviceRecord = {
   name: string;
   active: boolean;
   lastSeen: number | null;
+  firmwareVersion?: string | null;
+  heightSensor?: "ok" | "error" | "unknown";
+  weightSensor?: "ok" | "error" | "unknown";
   createdAt: number;
 };
 
@@ -855,30 +861,66 @@ async function activeStation(env: Env) {
   return { station, exam };
 }
 
-async function touchStation(env: Env) {
+type DeviceHeartbeat = {
+  firmwareVersion?: string;
+  heightSensor?: "ok" | "error" | "unknown";
+  weightSensor?: "ok" | "error" | "unknown";
+};
+
+async function touchIotDevice(env: Env, heartbeat: DeviceHeartbeat = {}) {
   const db = store(env);
   const path = `devices/${STATION_ID}`;
   const current = await db.get<DeviceRecord>(path);
   const now = Date.now();
+  const patch: Omit<Partial<DeviceRecord>, "createdAt"> = {
+    name: STATION_NAME,
+    active: true,
+    lastSeen: now,
+  };
+
+  if (heartbeat.firmwareVersion !== undefined) {
+    patch.firmwareVersion = heartbeat.firmwareVersion;
+  }
+  if (heartbeat.heightSensor !== undefined) {
+    patch.heightSensor = heartbeat.heightSensor;
+  }
+  if (heartbeat.weightSensor !== undefined) {
+    patch.weightSensor = heartbeat.weightSensor;
+  }
 
   if (current) {
-    await db.set(
-      path,
-      {
-        name: STATION_NAME,
-        active: true,
-        lastSeen: now,
-      },
-      { mergeFields: ["name", "active", "lastSeen"] },
-    );
-  } else {
-    await db.set(path, {
-      name: STATION_NAME,
-      active: true,
-      lastSeen: now,
-      createdAt: now,
+    await db.set(path, patch, {
+      mergeFields: Object.keys(patch),
     });
+    return;
   }
+
+  await db.set(path, {
+    ...patch,
+    firmwareVersion: patch.firmwareVersion ?? null,
+    heightSensor: patch.heightSensor ?? "unknown",
+    weightSensor: patch.weightSensor ?? "unknown",
+    createdAt: now,
+  });
+}
+
+async function stationDeviceState(env: Env) {
+  const device = await store(env).get<DeviceRecord>(`devices/${STATION_ID}`);
+  const now = Date.now();
+  const lastSeen = device?.data.lastSeen ?? null;
+  const online =
+    !!device?.data.active &&
+    lastSeen !== null &&
+    now - lastSeen <= ONLINE_WINDOW_MS;
+
+  return {
+    name: device?.data.name || STATION_NAME,
+    online,
+    lastSeen,
+    firmwareVersion: device?.data.firmwareVersion ?? null,
+    heightSensor: device?.data.heightSensor ?? "unknown",
+    weightSensor: device?.data.weightSensor ?? "unknown",
+  };
 }
 
 async function createActiveExam(
@@ -921,6 +963,8 @@ async function createActiveExam(
     cameraEnabled,
     heightCm: null,
     weightKg: null,
+    measurementUpdatedAt: null,
+    measurementSource: null,
     bmi: null,
     captureStatus: cameraEnabled ? null : "skipped",
     facialStatus: null,
@@ -957,7 +1001,6 @@ async function createActiveExam(
     throw error;
   }
 
-  await touchStation(env);
   return { id, status: "queued" as const };
 }
 
@@ -1039,6 +1082,25 @@ const completionSchema = z
       .default(null),
     facialReason: z.string().trim().max(80).nullable().default(null),
     facialModelVersion: z.string().trim().max(40).nullable().default(null),
+  })
+  .strict();
+
+const iotMeasurementSchema = z
+  .object({
+    heightCm: z.number().finite().min(30).max(200).optional(),
+    weightKg: z.number().finite().min(1).max(100).optional(),
+  })
+  .strict()
+  .refine(
+    (value) => value.heightCm !== undefined || value.weightKg !== undefined,
+    "Minimal satu hasil pengukuran harus dikirim.",
+  );
+
+const iotHeartbeatSchema = z
+  .object({
+    firmwareVersion: z.string().trim().min(1).max(40).optional(),
+    heightSensor: z.enum(["ok", "error", "unknown"]).optional(),
+    weightSensor: z.enum(["ok", "error", "unknown"]).optional(),
   })
   .strict();
 
@@ -1820,22 +1882,7 @@ async function parentChat(request: Request, env: Env) {
   });
 }
 
-async function stationStatus(_request: Request, env: Env) {
-  await touchStation(env);
-  const { exam } = await activeStation(env);
-  return ok({
-    active: exam
-      ? {
-          status: exam.data.status,
-          cameraEnabled: exam.data.cameraEnabled,
-          createdAt: exam.data.createdAt,
-        }
-      : null,
-  });
-}
-
-async function stationClaim(_request: Request, env: Env) {
-  await touchStation(env);
+async function claimActiveExam(env: Env) {
   const { exam } = await activeStation(env);
   if (!exam) {
     throw new ApiError(409, "Belum ada pemeriksaan yang dikirim ke alat.");
@@ -1865,6 +1912,32 @@ async function stationClaim(_request: Request, env: Env) {
     }
   }
 
+  return exam;
+}
+
+async function stationStatus(_request: Request, env: Env) {
+  const [{ exam }, device] = await Promise.all([
+    activeStation(env),
+    stationDeviceState(env),
+  ]);
+
+  return ok({
+    active: exam
+      ? {
+          status: exam.data.status,
+          cameraEnabled: exam.data.cameraEnabled,
+          createdAt: exam.data.createdAt,
+          heightCm: exam.data.heightCm,
+          weightKg: exam.data.weightKg,
+          measurementUpdatedAt: exam.data.measurementUpdatedAt ?? null,
+        }
+      : null,
+    device,
+  });
+}
+
+async function stationClaim(_request: Request, env: Env) {
+  const exam = await claimActiveExam(env);
   return ok({
     id: "station-active",
     ageMonths: exam.data.ageMonths,
@@ -1875,7 +1948,6 @@ async function stationClaim(_request: Request, env: Env) {
 }
 
 async function stationComplete(request: Request, env: Env) {
-  await touchStation(env);
   const input = await body(request, completionSchema);
   const { exam } = await activeStation(env);
   if (!exam) {
@@ -1886,9 +1958,17 @@ async function stationComplete(request: Request, env: Env) {
     throw new ApiError(409, "Pemeriksaan belum dimulai.");
   }
 
+  const heightCm =
+    exam.data.measurementSource === "iot" && exam.data.heightCm !== null
+      ? exam.data.heightCm
+      : input.heightCm;
+  const weightKg =
+    exam.data.measurementSource === "iot" && exam.data.weightKg !== null
+      ? exam.data.weightKg
+      : input.weightKg;
   const bmi =
-    input.heightCm && input.weightKg
-      ? Number((input.weightKg / (input.heightCm / 100) ** 2).toFixed(1))
+    heightCm !== null && weightKg !== null
+      ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
 
   try {
@@ -1896,8 +1976,8 @@ async function stationComplete(request: Request, env: Env) {
       `examinations/${exam.id}`,
       {
         status: "completed",
-        heightCm: input.heightCm,
-        weightKg: input.weightKg,
+        heightCm,
+        weightKg,
         bmi,
         captureStatus: input.captureStatus,
         facialStatus: input.facialStatus ?? "unavailable",
@@ -1936,11 +2016,121 @@ async function stationComplete(request: Request, env: Env) {
 }
 
 async function stationCancel(_request: Request, env: Env) {
-  await touchStation(env);
   const { exam } = await activeStation(env);
   if (!exam || !["queued", "running"].includes(exam.data.status)) {
     return ok({ cancelled: false });
   }
+  await cancelExam(env, exam);
+  return ok({ cancelled: true });
+}
+
+async function iotSession(request: Request, env: Env) {
+  requireIotApiKey(request, env);
+  await touchIotDevice(env);
+  const { exam } = await activeStation(env);
+
+  return ok({
+    active: exam
+      ? {
+          examinationId: exam.id,
+          status: exam.data.status,
+          ageMonths: exam.data.ageMonths,
+          sex: exam.data.sex,
+          cameraEnabled: exam.data.cameraEnabled,
+          heightCm: exam.data.heightCm,
+          weightKg: exam.data.weightKg,
+        }
+      : null,
+    serverTime: Date.now(),
+  });
+}
+
+async function iotClaim(request: Request, env: Env) {
+  requireIotApiKey(request, env);
+  await touchIotDevice(env);
+  const exam = await claimActiveExam(env);
+
+  return ok({
+    examinationId: exam.id,
+    status: "running",
+    ageMonths: exam.data.ageMonths,
+    sex: exam.data.sex,
+    cameraEnabled: exam.data.cameraEnabled,
+  });
+}
+
+async function iotMeasurements(request: Request, env: Env) {
+  requireIotApiKey(request, env);
+  const input = await body(request, iotMeasurementSchema);
+
+  await touchIotDevice(env, {
+    heightSensor: input.heightCm !== undefined ? "ok" : undefined,
+    weightSensor: input.weightKg !== undefined ? "ok" : undefined,
+  });
+
+  const { exam } = await activeStation(env);
+  if (!exam || exam.data.status !== "running") {
+    throw new ApiError(
+      409,
+      "Tidak ada pemeriksaan aktif yang menerima data sensor.",
+      "iot_session_not_running",
+    );
+  }
+
+  const now = Date.now();
+  const patch = {
+    ...(input.heightCm !== undefined ? { heightCm: input.heightCm } : {}),
+    ...(input.weightKg !== undefined ? { weightKg: input.weightKg } : {}),
+    measurementUpdatedAt: now,
+    measurementSource: "iot" as const,
+  };
+
+  try {
+    await store(env).set(`examinations/${exam.id}`, patch, {
+      mergeFields: Object.keys(patch),
+      precondition: { updateTime: exam.updateTime },
+    });
+  } catch (error) {
+    if (preconditionConflict(error)) {
+      throw new ApiError(
+        409,
+        "Sesi berubah saat data sensor dikirim. Coba kirim ulang.",
+        "iot_measurement_conflict",
+      );
+    }
+    throw error;
+  }
+
+  return ok({
+    saved: true,
+    examinationId: exam.id,
+    heightCm: input.heightCm ?? exam.data.heightCm,
+    weightKg: input.weightKg ?? exam.data.weightKg,
+    updatedAt: now,
+  });
+}
+
+async function iotHeartbeat(request: Request, env: Env) {
+  requireIotApiKey(request, env);
+  const input = await body(request, iotHeartbeatSchema);
+  await touchIotDevice(env, input);
+  const device = await stationDeviceState(env);
+
+  return ok({
+    online: device.online,
+    serverTime: Date.now(),
+  });
+}
+
+async function iotCancel(request: Request, env: Env) {
+  requireIotApiKey(request, env);
+  await touchIotDevice(env);
+  const { exam } = await activeStation(env);
+
+  if (!exam || !["queued", "running"].includes(exam.data.status)) {
+    return ok({ cancelled: false });
+  }
+
   await cancelExam(env, exam);
   return ok({ cancelled: true });
 }
@@ -2005,16 +2195,24 @@ async function staffComplete(request: Request, env: Env, examId: string) {
   }
 
   const input = await body(request, completionSchema);
+  const heightCm =
+    exam.data.measurementSource === "iot" && exam.data.heightCm !== null
+      ? exam.data.heightCm
+      : input.heightCm;
+  const weightKg =
+    exam.data.measurementSource === "iot" && exam.data.weightKg !== null
+      ? exam.data.weightKg
+      : input.weightKg;
   const bmi =
-    input.heightCm && input.weightKg
-      ? Number((input.weightKg / (input.heightCm / 100) ** 2).toFixed(1))
+    heightCm !== null && weightKg !== null
+      ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
   await store(env).set(
     `examinations/${exam.id}`,
     {
       status: "completed",
-      heightCm: input.heightCm,
-      weightKg: input.weightKg,
+      heightCm,
+      weightKg,
       bmi,
       captureStatus: input.captureStatus,
       facialStatus: input.facialStatus ?? "unavailable",
@@ -2113,24 +2311,20 @@ async function monitoringOverview(request: Request, env: Env) {
 
 async function deviceMonitoring(request: Request, env: Env) {
   await requireStaff(request, env, true);
-  const db = store(env);
-  const now = Date.now();
-  const device = await db.get<DeviceRecord>(`devices/${STATION_ID}`);
-  const { exam } = await activeStation(env);
-  const lastSeen = device?.data.lastSeen ?? null;
-  const online =
-    !!device?.data.active &&
-    lastSeen !== null &&
-    now - lastSeen <= ONLINE_WINDOW_MS;
+  const [{ exam }, device] = await Promise.all([
+    activeStation(env),
+    stationDeviceState(env),
+  ]);
 
   return ok({
     devices: [
       {
         id: STATION_ID,
-        name: device?.data.name || STATION_NAME,
-        online,
-        lastSeen,
-        status: !online
+        name: device.name,
+        online: device.online,
+        lastSeen: device.lastSeen,
+        firmwareVersion: device.firmwareVersion,
+        status: !device.online
           ? "offline"
           : exam?.data.status === "running"
             ? "in_use"
@@ -2145,14 +2339,22 @@ async function deviceMonitoring(request: Request, env: Env) {
             }
           : null,
         checks: {
-          application: online ? "normal" : "offline",
-          heightSensor: "pending_hardware",
-          weightSensor: "pending_hardware",
-          camera: online ? "app_ready" : "offline",
+          application: device.online ? "normal" : "offline",
+          heightSensor: !device.online
+            ? "offline"
+            : device.heightSensor === "ok"
+              ? "normal"
+              : "pending_hardware",
+          weightSensor: !device.online
+            ? "offline"
+            : device.weightSensor === "ok"
+              ? "normal"
+              : "pending_hardware",
+          camera: device.online ? "app_ready" : "offline",
         },
       },
     ],
-    generatedAt: now,
+    generatedAt: Date.now(),
   });
 }
 
@@ -2312,6 +2514,16 @@ export async function routeFirestore(
       return stationComplete(request, env);
     case "POST /api/station/cancel":
       return stationCancel(request, env);
+    case "GET /api/iot/session":
+      return iotSession(request, env);
+    case "POST /api/iot/session/claim":
+      return iotClaim(request, env);
+    case "POST /api/iot/measurements":
+      return iotMeasurements(request, env);
+    case "POST /api/iot/heartbeat":
+      return iotHeartbeat(request, env);
+    case "POST /api/iot/session/cancel":
+      return iotCancel(request, env);
     case "POST /api/parent-account/register":
       return registerParent(request, env);
     case "POST /api/parent-account/register-google":
