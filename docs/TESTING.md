@@ -40,14 +40,12 @@ Auto-format:
 
 ## Current test files
 
-| File | Focus |
-| --- | --- |
-| tests/camera.test.mjs | camera/image behavior |
-| tests/screening.test.mjs | screening calculation dan contract |
-| tests/session.test.mjs | screening state machine |
-| tests/security.test.mjs | password/auth validation |
-| tests/vercel.test.mjs | Vercel/runtime config |
-| tests/deployment-smoke.mjs | repository/deployment smoke checks |
+- tests/camera.test.mjs — camera/image behavior.
+- tests/screening.test.mjs — screening calculation dan contract.
+- tests/session.test.mjs — screening state machine.
+- tests/security.test.mjs — password/auth validation.
+- tests/vercel.test.mjs — Vercel/runtime config.
+- tests/deployment-smoke.mjs — repository/deployment smoke checks.
 
 ## Manual smoke test
 

@@ -93,19 +93,17 @@ Integrasi eksternal dipanggil server-side bila mengandung credential.
 
 ## Important modules
 
-| Module | Responsibility |
-| --- | --- |
-| `src/server/router.ts` | HTTP dispatcher + same-origin guard |
-| `src/server/firestore-app.ts` | application flow dan authorization |
-| `src/server/firestore.ts` | Firestore REST adapter |
-| `src/server/security.ts` | password, token, digest, request key |
-| `src/server/http.ts` | JSON parsing, response, API error |
-| `src/server/runtime.ts` | runtime dependency initialization |
-| `src/server/runtime-config.ts` | environment validation |
-| `src/server/gemini.ts` | Gemini adapter |
-| `src/lib/growth.ts` | WHO TB/U |
-| `src/lib/session.ts` | screening state machine |
-| `src/lib/model-a.ts` | Model A browser contract |
+- `src/server/router.ts` — HTTP dispatcher dan same-origin guard.
+- `src/server/firestore-app.ts` — application flow dan authorization.
+- `src/server/firestore.ts` — Firestore REST adapter.
+- `src/server/security.ts` — password, token, digest, request key.
+- `src/server/http.ts` — JSON parsing, response, API error.
+- `src/server/runtime.ts` — runtime dependency initialization.
+- `src/server/runtime-config.ts` — environment validation.
+- `src/server/gemini.ts` — Gemini adapter.
+- `src/lib/growth.ts` — WHO TB/U.
+- `src/lib/session.ts` — screening state machine.
+- `src/lib/model-a.ts` — Model A browser contract.
 
 ## Screening decision
 

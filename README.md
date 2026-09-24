@@ -38,14 +38,12 @@ npm run dev:web
 
 ## Route aplikasi
 
-| Route | Pengguna | Fungsi |
-| --- | --- | --- |
-| `/` | Publik | Landing page |
-| `/login` | Semua role | Login dan registrasi parent |
-| `/ortu` | Parent | Profil anak, mulai pemeriksaan, hasil, riwayat |
-| `/petugas` | Staff | Monitoring, data anak, riwayat, insight |
-| `/admin` | Admin | Monitoring alat dan kelola petugas |
-| `/alat` | Perangkat | Layar pemeriksaan StuntSpecula |
+- `/` — landing page publik.
+- `/login` — login semua role dan registrasi parent.
+- `/ortu` — portal parent.
+- `/petugas` — dashboard staff.
+- `/admin` — dashboard admin.
+- `/alat` — layar pemeriksaan StuntSpecula.
 
 ## Struktur
 
