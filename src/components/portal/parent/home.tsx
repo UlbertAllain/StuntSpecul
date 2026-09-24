@@ -7,8 +7,8 @@ import { growthStatusLabel } from "@/lib/growth";
 import { formatAge, formatReading } from "@/lib/screening";
 
 function MiniGrowthChart({ examinations }: { examinations: Examination[] }) {
-  const values = completed(examinations)
-    .filter((exam) => exam.heightCm !== null)
+  const values = examinations
+    .filter((exam) => exam.status === "completed" && exam.heightCm !== null)
     .slice(0, 6)
     .reverse();
 
