@@ -35,12 +35,32 @@ export function StationDisplay() {
         const value = await api<StationState>("/station/active", {
           signal: controller.signal,
         });
-        if (!controller.signal.aborted) {
-          setState(value);
-          setError("");
+        if (controller.signal.aborted) return;
+
+        setState(value);
+        setError("");
+
+        if (value.active && value.active.status !== "completed") {
+          setBusy(true);
+          const claimed = await api<MirrorAssignment>("/station/claim", {
+            method: "POST",
+            body: {},
+            signal: controller.signal,
+          });
+          if (controller.signal.aborted) return;
+
+          setAssignment({
+            ...claimed,
+            cameraEnabled: !!claimed.cameraEnabled,
+          });
+          setBusy(false);
+          return;
         }
       } catch (cause) {
-        if (!controller.signal.aborted) setError(errorMessage(cause));
+        if (!controller.signal.aborted) {
+          setBusy(false);
+          setError(errorMessage(cause));
+        }
       }
 
       if (!controller.signal.aborted) timer = setTimeout(poll, 2000);
@@ -88,24 +108,6 @@ export function StationDisplay() {
     };
   }, [assignment]);
 
-  async function begin() {
-    if (busy) return;
-
-    setBusy(true);
-    setError("");
-    try {
-      const claimed = await api<MirrorAssignment>("/station/claim", {
-        method: "POST",
-        body: {},
-      });
-      setAssignment({ ...claimed, cameraEnabled: !!claimed.cameraEnabled });
-    } catch (cause) {
-      setError(errorMessage(cause));
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function saveCompletion(payload: ScreeningCompletion) {
     await api("/station/complete", {
       method: "POST",
@@ -144,14 +146,7 @@ export function StationDisplay() {
   }
 
   if (state?.active) {
-    return (
-      <NutriMirror
-        key={`station-ready-${state.active.createdAt}`}
-        canBegin={!busy && !error}
-        onBegin={begin}
-        waitingLabel="Orang tua sudah memulai sesi dari HP. Tekan Aku siap! untuk mulai pemeriksaan."
-      />
-    );
+    return <StationIdleScreen error={error} loading={busy || !assignment} />;
   }
 
   return <StationIdleScreen error={error} loading={!state} />;

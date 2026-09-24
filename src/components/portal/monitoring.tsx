@@ -112,34 +112,42 @@ export function MonitoringPanel() {
 
       {overview && (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <article className="portal-card !mb-0">
-              <Baby size={22} />
-              <p className="portal-note">Anak tercatat</p>
-              <strong className="mt-2 block text-3xl font-black">
-                {overview.stats.totalChildren}
-              </strong>
+          <div className="staff-stat-grid">
+            <article className="staff-stat-card">
+              <span className="staff-stat-icon">
+                <Baby />
+              </span>
+              <div>
+                <p>Anak tercatat</p>
+                <strong>{overview.stats.totalChildren}</strong>
+              </div>
             </article>
-            <article className="portal-card !mb-0">
-              <Clock3 size={22} />
-              <p className="portal-note">Pemeriksaan hari ini</p>
-              <strong className="mt-2 block text-3xl font-black">
-                {overview.stats.todayExaminations}
-              </strong>
+            <article className="staff-stat-card">
+              <span className="staff-stat-icon">
+                <Clock3 />
+              </span>
+              <div>
+                <p>Pemeriksaan hari ini</p>
+                <strong>{overview.stats.todayExaminations}</strong>
+              </div>
             </article>
-            <article className="portal-card !mb-0">
-              <CheckCircle2 size={22} />
-              <p className="portal-note">Selesai hari ini</p>
-              <strong className="mt-2 block text-3xl font-black">
-                {overview.stats.todayCompleted}
-              </strong>
+            <article className="staff-stat-card">
+              <span className="staff-stat-icon">
+                <CheckCircle2 />
+              </span>
+              <div>
+                <p>Selesai hari ini</p>
+                <strong>{overview.stats.todayCompleted}</strong>
+              </div>
             </article>
-            <article className="portal-card !mb-0">
-              <Activity size={22} />
-              <p className="portal-note">Sesi aktif</p>
-              <strong className="mt-2 block text-3xl font-black">
-                {overview.stats.activeSessions}
-              </strong>
+            <article className="staff-stat-card">
+              <span className="staff-stat-icon">
+                <Activity />
+              </span>
+              <div>
+                <p>Sesi aktif</p>
+                <strong>{overview.stats.activeSessions}</strong>
+              </div>
             </article>
           </div>
 
