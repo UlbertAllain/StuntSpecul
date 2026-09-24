@@ -1229,6 +1229,7 @@
   .stunt-steps-section,
   .stunt-faq-section {
     padding: 86px 30px;
+    scroll-margin-top: 92px;
   }
 
   .stunt-preview-section {
@@ -1268,12 +1269,6 @@
 
   .stunt-bento-history {
     grid-area: history;
-  }
-
-  .stunt-bento-who,
-  .stunt-bento-chart,
-  .stunt-bento-history {
-    grid-column: auto;
   }
 
   .stunt-bento-chart {
