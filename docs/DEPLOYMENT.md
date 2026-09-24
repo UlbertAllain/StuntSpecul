@@ -1,80 +1,117 @@
 # Deployment
 
-## Vercel
+Production berjalan di Vercel.
 
-Konfigurasi utama:
+## Runtime
 
-- Framework: Next.js
-- Build command: `npm run build:vercel`
-- Node.js: 22.x
-- Python runtime mengikuti `pyproject.toml`
+- Next.js: Node.js 22.x
+- Model A: Python serverless function
+- Database: Firebase Firestore
+- Build command: npm run build:vercel
 
-Environment production:
+## Environment variables
 
-```dotenv
-FIREBASE_PROJECT_ID=
-FIREBASE_CLIENT_EMAIL=
-FIREBASE_PRIVATE_KEY=
+### Firestore
 
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
+    FIREBASE_PROJECT_ID=
+    FIREBASE_CLIENT_EMAIL=
+    FIREBASE_PRIVATE_KEY=
 
-GEMINI_API_KEY=
-GEMINI_MODEL=
+### Application origin
 
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-```
+    APP_ORIGIN=https://stuntspecula.vercel.app
 
-`APP_ORIGIN` opsional. Jika tidak diisi, production menggunakan origin request HTTPS.
+APP_ORIGIN optional. Jika tidak diisi, production menggunakan HTTPS request origin.
 
-## Firestore
+### Cloudinary
 
-Gunakan Firestore database default dalam Native mode. Tidak ada SQL migration yang perlu dijalankan.
+    CLOUDINARY_CLOUD_NAME=
+    CLOUDINARY_API_KEY=
+    CLOUDINARY_API_SECRET=
 
-Admin pertama dibuat dari localhost saat Firestore masih kosong. Setelah itu admin membuat akun petugas, sedangkan orang tua mendaftar dari form login yang sama.
+Diperlukan untuk upload foto profil.
 
-## Login Google
+### Gemini
 
-OAuth Google bersifat opsional. Jika diaktifkan, buat OAuth 2.0 Web Client di Google Cloud Console lalu tambahkan redirect URI production:
+    GEMINI_API_KEY=
+    GEMINI_MODEL=
 
-```text
-https://stuntspecula.vercel.app/api/auth/google/callback
-```
+Jika tidak diisi, fitur asisten tidak tersedia tetapi screening tetap berjalan.
 
-Isi `GOOGLE_CLIENT_ID` dan `GOOGLE_CLIENT_SECRET` di environment production. Provider Google boleh tetap diaktifkan di Firebase Authentication, tetapi aplikasi menggunakan callback server-side agar tetap kompatibel dengan session StuntSpecula yang ada.
+### Google OAuth
 
-- Login Google akan masuk ke akun parent/staff/admin jika email sudah terdaftar.
-- Registrasi Google tersedia untuk akun orang tua baru. Setelah OAuth berhasil, pengguna hanya melengkapi profil anak.
-- Staff dan admin tetap dibuat melalui alur administrasi yang ada; setelah emailnya terdaftar, akun tersebut dapat masuk dengan Google.
+    GOOGLE_CLIENT_ID=
+    GOOGLE_CLIENT_SECRET=
 
-## Model A
+Authorized JavaScript origin:
 
-Production membutuhkan:
+    https://stuntspecula.vercel.app
 
-```text
-models/
-├─ face_detection_yunet_2023mar.onnx
-├─ mobilenetv3_stunting_v2.onnx
-└─ mobilenetv3_stunting_v2.onnx.data
-```
+Authorized redirect URI:
 
-Endpoint:
+    https://stuntspecula.vercel.app/api/auth/google/callback
 
-```text
-GET  /api/model-a-screening
-POST /api/model-a-screening
-```
+Provider Google pada Firebase Authentication boleh aktif, tetapi aplikasi saat ini menggunakan OAuth server-side dan StuntSpecula session.
 
-## Smoke check
+## Model A production files
 
-1. `GET /api/health` → `ready: true` dan `databaseProvider: "firestore"`.
-2. `GET /api/config` berhasil.
-3. `GET /api/model-a-screening` → `ready: true`.
-4. Login parent, petugas, dan admin sesuai role.
-5. Mulai pemeriksaan dari parent dan jalankan `/alat`.
-6. Pastikan WHO tersimpan sebagai hasil utama dan Model A sebagai pendukung.
-7. Coba upload foto profil melalui Cloudinary signed upload.
+    models/
+    ├─ face_detection_yunet_2023mar.onnx
+    ├─ mobilenetv3_stunting_v2.onnx
+    └─ mobilenetv3_stunting_v2.onnx.data
 
-Jangan menaruh Firebase private key atau Cloudinary API secret di source code.
+Python dependency:
+
+- numpy 2.1.3
+- opencv-python-headless 4.10.0.84
+- onnxruntime 1.20.1
+
+## Pre-deploy
+
+    npm ci
+    npm run check
+    npm run build
+    node tests/deployment-smoke.mjs
+
+## Deploy strategy
+
+Untuk menghindari Vercel build-rate limit:
+
+1. Kumpulkan perubahan dalam satu batch.
+2. Verifikasi sebelum update main.
+3. Lakukan satu update ke main.
+4. Tunggu deployment selesai.
+5. Jangan spam manual Redeploy.
+
+## Production smoke check
+
+Application:
+
+    GET /api/health
+
+Expected: ready true, databaseReady true, databaseProvider firestore.
+
+Model A:
+
+    GET /api/model-a-screening
+
+Expected: ready, filesReady, dependenciesReady, dan runtimeReady true.
+
+Functional smoke:
+
+1. Login parent.
+2. Mulai examination.
+3. Buka /alat.
+4. Station auto-claim.
+5. Selesaikan screening.
+6. Hasil muncul di parent.
+7. Monitoring petugas berubah.
+8. Admin functions bekerja.
+
+## Rollback
+
+Jika deployment terbaru gagal secara fungsional, identifikasi commit terakhir yang valid, revert satu perubahan, perbaiki dalam satu batch baru, lalu jalankan quality gate sebelum deploy kembali.
+
+## Secrets
+
+Jangan expose secret sebagai NEXT_PUBLIC_*.

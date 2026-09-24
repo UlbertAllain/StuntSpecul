@@ -5,7 +5,7 @@ import { Activity, Baby, CheckCircle2, Clock3, RefreshCw } from "lucide-react";
 import { api, errorMessage } from "@/lib/api-client";
 import type { MonitoringOverview } from "@/lib/portal";
 import { formatAge, formatReading } from "@/lib/screening";
-import { Message } from "./shell";
+import { Message } from "../shared/shell";
 
 const SESSION_LABEL = {
   waiting_parent: "Menunggu orang tua",

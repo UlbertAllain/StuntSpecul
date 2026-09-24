@@ -6,7 +6,7 @@ import type { Examination } from "@/lib/portal";
 import { api, errorMessage } from "@/lib/api-client";
 import { facialAnalysisLabel, formatReading } from "@/lib/screening";
 import { growthStatusLabel } from "@/lib/growth";
-import { Message } from "./shell";
+import { Message } from "../shared/shell";
 
 const STATUS = {
   queued: "Menunggu",

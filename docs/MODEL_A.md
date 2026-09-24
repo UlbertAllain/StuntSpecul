@@ -1,79 +1,86 @@
 # Model A V2.1
 
-Model A adalah analisis wajah pendukung. Hasilnya tidak menentukan atau mengganti status stunting WHO.
+Model A adalah analisis wajah pendukung, bukan penentu status stunting. WHO TB/U tetap menjadi sumber hasil pertumbuhan utama.
 
 ## Pipeline
 
-```text
-foto kamera
-→ YuNet face detection
-→ quality gate
-→ inner-face preprocessing
-→ MobileNetV3-Small ONNX
-→ indikator wajah pendukung
-```
+    JPEG camera
+    → decode
+    → YuNet face detection
+    → face quality gate
+    → inner-face crop
+    → grayscale/preprocessing
+    → MobileNetV3-Small ONNX
+    → sigmoid probability
+    → threshold
+    → supporting indication
 
-Threshold classifier: `0.40`.
+Classifier threshold saat ini: 0.40.
 
 ## Runtime assets
 
-```text
-models/
-├─ face_detection_yunet_2023mar.onnx
-├─ mobilenetv3_stunting_v2.onnx
-└─ mobilenetv3_stunting_v2.onnx.data
-```
+    models/
+    ├─ face_detection_yunet_2023mar.onnx
+    ├─ mobilenetv3_stunting_v2.onnx
+    └─ mobilenetv3_stunting_v2.onnx.data
 
-Install dari artifact:
+## Dependency
 
-```powershell
-.\scripts\model-a\install.ps1 -ArtifactZip ".\stuntspecula_model_a_v2_artifacts.zip"
-```
-
-## Dependency files
-
-- `pyproject.toml` mendeskripsikan runtime Python untuk deployment.
-- `requirements.txt` mem-pin dependency yang dipakai launcher lokal agar reproduktif.
+- numpy == 2.1.3
+- opencv-python-headless == 4.10.0.84
+- onnxruntime == 1.20.1
 
 ## Local development
 
-Gunakan launcher:
+Install artifact bila diperlukan:
 
-```powershell
-npm run dev
-```
+    .\scripts\model-a\install.ps1 -ArtifactZip ".\stuntspecula_model_a_v2_artifacts.zip"
 
-Launcher yang dipanggil oleh `npm run dev` menyiapkan virtualenv `.venv-model-a` bila diperlukan, memastikan dependency Model A tersedia, menjalankan Model A pada `127.0.0.1:8787`, mengatur `NEXT_PUBLIC_MODEL_A_ENDPOINT`, lalu menjalankan Next.js.
+Run:
 
-Setelah dependency sudah ada:
+    npm run dev
 
-```powershell
-npm run dev
-```
-
-Health check:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:8787 | Format-List
-```
-
-Target:
-
-```text
-ready             : True
-filesReady        : True
-dependenciesReady : True
-```
+Launcher menjalankan Model A lokal di 127.0.0.1:8787 dan Next.js.
 
 ## Production
 
-Vercel menggunakan `api/model-a-screening.py`. Browser default memanggil `/api/model-a-screening`; override `NEXT_PUBLIC_MODEL_A_ENDPOINT` hanya dipakai launcher lokal.
+Endpoints:
 
-Foto diproses in-memory dan tidak disimpan sebagai bagian laporan. Field hasil yang disimpan:
+    GET  /api/model-a-screening
+    POST /api/model-a-screening
 
-- `facial_status`
-- `facial_probability`
-- `facial_reason`
-- `facial_model_version`
+GET health check melakukan file check, dependency import, YuNet load, ONNX load, dan dummy inference/warmup. Karena itu ready true berarti runtime berhasil diload.
 
-Jika Model A tidak tersedia, pemeriksaan antropometri tetap harus selesai. WHO TB/U tetap menjadi hasil utama.
+## Failure behavior
+
+Jika Model A gagal, facialStatus menjadi unavailable dan screening antropometri tetap harus dapat diselesaikan.
+
+## Data persisted
+
+Hanya supporting result:
+
+- facialStatus
+- facialProbability
+- facialReason
+- facialModelVersion
+
+Raw screening photo tidak disimpan pada examination.
+
+## Validation limitation
+
+Model A V2.1 masih harus diperlakukan sebagai model eksperimental/supporting. Internal accuracy tidak sama dengan validitas klinis atau generalisasi real-world.
+
+Known risks:
+
+- weak-label public dataset;
+- source/domain bias;
+- device/lighting shift;
+- demographic distribution shift.
+
+Jangan menulis copy yang menyatakan Model A mendiagnosis stunting.
+
+## External validation
+
+Validasi yang benar membutuhkan subjek independen dengan age, sex, measured height, WHO Height-for-Age ground truth, serta foto dari kondisi capture yang bervariasi.
+
+Split harus subject-wise, bukan image-wise.

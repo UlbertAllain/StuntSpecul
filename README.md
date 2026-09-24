@@ -1,24 +1,28 @@
 # StuntSpecula
 
-StuntSpecula adalah sistem skrining pertumbuhan anak usia 24–59 bulan dengan tiga peran: orang tua, petugas, dan admin. Hasil pertumbuhan utama menggunakan TB/U WHO, sedangkan Model A hanya menjadi analisis wajah pendukung.
+StuntSpecula adalah sistem skrining pertumbuhan anak usia 24–59 bulan. Orang tua memulai pemeriksaan dari HP, alat menjalankan alur pengukuran, petugas memonitor proses, dan admin mengelola perangkat serta akun petugas.
+
+Status pertumbuhan utama menggunakan **TB/U WHO**. Model A V2.1 hanya menghasilkan analisis wajah pendukung dan tidak boleh mengganti keputusan antropometri WHO.
 
 ## Stack
 
-- Next.js 16 + React 19 + TypeScript
+- Next.js 16.2.6 + React 19 + TypeScript
 - Tailwind CSS 4
-- Firebase Firestore
+- Firebase Firestore sebagai persistence
+- bcrypt untuk password hashing
+- Google OAuth untuk login dan registrasi parent
 - Cloudinary untuk foto profil
 - Gemini untuk asisten penjelasan hasil
 - Python + OpenCV YuNet + ONNX Runtime untuk Model A
+- Vercel untuk deployment
 
-## Jalankan lokal
+## Quick start
 
 Persyaratan:
 
 - Node.js 22.x
 - Python 3.12 untuk Model A lokal
-
-Setup:
+- Firestore project dan service-account credential
 
 ```powershell
 npm ci
@@ -26,64 +30,86 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Rute utama:
+`npm run dev` menjalankan web Next.js dan runtime Model A lokal. Jika hanya mengembangkan web:
 
-- `/` — landing page
-- `/login` — satu form login untuk semua role
-- `/ortu` — portal orang tua
-- `/petugas` — dashboard petugas
-- `/admin` — monitoring alat dan kelola petugas
-- `/alat` — layar pemeriksaan
+```powershell
+npm run dev:web
+```
 
-## Struktur project
+## Route aplikasi
+
+| Route | Pengguna | Fungsi |
+| --- | --- | --- |
+| `/` | Publik | Landing page |
+| `/login` | Semua role | Login dan registrasi parent |
+| `/ortu` | Parent | Profil anak, mulai pemeriksaan, hasil, riwayat |
+| `/petugas` | Staff | Monitoring, data anak, riwayat, insight |
+| `/admin` | Admin | Monitoring alat dan kelola petugas |
+| `/alat` | Perangkat | Layar pemeriksaan StuntSpecula |
+
+## Struktur
 
 ```text
 StuntSpecula/
-├─ api/                    # Python endpoint Model A
-├─ docs/                   # dokumentasi teknis
-├─ models/                 # model ONNX runtime
-├─ public/                 # gambar dan audio
-├─ scripts/
-│  ├─ model-a/             # runtime Model A lokal
-│  ├─ check-ai.mjs
-│  ├─ server-module.mjs
-│  └─ vercel-build.mjs
+├─ api/                       # Python serverless endpoint Model A
+├─ docs/                      # dokumentasi teknis
+├─ models/                    # asset ONNX runtime
+├─ public/                    # image dan audio statis
+├─ scripts/                   # launcher, install, build helper
 ├─ src/
-│  ├─ app/                 # route Next.js
+│  ├─ app/                    # Next.js route entrypoints
 │  ├─ components/
-│  │  ├─ landing/
+│  │  ├─ auth/               # login dan registrasi
+│  │  ├─ landing/            # landing publik
 │  │  ├─ portal/
-│  │  ├─ screening/
-│  │  └─ ui/
-│  ├─ hooks/
-│  ├─ lib/                 # domain/client utilities
-│  └─ server/              # Firestore API + auth + integrations
-└─ tests/
+│  │  │  ├─ admin/           # UI admin
+│  │  │  ├─ parent/          # UI parent
+│  │  │  ├─ shared/          # shell/session role portal
+│  │  │  ├─ staff/           # UI petugas
+│  │  │  └─ portal.css
+│  │  ├─ screening/          # UI alat dan pemeriksaan
+│  │  └─ ui/                 # primitive UI generik
+│  ├─ hooks/                  # hooks kamera/audio/session
+│  ├─ lib/                    # pure domain + client utilities
+│  └─ server/                 # API, auth, Firestore, integrations
+└─ tests/                     # automated tests
 ```
 
-Entry point utama:
+Detail ownership folder ada di [Project Structure](docs/PROJECT_STRUCTURE.md).
 
-- `src/components/screening/station-display.tsx`
-- `src/components/portal/dashboard.tsx`
-- `src/components/portal/parent-portal.tsx`
-- `src/server/firestore-app.ts`
-- `src/server/firestore.ts`
-- `src/lib/growth.ts`
-- `api/model-a-screening.py`
+## Quality gate
 
-## Environment
-
-Lihat `.env.example`. Production membutuhkan Firebase service account dan Cloudinary server credentials. Jangan commit file environment atau private key.
-
-## Verifikasi
+Sebelum commit atau deployment:
 
 ```powershell
 npm run check
 npm run build
+node tests/deployment-smoke.mjs
 ```
 
-Dokumentasi lanjutan:
+`npm run check` menjalankan TypeScript check, ESLint, unit tests, dan Prettier check.
 
-- [Arsitektur](docs/ARCHITECTURE.md)
+## Dokumentasi
+
+- [Getting Started](docs/GETTING_STARTED.md)
+- [Project Structure](docs/PROJECT_STRUCTURE.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Authentication](docs/AUTHENTICATION.md)
+- [Screening Flow](docs/SCREENING_FLOW.md)
+- [Data Model](docs/DATA_MODEL.md)
+- [API](docs/API.md)
+- [Security](docs/SECURITY.md)
+- [Testing](docs/TESTING.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Model A](docs/MODEL_A.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+
+## Prinsip penting
+
+1. WHO TB/U adalah sumber hasil pertumbuhan utama.
+2. Model A hanya supporting signal.
+3. Raw photo pemeriksaan diproses sementara dan tidak menjadi bagian laporan.
+4. Client input selalu divalidasi kembali di server.
+5. Controller/route tetap tipis; business flow berada di server application layer.
+6. Jangan menaruh credential di source code.
+7. Hindari menambah layer/folder baru tanpa ownership atau tanggung jawab yang jelas.

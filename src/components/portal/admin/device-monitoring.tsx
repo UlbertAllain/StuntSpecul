@@ -16,7 +16,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api-client";
-import { Message } from "./shell";
+import { Message } from "../shared/shell";
 
 type DeviceCheck = "normal" | "offline" | "pending_hardware" | "app_ready";
 

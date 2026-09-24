@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { UserPlus, UsersRound } from "lucide-react";
 import type { Staff } from "@/lib/portal";
 import { api, errorMessage } from "@/lib/api-client";
-import { Message } from "./shell";
+import { Message } from "../shared/shell";
 
 export function SettingsPanel() {
   const [staff, setStaff] = useState<Staff[]>([]);

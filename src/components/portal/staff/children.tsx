@@ -6,7 +6,7 @@ import type { ChildProfile } from "@/lib/portal";
 import { ageInMonths } from "@/lib/portal";
 import { api, errorMessage } from "@/lib/api-client";
 import { formatAge } from "@/lib/screening";
-import { Message } from "./shell";
+import { Message } from "../shared/shell";
 
 export function ChildrenPanel() {
   const [children, setChildren] = useState<ChildProfile[]>([]);
