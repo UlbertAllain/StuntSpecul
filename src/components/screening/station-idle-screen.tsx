@@ -18,9 +18,9 @@ export function StationIdleScreen({
   loading: boolean;
 }) {
   return (
-    <main className="min-h-svh bg-[linear-gradient(180deg,#DDF2FF_0%,#FFFDF7_48%,#FFF7FA_100%)] px-4 py-4 text-[#18334d] sm:px-6">
-      <div className="mx-auto flex min-h-[calc(100svh-2rem)] w-full max-w-[560px] flex-col">
-        <header className="flex items-center justify-between gap-3 py-1">
+    <main className="station-idle-shell min-h-svh bg-[linear-gradient(180deg,#DDF2FF_0%,#FFFDF7_48%,#FFF7FA_100%)] px-4 py-4 text-[#18334d] sm:px-6">
+      <div className="station-idle-frame mx-auto flex min-h-[calc(100svh-2rem)] w-full max-w-[560px] flex-col">
+        <header className="station-idle-header flex items-center justify-between gap-3 py-1">
           <Image
             src="/images/stuntspecula-logo.jpeg"
             alt="StuntSpecula"
@@ -35,7 +35,7 @@ export function StationIdleScreen({
           </span>
         </header>
 
-        <section className="mt-3 flex flex-1 flex-col rounded-[2rem] border-2 border-[#18334d] bg-[#FFFDF7] px-5 py-6 shadow-[0_14px_34px_rgba(24,51,77,0.12)] sm:px-7">
+        <section className="station-idle-card mt-3 flex flex-1 flex-col rounded-[2rem] border-2 border-[#18334d] bg-[#FFFDF7] px-5 py-6 shadow-[0_14px_34px_rgba(24,51,77,0.12)] sm:px-7">
           {error ? (
             <div className="m-auto max-w-sm text-center">
               <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-[#FFE3EE]">
@@ -61,41 +61,44 @@ export function StationIdleScreen({
             </div>
           ) : (
             <>
-              <div className="text-center">
-                <span className="inline-flex rounded-full bg-[#E8F5FF] px-3 py-1.5 text-[11px] font-black tracking-[0.08em] text-[#315f80]">
-                  HALO, AKU MIMO!
-                </span>
-                <h1 className="mx-auto mt-4 max-w-md text-[2.2rem] font-black leading-[0.98] tracking-[-0.045em] sm:text-[2.7rem]">
-                  Yuk, cek{" "}
-                  <span className="text-[#B43E70]">tumbuh kembangmu</span>
-                </h1>
-                <p className="mx-auto mt-3 max-w-sm text-sm font-semibold leading-6 text-[#5d7384]">
-                  Cuma tiga langkah singkat. Ikuti petunjuk Mimo sampai selesai.
-                </p>
+              <div className="station-idle-body">
+                <div className="text-center">
+                  <span className="inline-flex rounded-full bg-[#E8F5FF] px-3 py-1.5 text-[11px] font-black tracking-[0.08em] text-[#315f80]">
+                    HALO, AKU MIMO!
+                  </span>
+                  <h1 className="mx-auto mt-4 max-w-md text-[2.2rem] font-black leading-[0.98] tracking-[-0.045em] sm:text-[2.7rem]">
+                    Yuk, cek{" "}
+                    <span className="text-[#B43E70]">tumbuh kembangmu</span>
+                  </h1>
+                  <p className="mx-auto mt-3 max-w-sm text-sm font-semibold leading-6 text-[#5d7384]">
+                    Cuma tiga langkah singkat. Ikuti petunjuk Mimo sampai
+                    selesai.
+                  </p>
+                </div>
+
+                <div className="station-idle-mascot mx-auto mt-2 w-[175px] sm:w-[195px]">
+                  <Mascot interactive />
+                </div>
+
+                <div className="station-idle-steps mt-2 grid grid-cols-3 gap-2">
+                  {STEPS.map((step, index) => (
+                    <div
+                      key={step.label}
+                      className="rounded-2xl border border-[#cbd8e1] px-2 py-3 text-center"
+                      style={{ background: step.background }}
+                    >
+                      <span className="mx-auto grid h-9 w-9 place-items-center rounded-full bg-white/80">
+                        <step.icon size={18} strokeWidth={2.6} />
+                      </span>
+                      <strong className="mt-2 block text-xs font-black">
+                        {index + 1}. {step.label}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="mx-auto mt-2 w-[175px] sm:w-[195px]">
-                <Mascot interactive />
-              </div>
-
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {STEPS.map((step, index) => (
-                  <div
-                    key={step.label}
-                    className="rounded-2xl border border-[#cbd8e1] px-2 py-3 text-center"
-                    style={{ background: step.background }}
-                  >
-                    <span className="mx-auto grid h-9 w-9 place-items-center rounded-full bg-white/80">
-                      <step.icon size={18} strokeWidth={2.6} />
-                    </span>
-                    <strong className="mt-2 block text-xs font-black">
-                      {index + 1}. {step.label}
-                    </strong>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-auto pt-5">
+              <div className="station-idle-status mt-auto pt-5">
                 <div className="rounded-2xl border border-[#cbd8e1] bg-white px-4 py-3 text-center">
                   <div className="flex items-center justify-center gap-2 text-xs font-black tracking-[0.04em]">
                     <span className="h-2.5 w-2.5 rounded-full bg-[#4E8BC4]" />
