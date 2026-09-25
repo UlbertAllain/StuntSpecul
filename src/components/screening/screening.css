@@ -2192,14 +2192,22 @@
     gap: clamp(18px, 2.2svh, 30px);
   }
 
+  .station-page .station-idle-body > .text-center {
+    width: 100%;
+    justify-self: stretch;
+    text-align: center;
+  }
+
   .station-page .station-idle-body > .text-center > span {
     padding: 8px 14px;
     font-size: 13px;
   }
 
   .station-page .station-idle-body h1 {
+    width: 100%;
     max-width: 560px;
-    margin-top: 18px;
+    margin: 18px auto 0;
+    text-align: center;
     font-size: clamp(48px, 7.2vw, 62px);
     line-height: 0.98;
     letter-spacing: -0.025em;
@@ -2216,8 +2224,10 @@
   }
 
   .station-page .station-idle-body .text-center > p {
+    width: 100%;
     max-width: 500px;
-    margin-top: 16px;
+    margin: 16px auto 0;
+    text-align: center;
     font-size: 17px;
     line-height: 1.65;
   }
