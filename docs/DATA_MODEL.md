@@ -123,6 +123,8 @@ Artikel edukasi yang dikelola petugas:
 
 Parent hanya menerima artikel berstatus published.
 
+Starter content awal di-seed sekali dari `src/lib/blog-seeds.ts` ketika koleksi blog masih kosong. Marker `config/blogSeed` mencegah artikel starter muncul kembali setelah seluruh artikel sengaja dihapus.
+
 ### `staffSessions/{digest(token)}`
 
 - userId

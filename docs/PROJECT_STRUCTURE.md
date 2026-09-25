@@ -211,4 +211,5 @@ Jangan split function kecil hanya agar folder terlihat kompleks.
 - `src/components/portal/parent/blog-detail-page.tsx`: detail artikel.
 - `src/components/portal/staff/blogs.tsx`: CRUD artikel petugas.
 - `src/lib/growth-recommendations.ts`: aturan rekomendasi nutrisi dan tindak lanjut berdasarkan status WHO + tren TB/U pemeriksaan sebelumnya.
+- `src/lib/blog-seeds.ts`: lima artikel edukasi starter berbasis sumber WHO/Kemenkes/UNICEF.
 - Firestore collection: `blogs`.

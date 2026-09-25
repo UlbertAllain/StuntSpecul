@@ -13,6 +13,7 @@ import {
   blogInputSchema,
   childProfileSchema,
 } from "../lib/portal";
+import { STARTER_BLOGS } from "../lib/blog-seeds";
 import { assessHeightForAge } from "../lib/growth";
 import {
   growthRecommendationsFor,
@@ -913,7 +914,52 @@ async function recommendationsForExam(
 }
 
 async function listBlogs(env: Env) {
-  return (await store(env).list<BlogRecord>("blogs")).sort(
+  const db = store(env);
+  const markerPath = "config/blogSeed";
+  const existing = await db.list<BlogRecord>("blogs");
+
+  if (existing.length > 0) {
+    const marker = await db.get<{ version: string; seededAt: number }>(
+      markerPath,
+    );
+    if (!marker) {
+      await db.set(markerPath, {
+        version: "starter-blogs-v1",
+        seededAt: Date.now(),
+      });
+    }
+    return existing.sort((a, b) => b.data.updatedAt - a.data.updatedAt);
+  }
+
+  const marker = await db.get<{ version: string; seededAt: number }>(
+    markerPath,
+  );
+  if (marker) return existing;
+
+  const now = Date.now();
+  for (const [index, post] of STARTER_BLOGS.entries()) {
+    const timestamp = now - index * 60_000;
+    const record: BlogRecord = {
+      title: post.title,
+      excerpt: post.excerpt,
+      content: post.content,
+      category: post.category,
+      status: post.status,
+      authorId: "system-blog-seed",
+      authorName: "StuntSpecula Edukasi",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      publishedAt: timestamp,
+    };
+    await db.set(`blogs/${post.id}`, record);
+  }
+
+  await db.set(markerPath, {
+    version: "starter-blogs-v1",
+    seededAt: now,
+  });
+
+  return (await db.list<BlogRecord>("blogs")).sort(
     (a, b) => b.data.updatedAt - a.data.updatedAt,
   );
 }

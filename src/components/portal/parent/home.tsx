@@ -87,7 +87,7 @@ export function ParentHome({
   const visibleHistory = showAllHistory ? history : history.slice(0, 3);
 
   return (
-    <>
+    <div className="parent-home-dashboard">
       <section className="mobile-dashboard-card parent-growth-card">
         <div className="parent-dashboard-head">
           <div>
@@ -246,6 +246,6 @@ export function ParentHome({
           </>
         )}
       </section>
-    </>
+    </div>
   );
 }
