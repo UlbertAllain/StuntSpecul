@@ -15,7 +15,10 @@ import {
 } from "lucide-react";
 import { downloadReport, WHO_REFERENCE_URL } from "@/lib/report";
 import { growthStatusLabel, stuntingScreeningLabel } from "@/lib/growth";
-import { growthRecommendationsFor } from "@/lib/growth-recommendations";
+import {
+  growthRecommendationsFor,
+  type GrowthRecommendations,
+} from "@/lib/growth-recommendations";
 import {
   captureStatusLabel,
   facialAnalysisLabel,
@@ -31,16 +34,22 @@ export function Results({
   onFinish,
   awaitingParentFinalize = false,
   temporaryMeasurements = false,
+  recommendations: savedRecommendations = null,
 }: {
   report: ScreeningReport;
   onFinish?: () => void;
   awaitingParentFinalize?: boolean;
   temporaryMeasurements?: boolean;
+  recommendations?: GrowthRecommendations | null;
 }) {
   const [detail, setDetail] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
-  const recommendations = growthRecommendationsFor(report.growthStatus);
+  const recommendations =
+    savedRecommendations ??
+    growthRecommendationsFor(report.growthStatus, {
+      currentHeightForAgeZ: report.heightForAgeZ,
+    });
   const facial = report.facialAnalysis;
   const showFacialReason =
     Boolean(facial.reason) &&
@@ -48,7 +57,7 @@ export function Results({
 
   function save() {
     try {
-      downloadReport(report);
+      downloadReport(report, recommendations);
       setSaved(true);
       setError("");
     } catch {
@@ -188,6 +197,17 @@ export function Results({
           </ol>
         </section>
       </div>
+      {recommendations.trendDelta !== null && (
+        <p className="result-recommendation-trend">
+          Dibanding pemeriksaan sebelumnya: TB/U{" "}
+          {recommendations.trend === "declining"
+            ? "turun"
+            : recommendations.trend === "improving"
+              ? "naik"
+              : "relatif stabil"}{" "}
+          {Math.abs(recommendations.trendDelta).toFixed(2)} SD.
+        </p>
+      )}
       <p className="result-recommendation-note">
         Rekomendasi edukasi mengikuti status TB/U WHO dan bukan resep atau
         diagnosis individual.

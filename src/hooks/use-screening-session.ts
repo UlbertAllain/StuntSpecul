@@ -7,6 +7,7 @@ import {
   type Readings,
 } from "@/lib/screening";
 import { api, errorMessage } from "@/lib/api-client";
+import type { GrowthRecommendations } from "@/lib/growth-recommendations";
 import type { MirrorAssignment } from "@/lib/portal";
 import { INITIAL_SESSION, sessionReducer } from "@/lib/session";
 
@@ -34,7 +35,9 @@ export type ScreeningCompletion = {
 
 export function useScreeningSession(
   assignment?: MirrorAssignment,
-  saveCompletion?: (payload: ScreeningCompletion) => Promise<void>,
+  saveCompletion?: (
+    payload: ScreeningCompletion,
+  ) => Promise<GrowthRecommendations | void>,
 ) {
   const [session, dispatch] = useReducer(
     sessionReducer,
@@ -53,6 +56,8 @@ export function useScreeningSession(
   );
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savedRecommendations, setSavedRecommendations] =
+    useState<GrowthRecommendations | null>(null);
   const hidden = useSyncExternalStore(
     subscribeVisibility,
     getHidden,
@@ -81,12 +86,20 @@ export function useScreeningSession(
     setSaveError("");
     try {
       if (assignment) {
-        if (saveCompletion) await saveCompletion(payload);
-        else
-          await api("/screening/mirror/complete", {
+        if (saveCompletion) {
+          const recommendations = await saveCompletion(payload);
+          if (recommendations) setSavedRecommendations(recommendations);
+        } else {
+          const result = await api<{
+            recommendations?: GrowthRecommendations;
+          }>("/screening/mirror/complete", {
             method: "POST",
             body: payload,
           });
+          if (result.recommendations) {
+            setSavedRecommendations(result.recommendations);
+          }
+        }
       }
       dispatch({ type: "complete", report });
     } catch (error) {
@@ -104,5 +117,6 @@ export function useScreeningSession(
     complete,
     saveError,
     saving,
+    savedRecommendations,
   };
 }

@@ -94,6 +94,10 @@ Index lookup:
 - recommendations
   - version
   - basedOn
+  - trend
+  - currentHeightForAgeZ
+  - previousHeightForAgeZ
+  - trendDelta
   - nutrition[]
   - nextSteps[]
 - createdAt

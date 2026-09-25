@@ -2679,3 +2679,21 @@
     font-size: 13px;
   }
 }
+
+.result-recommendation-trend {
+  margin: 10px 2px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #eef7fd;
+  color: #4d6f86;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+@media (orientation: portrait) and (min-width: 700px) {
+  .station-page .results-screen .result-recommendation-trend {
+    font-size: 12px;
+    padding: 12px 14px;
+  }
+}

@@ -12,7 +12,6 @@ import {
 } from "react";
 import {
   BookOpen,
-  ChartNoAxesCombined,
   Home,
   LogOut,
   Play,
@@ -27,12 +26,11 @@ import { formatAge } from "@/lib/screening";
 import { Message, PortalShell } from "../shared/shell";
 import { ParentAssistant } from "./assistant";
 import { ParentBlog } from "./blog";
-import { ParentHistory } from "./history";
 import { ParentHome } from "./home";
 import { ParentInsights } from "./insights";
 import { ParentProfile } from "./profile";
 
-type Tab = "home" | "insights" | "history" | "blog" | "profile";
+type Tab = "home" | "insights" | "blog" | "profile";
 
 const ASSISTANT_FAB_POSITION_KEY = "stuntspecula:assistant-fab-position-v2";
 const ASSISTANT_FAB_MARGIN = 8;
@@ -445,12 +443,6 @@ export function ParentPortal() {
           <Play /> Mulai pemeriksaan
         </button>
         <button
-          aria-current={tab === "history" ? "page" : undefined}
-          onClick={() => setTab("history")}
-        >
-          <ChartNoAxesCombined /> Riwayat
-        </button>
-        <button
           aria-current={tab === "blog" ? "page" : undefined}
           onClick={() => setTab("blog")}
         >
@@ -480,7 +472,6 @@ export function ParentPortal() {
             child={view.children[0] || null}
           />
         )}
-        {tab === "history" && <ParentHistory examinations={completedExams} />}
         {tab === "blog" && <ParentBlog />}
         {tab === "profile" && <ParentProfile view={view} onRefresh={refresh} />}
       </div>
@@ -537,13 +528,6 @@ export function ParentPortal() {
                 ? "Aktif"
                 : "Mulai"}
           </small>
-        </button>
-        <button
-          aria-current={tab === "history" ? "page" : undefined}
-          onClick={() => setTab("history")}
-        >
-          <ChartNoAxesCombined />
-          <span>Riwayat</span>
         </button>
         <button
           aria-current={tab === "blog" ? "page" : undefined}

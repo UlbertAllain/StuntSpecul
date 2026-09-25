@@ -5413,3 +5413,231 @@
     height: 17px !important;
   }
 }
+
+/* Parent home V3: history lives on Beranda; nav stays at five items. */
+.parent-home-latest-result {
+  margin-top: 14px;
+}
+
+.parent-home-result-status {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #e6dcb8;
+  border-radius: 14px;
+  background: #fffaf0;
+}
+
+.parent-home-result-status span,
+.parent-home-result-status strong,
+.parent-home-result-status small {
+  display: block;
+}
+
+.parent-home-result-status > span {
+  color: #8a7850;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.parent-home-result-status > strong {
+  margin-top: 5px;
+  color: #18334d;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.parent-home-result-status > small {
+  margin-top: 7px;
+  color: #718493;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.parent-home-result-link {
+  min-height: 44px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #3f7eab;
+  font-size: 11px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.parent-home-empty-copy {
+  margin-top: 13px;
+}
+
+.parent-home-history {
+  margin-top: 18px;
+  padding-bottom: 10px;
+}
+
+.parent-home-history-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 11px;
+}
+
+.parent-home-history-heading > div {
+  min-width: 0;
+}
+
+.parent-home-history-heading > svg {
+  margin-top: 4px;
+  color: #4e8bc4;
+  flex-shrink: 0;
+}
+
+.parent-home-history-heading h2 {
+  margin: 4px 0 0;
+  color: #18334d;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.parent-home-history-heading p {
+  margin-top: 4px;
+  color: #718493;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.parent-home-history-list {
+  display: grid;
+  gap: 8px;
+}
+
+.parent-home-history-item {
+  padding: 13px 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #dce7ef;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #18334d;
+  text-decoration: none;
+}
+
+.parent-home-history-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #718493;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.parent-home-history-item > strong {
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.parent-home-history-item > div {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: #527087;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.parent-home-history-item > div svg {
+  color: #4e8bc4;
+}
+
+.parent-home-history-toggle {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #3f7eab;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.parent-home-history-empty {
+  margin-top: 0;
+}
+
+.parent-history-trend-note {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #d9e7ef;
+  border-radius: 13px;
+  background: #f5fbff;
+}
+
+.parent-history-trend-note strong,
+.parent-history-trend-note span {
+  display: block;
+}
+
+.parent-history-trend-note strong {
+  color: #315f87;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.parent-history-trend-note span {
+  margin-top: 4px;
+  color: #5d7486;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .parent-mobile-nav {
+    grid-template-columns: 1fr 1fr 1.15fr 1fr 1fr !important;
+  }
+
+  .staff-mobile-nav {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
+
+  .parent-home-history-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+  }
+
+  .parent-home-history-date {
+    grid-column: 1;
+  }
+
+  .parent-home-history-item > strong {
+    grid-column: 1;
+  }
+
+  .parent-home-history-item > div {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+
+@media (max-width: 390px) {
+  .parent-home-history-item > div {
+    display: grid;
+    justify-items: end;
+    gap: 3px;
+  }
+
+  .parent-home-history-item > div svg {
+    display: none;
+  }
+}

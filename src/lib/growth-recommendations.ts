@@ -1,22 +1,54 @@
 import type { GrowthStatus } from "./growth.ts";
 
-export const GROWTH_RECOMMENDATION_VERSION = "growth-rec-v1";
+export const GROWTH_RECOMMENDATION_VERSION = "growth-rec-v2";
+
+export type GrowthTrend =
+  | "first_measurement"
+  | "improving"
+  | "stable"
+  | "declining"
+  | "unavailable";
 
 export type GrowthRecommendations = {
-  version: typeof GROWTH_RECOMMENDATION_VERSION;
+  version: string;
   basedOn: GrowthStatus;
+  trend: GrowthTrend;
+  currentHeightForAgeZ: number | null;
+  previousHeightForAgeZ: number | null;
+  trendDelta: number | null;
   nutrition: string[];
   nextSteps: string[];
 };
 
-export function growthRecommendationsFor(
-  status: GrowthStatus,
-): GrowthRecommendations {
+export type GrowthRecommendationContext = {
+  currentHeightForAgeZ?: number | null;
+  previousHeightForAgeZ?: number | null;
+};
+
+function round2(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function trendFrom(
+  current: number | null,
+  previous: number | null,
+): {
+  trend: GrowthTrend;
+  delta: number | null;
+} {
+  if (current === null) return { trend: "unavailable", delta: null };
+  if (previous === null) return { trend: "first_measurement", delta: null };
+
+  const delta = round2(current - previous);
+  if (delta > 0.1) return { trend: "improving", delta };
+  if (delta < -0.1) return { trend: "declining", delta };
+  return { trend: "stable", delta };
+}
+
+function baseRecommendations(status: GrowthStatus) {
   switch (status) {
     case "severely_stunted":
       return {
-        version: GROWTH_RECOMMENDATION_VERSION,
-        basedOn: status,
         nutrition: [
           "Utamakan makanan beragam dan padat gizi dengan sumber protein hewani seperti telur, ikan, ayam, daging, atau susu/olahannya sesuai toleransi anak.",
           "Lengkapi makan utama dengan sumber karbohidrat, sayur, buah, serta lemak sehat; hindari mengganti makan utama dengan minuman manis atau camilan rendah gizi.",
@@ -31,8 +63,6 @@ export function growthRecommendationsFor(
       };
     case "stunted":
       return {
-        version: GROWTH_RECOMMENDATION_VERSION,
-        basedOn: status,
         nutrition: [
           "Berikan makanan beragam dan padat gizi dengan sumber protein hewani secara rutin, misalnya telur, ikan, ayam, daging, atau susu/olahannya sesuai toleransi anak.",
           "Lengkapi menu dengan karbohidrat, sayur, buah, dan lemak sehat agar kebutuhan energi dan zat gizi lebih beragam.",
@@ -46,8 +76,6 @@ export function growthRecommendationsFor(
       };
     case "monitor":
       return {
-        version: GROWTH_RECOMMENDATION_VERSION,
-        basedOn: status,
         nutrition: [
           "Pertahankan pola makan beragam dengan sumber protein hewani, sayur, buah, karbohidrat, dan lemak sehat.",
           "Jaga jadwal makan teratur dan pilih camilan bergizi agar asupan utama tidak tergantikan makanan atau minuman tinggi gula.",
@@ -61,8 +89,6 @@ export function growthRecommendationsFor(
       };
     case "within_range":
       return {
-        version: GROWTH_RECOMMENDATION_VERSION,
-        basedOn: status,
         nutrition: [
           "Pertahankan pola makan beragam dan seimbang dengan sumber protein hewani, sayur, buah, karbohidrat, dan lemak sehat.",
           "Utamakan air putih dan batasi minuman manis serta makanan tinggi gula, garam, atau lemak trans.",
@@ -76,8 +102,6 @@ export function growthRecommendationsFor(
       };
     default:
       return {
-        version: GROWTH_RECOMMENDATION_VERSION,
-        basedOn: status,
         nutrition: [
           "Pertahankan pola makan beragam dan seimbang sesuai usia sambil menunggu hasil pengukuran yang valid.",
         ],
@@ -87,4 +111,71 @@ export function growthRecommendationsFor(
         ],
       };
   }
+}
+
+function trendRecommendation(
+  trend: GrowthTrend,
+  delta: number | null,
+): {
+  nutrition: string[];
+  nextSteps: string[];
+} {
+  const magnitude = delta === null ? null : Math.abs(delta).toFixed(2);
+
+  switch (trend) {
+    case "declining":
+      return {
+        nutrition: [
+          "Karena tren TB/U tercatat menurun, catat pola makan harian dan bawa catatan tersebut saat berdiskusi dengan tenaga kesehatan agar kecukupan makan dapat ditinjau bersama.",
+        ],
+        nextSteps: [
+          `TB/U turun ${magnitude} SD dibanding pemeriksaan sebelumnya. Ulangi pengukuran dengan teknik yang benar dan bawa tren ini saat konsultasi atau pemantauan berikutnya.`,
+        ],
+      };
+    case "improving":
+      return {
+        nutrition: [
+          "Pertahankan pola makan beragam dan kebiasaan makan yang sudah berjalan karena tren TB/U tercatat lebih tinggi dibanding pemeriksaan sebelumnya.",
+        ],
+        nextSteps: [
+          `TB/U naik ${magnitude} SD dibanding pemeriksaan sebelumnya. Lanjutkan pemantauan karena status WHO saat ini tetap menjadi dasar tindak lanjut.`,
+        ],
+      };
+    case "stable":
+      return {
+        nutrition: [
+          "Pertahankan pola makan beragam dan teratur sambil terus memantau pertumbuhan dari waktu ke waktu.",
+        ],
+        nextSteps: [
+          `TB/U relatif stabil dibanding pemeriksaan sebelumnya (perubahan ${magnitude} SD). Lanjutkan pemantauan rutin.`,
+        ],
+      };
+    default:
+      return { nutrition: [], nextSteps: [] };
+  }
+}
+
+export function growthRecommendationsFor(
+  status: GrowthStatus,
+  context: GrowthRecommendationContext = {},
+): GrowthRecommendations {
+  const currentHeightForAgeZ = context.currentHeightForAgeZ ?? null;
+  const previousHeightForAgeZ = context.previousHeightForAgeZ ?? null;
+  const { trend, delta } = trendFrom(
+    currentHeightForAgeZ,
+    previousHeightForAgeZ,
+  );
+  const base = baseRecommendations(status);
+  const contextual = trendRecommendation(trend, delta);
+
+  return {
+    version: GROWTH_RECOMMENDATION_VERSION,
+    basedOn: status,
+    trend,
+    currentHeightForAgeZ,
+    previousHeightForAgeZ,
+    trendDelta: delta,
+    nutrition: [...base.nutrition, ...contextual.nutrition],
+    nextSteps: [...contextual.nextSteps, ...base.nextSteps],
+  };
 }

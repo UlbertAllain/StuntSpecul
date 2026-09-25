@@ -1,5 +1,8 @@
 import { growthStatusLabel, stuntingScreeningLabel } from "./growth.ts";
-import { growthRecommendationsFor } from "./growth-recommendations.ts";
+import {
+  growthRecommendationsFor,
+  type GrowthRecommendations,
+} from "./growth-recommendations.ts";
 import {
   facialAnalysisLabel,
   facialReasonLabel,
@@ -11,8 +14,15 @@ import {
 export const WHO_REFERENCE_URL =
   "https://www.who.int/tools/child-growth-standards/standards/length-height-for-age";
 
-export function reportText(report: ScreeningReport): string {
-  const recommendations = growthRecommendationsFor(report.growthStatus);
+export function reportText(
+  report: ScreeningReport,
+  savedRecommendations?: GrowthRecommendations | null,
+): string {
+  const recommendations =
+    savedRecommendations ??
+    growthRecommendationsFor(report.growthStatus, {
+      currentHeightForAgeZ: report.heightForAgeZ,
+    });
   const facial = report.facialAnalysis;
   return [
     "STUNTSPECULA — HASIL SCREENING",
@@ -42,6 +52,15 @@ export function reportText(report: ScreeningReport): string {
     "",
     "PENANGANAN / LANGKAH SELANJUTNYA",
     ...recommendations.nextSteps.map((item, index) => `${index + 1}. ${item}`),
+    recommendations.trendDelta === null
+      ? ""
+      : `Perbandingan TB/U sebelumnya: ${
+          recommendations.trend === "declining"
+            ? "turun"
+            : recommendations.trend === "improving"
+              ? "naik"
+              : "relatif stabil"
+        } ${Math.abs(recommendations.trendDelta).toFixed(2)} SD.`,
     "",
     "Hasil ini merupakan skrining, bukan diagnosis. TB/U WHO merupakan hasil utama untuk skrining stunting. Analisis wajah adalah indikator eksperimental tambahan.",
     "Foto wajah tidak disertakan dalam laporan.",
@@ -51,8 +70,11 @@ export function reportText(report: ScreeningReport): string {
     .join("\n");
 }
 
-export function downloadReport(report: ScreeningReport): void {
-  const blob = new Blob([reportText(report)], {
+export function downloadReport(
+  report: ScreeningReport,
+  recommendations?: GrowthRecommendations | null,
+): void {
+  const blob = new Blob([reportText(report, recommendations)], {
     type: "text/plain;charset=utf-8",
   });
   const url = URL.createObjectURL(blob);

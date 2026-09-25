@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ScreeningCompletion } from "@/hooks/use-screening-session";
 import { api, errorMessage } from "@/lib/api-client";
+import type { GrowthRecommendations } from "@/lib/growth-recommendations";
 import type { MirrorAssignment } from "@/lib/portal";
 import { NutriMirror } from "./nutri-mirror";
 import { StationCompleteScreen } from "./station-complete-screen";
@@ -124,10 +125,14 @@ export function StationDisplay() {
   }, [assignment]);
 
   async function saveCompletion(payload: ScreeningCompletion) {
-    await api("/station/complete", {
+    const result = await api<{
+      saved: boolean;
+      recommendations?: GrowthRecommendations;
+    }>("/station/complete", {
       method: "POST",
       body: payload,
     });
+    return result.recommendations;
   }
 
   async function finish(cancel: boolean) {

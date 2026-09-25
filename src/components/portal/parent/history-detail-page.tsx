@@ -283,6 +283,21 @@ export function ParentHistoryDetailPage() {
           </a>
         </section>
 
+        {recommendations.trendDelta !== null && (
+          <div className="parent-history-trend-note">
+            <strong>Perbandingan dengan pemeriksaan sebelumnya</strong>
+            <span>
+              TB/U{" "}
+              {recommendations.trend === "declining"
+                ? "turun"
+                : recommendations.trend === "improving"
+                  ? "naik"
+                  : "relatif stabil"}{" "}
+              {Math.abs(recommendations.trendDelta).toFixed(2)} SD.
+            </span>
+          </div>
+        )}
+
         <section className="parent-history-clinical-section parent-history-nutrition">
           <div className="parent-history-clinical-title">
             <Utensils size={20} />

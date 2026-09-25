@@ -87,8 +87,9 @@ Landing page publik beserta styling khusus landing.
 UI yang hanya dimiliki parent:
 
 - portal orchestration
-- home
-- riwayat parent
+- home + daftar riwayat pemeriksaan
+- detail riwayat pemeriksaan
+- blog edukasi
 - insight pertumbuhan
 - asisten
 - profil
@@ -209,5 +210,5 @@ Jangan split function kecil hanya agar folder terlihat kompleks.
 - `src/components/portal/parent/blog.tsx`: daftar artikel untuk orang tua.
 - `src/components/portal/parent/blog-detail-page.tsx`: detail artikel.
 - `src/components/portal/staff/blogs.tsx`: CRUD artikel petugas.
-- `src/lib/growth-recommendations.ts`: aturan rekomendasi nutrisi dan tindak lanjut berdasarkan status WHO.
+- `src/lib/growth-recommendations.ts`: aturan rekomendasi nutrisi dan tindak lanjut berdasarkan status WHO + tren TB/U pemeriksaan sebelumnya.
 - Firestore collection: `blogs`.

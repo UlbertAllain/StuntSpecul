@@ -107,7 +107,7 @@ type ExamRecord = {
   facialProbability: number | null;
   facialReason: string | null;
   facialModelVersion: string | null;
-  recommendations?: GrowthRecommendations | null;
+  recommendations?: Partial<GrowthRecommendations> | null;
   createdAt: number;
   completedAt: number | null;
   finalizedAt: number | null;
@@ -190,8 +190,27 @@ function asChild(doc: FirestoreDoc<ChildRecord>): ChildProfile {
 function asExam(doc: FirestoreDoc<ExamRecord>): Examination {
   const value = doc.data;
   const growth = assessHeightForAge(value.ageMonths, value.sex, value.heightCm);
-  const recommendations =
-    value.recommendations ?? growthRecommendationsFor(growth.growthStatus);
+  const fallbackRecommendations = growthRecommendationsFor(
+    growth.growthStatus,
+    { currentHeightForAgeZ: growth.heightForAgeZ },
+  );
+  const recommendations: GrowthRecommendations = value.recommendations
+    ? {
+        ...fallbackRecommendations,
+        ...value.recommendations,
+        trend: value.recommendations.trend ?? fallbackRecommendations.trend,
+        currentHeightForAgeZ:
+          value.recommendations.currentHeightForAgeZ ??
+          fallbackRecommendations.currentHeightForAgeZ,
+        previousHeightForAgeZ:
+          value.recommendations.previousHeightForAgeZ ?? null,
+        trendDelta: value.recommendations.trendDelta ?? null,
+        nutrition:
+          value.recommendations.nutrition ?? fallbackRecommendations.nutrition,
+        nextSteps:
+          value.recommendations.nextSteps ?? fallbackRecommendations.nextSteps,
+      }
+    : fallbackRecommendations;
 
   return {
     id: doc.id,
@@ -860,6 +879,37 @@ async function listExams(env: Env) {
   return (await store(env).list<ExamRecord>("examinations")).sort(
     byCreatedDesc,
   );
+}
+
+async function recommendationsForExam(
+  env: Env,
+  exam: FirestoreDoc<ExamRecord>,
+  heightCm: number | null,
+) {
+  const current = assessHeightForAge(
+    exam.data.ageMonths,
+    exam.data.sex,
+    heightCm,
+  );
+  const previous = (await listExams(env)).find(
+    (item) =>
+      item.id !== exam.id &&
+      item.data.childId === exam.data.childId &&
+      item.data.status === "completed" &&
+      item.data.heightCm !== null,
+  );
+  const previousGrowth = previous
+    ? assessHeightForAge(
+        previous.data.ageMonths,
+        previous.data.sex,
+        previous.data.heightCm,
+      )
+    : null;
+
+  return growthRecommendationsFor(current.growthStatus, {
+    currentHeightForAgeZ: current.heightForAgeZ,
+    previousHeightForAgeZ: previousGrowth?.heightForAgeZ ?? null,
+  });
 }
 
 async function listBlogs(env: Env) {
@@ -2107,10 +2157,7 @@ async function stationComplete(request: Request, env: Env) {
     heightCm !== null && weightKg !== null
       ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
-  const recommendations = growthRecommendationsFor(
-    assessHeightForAge(exam.data.ageMonths, exam.data.sex, heightCm)
-      .growthStatus,
-  );
+  const recommendations = await recommendationsForExam(env, exam, heightCm);
 
   try {
     await store(env).set(
@@ -2155,7 +2202,7 @@ async function stationComplete(request: Request, env: Env) {
     throw error;
   }
 
-  return ok({ saved: true });
+  return ok({ saved: true, recommendations });
 }
 
 async function stationCancel(_request: Request, env: Env) {
@@ -2350,10 +2397,7 @@ async function staffComplete(request: Request, env: Env, examId: string) {
     heightCm !== null && weightKg !== null
       ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
-  const recommendations = growthRecommendationsFor(
-    assessHeightForAge(exam.data.ageMonths, exam.data.sex, heightCm)
-      .growthStatus,
-  );
+  const recommendations = await recommendationsForExam(env, exam, heightCm);
   await store(env).set(
     `examinations/${exam.id}`,
     {
@@ -2386,7 +2430,7 @@ async function staffComplete(request: Request, env: Env, examId: string) {
       precondition: { updateTime: exam.updateTime },
     },
   );
-  return ok({ id: exam.id, saved: true });
+  return ok({ id: exam.id, saved: true, recommendations });
 }
 
 async function staffMirrorCancel(request: Request, env: Env, examId: string) {

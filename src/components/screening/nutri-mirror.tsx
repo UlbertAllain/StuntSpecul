@@ -32,6 +32,7 @@ import {
 import { useMimoAudio } from "@/hooks/use-mimo-audio";
 import { stopMimoStageCue } from "@/lib/mimo-audio";
 import { STEP_PROGRESS, type Step } from "@/lib/session";
+import type { GrowthRecommendations } from "@/lib/growth-recommendations";
 import type { Readings } from "@/lib/screening";
 import { CameraStep } from "./camera-step";
 import type { MirrorAssignment } from "@/lib/portal";
@@ -86,15 +87,25 @@ export function NutriMirror({
   assignment?: MirrorAssignment;
   canBegin?: boolean;
   onBegin?: () => void;
-  onComplete?: (payload: ScreeningCompletion) => Promise<void>;
+  onComplete?: (
+    payload: ScreeningCompletion,
+  ) => Promise<GrowthRecommendations | void>;
   onFinish?: (cancel: boolean) => Promise<void>;
   hardwareMode?: boolean;
   hardwareMeasurements?: Readings | null;
   waitingLabel?: string;
   awaitingParentFinalize?: boolean;
 }) {
-  const { session, dispatch, active, isPaused, complete, saveError, saving } =
-    useScreeningSession(assignment, onComplete);
+  const {
+    session,
+    dispatch,
+    active,
+    isPaused,
+    complete,
+    saveError,
+    saving,
+    savedRecommendations,
+  } = useScreeningSession(assignment, onComplete);
   const { step, report, paused, exitOpen } = session;
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [notice, setNotice] = useState("");
@@ -241,6 +252,7 @@ export function NutriMirror({
               onFinish={awaitingParentFinalize ? undefined : reset}
               awaitingParentFinalize={awaitingParentFinalize}
               temporaryMeasurements={!hardwareMode && !!demoReadings}
+              recommendations={savedRecommendations}
             />
           )
         );
