@@ -54,6 +54,19 @@ export type Capture =
     }
   | { status: "skipped" | "failed" };
 
+export function captureStatusLabel(status: Capture["status"] | null): string {
+  switch (status) {
+    case "captured":
+      return "Kamera perangkat";
+    case "skipped":
+      return "Kamera dinonaktifkan";
+    case "failed":
+      return "Tidak berhasil diambil";
+    default:
+      return "Belum tersedia";
+  }
+}
+
 export type ScreeningReport = {
   child: Child;
   readings: Readings;

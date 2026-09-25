@@ -19,6 +19,7 @@ import {
   stuntingScreeningLabel,
 } from "@/lib/growth";
 import {
+  captureStatusLabel,
   facialAnalysisLabel,
   facialReasonLabel,
   formatAge,
@@ -26,12 +27,6 @@ import {
   type ScreeningReport,
 } from "@/lib/screening";
 import { Mascot } from "./mascot";
-
-const CAPTURE_LABELS = {
-  captured: "Kamera perangkat",
-  skipped: "Kamera dinonaktifkan",
-  failed: "Tidak berhasil diambil",
-} as const;
 
 export function Results({
   report,
@@ -196,7 +191,7 @@ export function Results({
               </div>
               <div>
                 <dt>Pengambilan wajah</dt>
-                <dd>{CAPTURE_LABELS[report.captureStatus]}</dd>
+                <dd>{captureStatusLabel(report.captureStatus)}</dd>
               </div>
             </dl>
             <p>

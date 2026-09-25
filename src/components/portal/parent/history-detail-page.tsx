@@ -3,11 +3,27 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, Ruler, Scale, ScanFace } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  ExternalLink,
+  Info,
+  Ruler,
+  Scale,
+  ScanFace,
+  Stethoscope,
+} from "lucide-react";
 import { api, ClientError, errorMessage } from "@/lib/api-client";
-import { growthStatusLabel } from "@/lib/growth";
+import { followUpForGrowthStatus, growthStatusLabel } from "@/lib/growth";
 import type { Examination, ParentAccountView } from "@/lib/portal";
-import { facialAnalysisLabel, formatAge, formatReading } from "@/lib/screening";
+import { WHO_REFERENCE_URL } from "@/lib/report";
+import {
+  captureStatusLabel,
+  facialAnalysisLabel,
+  facialReasonLabel,
+  formatAge,
+  formatReading,
+} from "@/lib/screening";
 import { Message, PortalShell } from "../shared/shell";
 
 function formatExamDate(exam: Examination) {
@@ -108,6 +124,11 @@ export function ParentHistoryDetailPage() {
     );
   }
 
+  const followUp = followUpForGrowthStatus(exam.growthStatus);
+  const showFacialReason =
+    Boolean(exam.facialReason) &&
+    (exam.facialStatus === "rejected" || exam.facialStatus === "unavailable");
+
   return (
     <PortalShell
       tone="parent"
@@ -207,11 +228,78 @@ export function ParentHistoryDetailPage() {
             </div>
           </dl>
 
+          {showFacialReason && exam.facialReason && (
+            <p>{facialReasonLabel(exam.facialReason)}</p>
+          )}
+
           <p>
             Analisis wajah hanya informasi pendukung. Hasil utama tetap berasal
             dari TB/U WHO.
           </p>
         </section>
+
+        <section className="parent-history-clinical-section">
+          <div className="parent-history-clinical-title">
+            <Info size={20} />
+            <h3>Dasar hasil</h3>
+          </div>
+
+          <dl>
+            <div>
+              <dt>IMT numerik</dt>
+              <dd>
+                {formatReading(exam.bmi)}
+                {exam.bmi === null ? "" : " kg/m²"}
+              </dd>
+            </div>
+            <div>
+              <dt>TB/U Z-score WHO</dt>
+              <dd>{formatReading(exam.heightForAgeZ)}</dd>
+            </div>
+            <div>
+              <dt>Penilaian pertumbuhan</dt>
+              <dd>{growthStatusLabel(exam.growthStatus)}</dd>
+            </div>
+            <div>
+              <dt>Analisis wajah pendukung</dt>
+              <dd>{facialAnalysisLabel(exam.facialStatus)}</dd>
+            </div>
+            <div>
+              <dt>Pengambilan wajah</dt>
+              <dd>{captureStatusLabel(exam.captureStatus)}</dd>
+            </div>
+          </dl>
+
+          <p>
+            Status stunting utama dihitung dari tinggi menurut umur berdasarkan
+            standar WHO untuk anak usia 24–59 bulan. Model wajah ditampilkan
+            terpisah sebagai skrining eksperimental dan bukan diagnosis.
+          </p>
+
+          <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
+            Referensi WHO: panjang/tinggi menurut umur
+            <ExternalLink size={14} />
+          </a>
+        </section>
+
+        <section className="parent-history-clinical-section">
+          <div className="parent-history-clinical-title">
+            <Stethoscope size={20} />
+            <h3>Langkah selanjutnya</h3>
+          </div>
+
+          <ol className="parent-history-follow-up">
+            {followUp.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ol>
+        </section>
+
+        <p className="parent-history-disclaimer">
+          Simpan hasil ini untuk dibandingkan dengan pemeriksaan berikutnya.
+          StuntSpecula membantu skrining pertumbuhan dan tidak menggantikan
+          pemeriksaan tenaga kesehatan.
+        </p>
 
         <Link className="parent-history-page-back bottom" href="/ortu">
           <ArrowLeft size={18} />

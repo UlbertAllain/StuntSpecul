@@ -4527,3 +4527,450 @@
     font-size: 24px;
   }
 }
+
+/* Parent insight V2: one focused chart, compact latest summary, mobile-first. */
+.parent-insight-heading {
+  margin: 4px 0 14px;
+}
+
+.parent-insight-heading .portal-note {
+  margin-top: 6px;
+}
+
+.parent-growth-insight {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+.parent-insight-latest,
+.parent-insight-chart-card,
+.parent-insight-trend-card,
+.parent-insight-who-card {
+  border: 1px solid #dce7ef;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.parent-insight-latest {
+  padding: 16px;
+}
+
+.parent-insight-latest-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.parent-insight-latest-head span,
+.parent-insight-chart-head span {
+  color: #4e8bc4;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.parent-insight-latest-head h3,
+.parent-insight-chart-head h3 {
+  margin-top: 3px;
+  color: #18334d;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.parent-insight-latest-head > small {
+  color: #728493;
+  font-size: 10px;
+  font-weight: 750;
+  text-align: right;
+}
+
+.parent-insight-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.parent-insight-summary-grid article {
+  min-width: 0;
+  padding: 12px;
+  border: 0 !important;
+  border-radius: 13px !important;
+  background: #f7fafc !important;
+}
+
+.parent-insight-summary-grid article:nth-child(2) {
+  background: #fff5f8 !important;
+}
+
+.parent-insight-summary-grid article:nth-child(3) {
+  background: #fffaf0 !important;
+}
+
+.parent-insight-summary-grid svg {
+  color: #4e8bc4;
+}
+
+.parent-insight-summary-grid span,
+.parent-insight-summary-grid strong,
+.parent-insight-summary-grid small {
+  display: block;
+}
+
+.parent-insight-summary-grid span {
+  margin-top: 7px;
+  color: #718493;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.parent-insight-summary-grid strong {
+  margin-top: 3px;
+  color: #18334d;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.parent-insight-summary-grid small {
+  margin-top: 5px;
+  color: #728493;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.parent-insight-chart-card {
+  padding: 16px;
+}
+
+.parent-insight-chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.parent-insight-chart-head p {
+  margin-top: 4px;
+  color: #728493;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.parent-insight-chart-head > strong {
+  flex-shrink: 0;
+  color: #315f87;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.parent-insight-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 14px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #f0f5f8;
+}
+
+.parent-insight-tabs button {
+  min-height: 38px;
+  border-radius: 9px;
+  color: #6c7f8f;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.parent-insight-tabs button[aria-selected="true"] {
+  background: white;
+  color: #315f87;
+  box-shadow: 0 2px 7px rgba(42, 71, 93, 0.1);
+}
+
+.parent-insight-chart-wrap {
+  margin-top: 10px;
+  color: #4e8bc4;
+}
+
+.parent-insight-chart-wrap svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.parent-insight-chart-wrap > p,
+.parent-insight-chart-empty p {
+  margin-top: 4px;
+  color: #728493;
+  font-size: 10px;
+  text-align: center;
+}
+
+.parent-insight-chart-empty {
+  min-height: 180px;
+  margin-top: 12px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  border-radius: 13px;
+  background: #f7fafc;
+  color: #4e8bc4;
+  text-align: center;
+}
+
+.parent-insight-chart-empty strong {
+  color: #18334d;
+  font-size: 13px;
+}
+
+.parent-insight-bottom-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.parent-insight-trend-card {
+  padding: 15px;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.parent-insight-trend-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: #edf6fd;
+  color: #4e8bc4;
+}
+
+.parent-insight-trend-card small,
+.parent-insight-who-card > small {
+  color: #728493;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.parent-insight-trend-card strong,
+.parent-insight-who-card > strong {
+  display: block;
+  margin-top: 4px;
+  color: #18334d;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.parent-insight-trend-card p,
+.parent-insight-who-card > p {
+  margin-top: 5px;
+  color: #728493;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.parent-insight-who-card {
+  padding: 15px;
+}
+
+.parent-insight-who-card dl {
+  margin: 10px 0 0;
+}
+
+.parent-insight-who-card dl > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 0;
+  border-top: 1px solid #e5ebf0;
+}
+
+.parent-insight-who-card dt {
+  color: #728493;
+  font-size: 10px;
+}
+
+.parent-insight-who-card dd {
+  margin: 0;
+  color: #18334d;
+  font-size: 10px;
+  font-weight: 850;
+  text-align: right;
+}
+
+/* Parent history: complete clinical basis and follow-up from the device result. */
+.parent-history-clinical-section {
+  margin-top: 14px;
+  padding: 18px 19px;
+  border: 1px solid #dce6ed;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.parent-history-clinical-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #18334d;
+}
+
+.parent-history-clinical-title svg {
+  color: #4e8bc4;
+  flex-shrink: 0;
+}
+
+.parent-history-clinical-title h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.parent-history-clinical-section dl {
+  margin: 13px 0 0;
+}
+
+.parent-history-clinical-section dl > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 0;
+  border-top: 1px solid #e7edf2;
+}
+
+.parent-history-clinical-section dt {
+  color: #718493;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.parent-history-clinical-section dd {
+  max-width: 56%;
+  margin: 0;
+  color: #18334d;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.parent-history-clinical-section > p {
+  margin-top: 12px;
+  color: #667d8e;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.parent-history-clinical-section > a {
+  width: fit-content;
+  min-height: 38px;
+  margin-top: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #3f7eab;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.parent-history-follow-up {
+  margin: 13px 0 0;
+  padding-left: 20px;
+  color: #365268;
+}
+
+.parent-history-follow-up li {
+  padding: 4px 0 7px 3px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.parent-history-disclaimer {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  background: #f4f8fb;
+  color: #6b7f8f;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+  .parent-insight-heading {
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  .parent-growth-insight {
+    gap: 10px !important;
+  }
+
+  .parent-insight-latest,
+  .parent-insight-chart-card {
+    padding: 14px;
+  }
+
+  .parent-insight-summary-grid {
+    gap: 6px;
+  }
+
+  .parent-insight-summary-grid article {
+    padding: 10px 9px;
+  }
+
+  .parent-insight-summary-grid strong {
+    font-size: 14px;
+  }
+
+  .parent-insight-summary-grid small {
+    font-size: 8.5px;
+  }
+
+  .parent-insight-chart-head > strong {
+    font-size: 14px;
+  }
+
+  .parent-insight-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .parent-insight-chart-wrap {
+    margin-left: -4px;
+    margin-right: -4px;
+  }
+
+  .parent-history-clinical-section {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  .parent-insight-summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .parent-insight-summary-grid article:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .parent-history-clinical-section dl > div {
+    display: grid;
+    gap: 3px;
+  }
+
+  .parent-history-clinical-section dd {
+    max-width: none;
+    text-align: left;
+  }
+}
