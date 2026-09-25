@@ -6,18 +6,16 @@ import {
   ArrowRight,
   Check,
   Download,
+  HeartHandshake,
   Info,
   Ruler,
   Scale,
   ScanFace,
-  Stethoscope,
+  Utensils,
 } from "lucide-react";
 import { downloadReport, WHO_REFERENCE_URL } from "@/lib/report";
-import {
-  followUpForGrowthStatus,
-  growthStatusLabel,
-  stuntingScreeningLabel,
-} from "@/lib/growth";
+import { growthStatusLabel, stuntingScreeningLabel } from "@/lib/growth";
+import { growthRecommendationsFor } from "@/lib/growth-recommendations";
 import {
   captureStatusLabel,
   facialAnalysisLabel,
@@ -42,7 +40,7 @@ export function Results({
   const [detail, setDetail] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
-  const followUp = followUpForGrowthStatus(report.growthStatus);
+  const recommendations = growthRecommendationsFor(report.growthStatus);
   const facial = report.facialAnalysis;
   const showFacialReason =
     Boolean(facial.reason) &&
@@ -165,6 +163,36 @@ export function Results({
         </p>
       </div>
 
+      <div className="result-recommendation-grid">
+        <section className="result-recommendation-card nutrition">
+          <h2>
+            <Utensils size={20} />
+            Rekomendasi nutrisi
+          </h2>
+          <ul>
+            {recommendations.nutrition.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="result-recommendation-card care">
+          <h2>
+            <HeartHandshake size={20} />
+            Penanganan / langkah selanjutnya
+          </h2>
+          <ol>
+            {recommendations.nextSteps.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ol>
+        </section>
+      </div>
+      <p className="result-recommendation-note">
+        Rekomendasi edukasi mengikuti status TB/U WHO dan bukan resep atau
+        diagnosis individual.
+      </p>
+
       {detail && (
         <>
           <div className="clinical-detail">
@@ -204,17 +232,6 @@ export function Results({
               Referensi WHO: panjang/tinggi menurut umur ↗
             </a>
           </div>
-          <div className="clinical-detail">
-            <h2>
-              <Stethoscope size={21} />
-              Langkah selanjutnya
-            </h2>
-            <ol>
-              {followUp.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ol>
-          </div>
         </>
       )}
 
@@ -223,7 +240,7 @@ export function Results({
           className="text-button detail-link"
           onClick={() => setDetail(true)}
         >
-          Lihat dasar hasil & tindak lanjut
+          Lihat dasar hasil
           <ArrowRight size={18} />
         </button>
       )}

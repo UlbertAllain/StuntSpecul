@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   BarChart3,
+  BookOpen,
   History,
   Home,
   LogOut,
@@ -12,12 +13,19 @@ import {
 import type { Staff } from "@/lib/portal";
 import { Message, PortalShell } from "../shared/shell";
 import { useStaffSession } from "../shared/staff-session";
+import { BlogPanel } from "./blogs";
 import { ChildrenPanel } from "./children";
 import { ExaminationHistory } from "./history";
 import { InsightsPanel } from "./insights";
 import { MonitoringPanel } from "./monitoring";
 
-type StaffTab = "home" | "children" | "history" | "insights" | "profile";
+type StaffTab =
+  | "home"
+  | "children"
+  | "history"
+  | "insights"
+  | "blog"
+  | "profile";
 
 function ProfilePanel({
   user,
@@ -60,6 +68,7 @@ export function StaffDashboard() {
     ["children", UsersRound, "Data anak"],
     ["history", History, "Riwayat"],
     ["insights", BarChart3, "Insight"],
+    ["blog", BookOpen, "Blog"],
     ["profile", UserRound, "Profil"],
   ] as const;
 
@@ -93,6 +102,7 @@ export function StaffDashboard() {
         {tab === "children" && <ChildrenPanel />}
         {tab === "history" && <ExaminationHistory />}
         {tab === "insights" && <InsightsPanel />}
+        {tab === "blog" && <BlogPanel />}
         {tab === "profile" && <ProfilePanel user={user} onLogout={logout} />}
       </div>
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { GrowthStatus } from "./growth";
+import type { GrowthRecommendations } from "./growth-recommendations";
 import type { FacialAnalysisStatus } from "./screening";
 
 export const childProfileSchema = z.object({
@@ -49,6 +50,7 @@ export type Examination = {
   facialReason: string | null;
   facialModelVersion: string | null;
   growthStatus: GrowthStatus;
+  recommendations: GrowthRecommendations;
   createdAt: number;
   completedAt: number | null;
   finalizedAt: number | null;
@@ -59,6 +61,51 @@ export type ChatMessage = {
   content: string;
   createdAt: number;
 };
+
+export const blogCategories = [
+  "nutrition",
+  "healthy_habits",
+  "stunting_risk",
+  "growth",
+] as const;
+
+export type BlogCategory = (typeof blogCategories)[number];
+export type BlogStatus = "draft" | "published";
+
+export const blogInputSchema = z
+  .object({
+    title: z.string().trim().min(5).max(120),
+    excerpt: z.string().trim().min(10).max(280),
+    content: z.string().trim().min(30).max(12000),
+    category: z.enum(blogCategories),
+    status: z.enum(["draft", "published"]),
+  })
+  .strict();
+
+export type BlogPostInput = z.infer<typeof blogInputSchema>;
+
+export type BlogPost = BlogPostInput & {
+  id: string;
+  authorId: string;
+  authorName: string;
+  createdAt: number;
+  updatedAt: number;
+  publishedAt: number | null;
+};
+
+export function blogCategoryLabel(category: BlogCategory): string {
+  switch (category) {
+    case "nutrition":
+      return "Nutrisi";
+    case "healthy_habits":
+      return "Kebiasaan baik";
+    case "stunting_risk":
+      return "Risiko stunting";
+    case "growth":
+      return "Pertumbuhan anak";
+  }
+}
+
 export type ParentAccountSummary = {
   id: string;
   name: string;

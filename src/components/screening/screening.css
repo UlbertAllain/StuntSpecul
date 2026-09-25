@@ -2601,3 +2601,81 @@
     padding-bottom: 34px;
   }
 }
+
+/* WHO-based educational recommendations shown with the examination result. */
+.result-recommendation-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.result-recommendation-card {
+  padding: 17px 18px;
+  border: 1px solid #dce6ed;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.result-recommendation-card.nutrition {
+  border-color: #dbe8d6;
+  background: #fbfdf9;
+}
+
+.result-recommendation-card.care {
+  border-color: #d8e5ee;
+  background: #f8fbfd;
+}
+
+.result-recommendation-card h2 {
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #18334d;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.result-recommendation-card h2 svg {
+  color: #4e8bc4;
+  flex-shrink: 0;
+}
+
+.result-recommendation-card ul,
+.result-recommendation-card ol {
+  margin: 0;
+  padding-left: 19px;
+  color: #4c6578;
+}
+
+.result-recommendation-card li {
+  padding: 4px 0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.result-recommendation-note {
+  margin: 9px 2px 0;
+  color: #738492;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (orientation: portrait) and (min-width: 700px) {
+  .station-page .results-screen .result-recommendation-grid {
+    gap: 13px;
+    margin-top: 18px;
+  }
+
+  .station-page .results-screen .result-recommendation-card {
+    padding: 18px 20px;
+  }
+
+  .station-page .results-screen .result-recommendation-card h2 {
+    font-size: 18px;
+  }
+
+  .station-page .results-screen .result-recommendation-card li {
+    font-size: 13px;
+  }
+}

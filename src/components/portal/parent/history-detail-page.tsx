@@ -7,14 +7,15 @@ import {
   ArrowLeft,
   CalendarDays,
   ExternalLink,
+  HeartHandshake,
   Info,
   Ruler,
   Scale,
   ScanFace,
-  Stethoscope,
+  Utensils,
 } from "lucide-react";
 import { api, ClientError, errorMessage } from "@/lib/api-client";
-import { followUpForGrowthStatus, growthStatusLabel } from "@/lib/growth";
+import { growthStatusLabel } from "@/lib/growth";
 import type { Examination, ParentAccountView } from "@/lib/portal";
 import { WHO_REFERENCE_URL } from "@/lib/report";
 import {
@@ -124,7 +125,7 @@ export function ParentHistoryDetailPage() {
     );
   }
 
-  const followUp = followUpForGrowthStatus(exam.growthStatus);
+  const recommendations = exam.recommendations;
   const showFacialReason =
     Boolean(exam.facialReason) &&
     (exam.facialStatus === "rejected" || exam.facialStatus === "unavailable");
@@ -282,18 +283,37 @@ export function ParentHistoryDetailPage() {
           </a>
         </section>
 
+        <section className="parent-history-clinical-section parent-history-nutrition">
+          <div className="parent-history-clinical-title">
+            <Utensils size={20} />
+            <h3>Rekomendasi nutrisi</h3>
+          </div>
+
+          <ul className="parent-history-follow-up">
+            {recommendations.nutrition.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+
         <section className="parent-history-clinical-section">
           <div className="parent-history-clinical-title">
-            <Stethoscope size={20} />
-            <h3>Langkah selanjutnya</h3>
+            <HeartHandshake size={20} />
+            <h3>Penanganan / langkah selanjutnya</h3>
           </div>
 
           <ol className="parent-history-follow-up">
-            {followUp.map((item) => (
+            {recommendations.nextSteps.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ol>
         </section>
+
+        <p className="parent-history-recommendation-source">
+          Rekomendasi ini merupakan edukasi berdasarkan status TB/U WHO dan
+          panduan gizi umum. Bukan diagnosis, resep, atau pengganti konsultasi
+          tenaga kesehatan.
+        </p>
 
         <p className="parent-history-disclaimer">
           Simpan hasil ini untuk dibandingkan dengan pemeriksaan berikutnya.

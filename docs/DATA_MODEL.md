@@ -91,11 +91,33 @@ Index lookup:
 - facialProbability
 - facialReason
 - facialModelVersion
+- recommendations
+  - version
+  - basedOn
+  - nutrition[]
+  - nextSteps[]
 - createdAt
 - completedAt
 - finalizedAt
 
 WHO-derived values dikalkulasi dari data examination saat dibaca/dibentuk menjadi response.
+
+### `blogs/{id}`
+
+Artikel edukasi yang dikelola petugas:
+
+- title
+- excerpt
+- content
+- category: nutrition | healthy_habits | stunting_risk | growth
+- status: draft | published
+- authorId
+- authorName
+- createdAt
+- updatedAt
+- publishedAt
+
+Parent hanya menerima artikel berstatus published.
 
 ### `staffSessions/{digest(token)}`
 

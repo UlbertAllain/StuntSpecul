@@ -71,6 +71,14 @@ Jika perangkat IoT online, hasil sensor menjadi sumber utama dan backend memprio
 
 Fallback measurement generator hanya digunakan ketika hardware belum aktif dan tetap harus dianggap development/demo fallback, bukan pengganti sensor production.
 
+Setelah TB/U WHO dihitung, backend membuat snapshot rekomendasi edukasi berdasarkan growthStatus:
+
+- recommendations.nutrition
+- recommendations.nextSteps
+- recommendations.version
+
+Snapshot disimpan bersama examination supaya riwayat lama tidak berubah ketika aturan rekomendasi versi berikutnya diperbarui. Examination legacy yang belum memiliki snapshot tetap mendapatkan fallback rekomendasi saat dibaca.
+
 Detail firmware ada di IOT_INTEGRATION.md.
 
 ## Camera

@@ -11,6 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
+  BookOpen,
   ChartNoAxesCombined,
   Home,
   LogOut,
@@ -25,12 +26,13 @@ import { ageInMonths } from "@/lib/portal";
 import { formatAge } from "@/lib/screening";
 import { Message, PortalShell } from "../shared/shell";
 import { ParentAssistant } from "./assistant";
+import { ParentBlog } from "./blog";
 import { ParentHistory } from "./history";
 import { ParentHome } from "./home";
 import { ParentInsights } from "./insights";
 import { ParentProfile } from "./profile";
 
-type Tab = "home" | "insights" | "history" | "profile";
+type Tab = "home" | "insights" | "history" | "blog" | "profile";
 
 const ASSISTANT_FAB_POSITION_KEY = "stuntspecula:assistant-fab-position-v2";
 const ASSISTANT_FAB_MARGIN = 8;
@@ -449,6 +451,12 @@ export function ParentPortal() {
           <ChartNoAxesCombined /> Riwayat
         </button>
         <button
+          aria-current={tab === "blog" ? "page" : undefined}
+          onClick={() => setTab("blog")}
+        >
+          <BookOpen /> Blog
+        </button>
+        <button
           aria-current={tab === "profile" ? "page" : undefined}
           onClick={() => setTab("profile")}
         >
@@ -473,6 +481,7 @@ export function ParentPortal() {
           />
         )}
         {tab === "history" && <ParentHistory examinations={completedExams} />}
+        {tab === "blog" && <ParentBlog />}
         {tab === "profile" && <ParentProfile view={view} onRefresh={refresh} />}
       </div>
 
@@ -535,6 +544,13 @@ export function ParentPortal() {
         >
           <ChartNoAxesCombined />
           <span>Riwayat</span>
+        </button>
+        <button
+          aria-current={tab === "blog" ? "page" : undefined}
+          onClick={() => setTab("blog")}
+        >
+          <BookOpen />
+          <span>Blog</span>
         </button>
         <button
           aria-current={tab === "profile" ? "page" : undefined}

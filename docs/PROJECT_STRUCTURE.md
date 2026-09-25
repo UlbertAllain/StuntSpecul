@@ -203,3 +203,11 @@ Buat file baru jika minimal satu kondisi terpenuhi:
 5. ada security boundary.
 
 Jangan split function kecil hanya agar folder terlihat kompleks.
+
+## Education/blog domain
+
+- `src/components/portal/parent/blog.tsx`: daftar artikel untuk orang tua.
+- `src/components/portal/parent/blog-detail-page.tsx`: detail artikel.
+- `src/components/portal/staff/blogs.tsx`: CRUD artikel petugas.
+- `src/lib/growth-recommendations.ts`: aturan rekomendasi nutrisi dan tindak lanjut berdasarkan status WHO.
+- Firestore collection: `blogs`.

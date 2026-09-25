@@ -1,8 +1,5 @@
-import {
-  followUpForGrowthStatus,
-  growthStatusLabel,
-  stuntingScreeningLabel,
-} from "./growth.ts";
+import { growthStatusLabel, stuntingScreeningLabel } from "./growth.ts";
+import { growthRecommendationsFor } from "./growth-recommendations.ts";
 import {
   facialAnalysisLabel,
   facialReasonLabel,
@@ -15,7 +12,7 @@ export const WHO_REFERENCE_URL =
   "https://www.who.int/tools/child-growth-standards/standards/length-height-for-age";
 
 export function reportText(report: ScreeningReport): string {
-  const followUp = followUpForGrowthStatus(report.growthStatus);
+  const recommendations = growthRecommendationsFor(report.growthStatus);
   const facial = report.facialAnalysis;
   return [
     "STUNTSPECULA — HASIL SCREENING",
@@ -40,8 +37,11 @@ export function reportText(report: ScreeningReport): string {
       ? `Catatan: ${facialReasonLabel(facial.reason)}`
       : "",
     "",
-    "LANGKAH SELANJUTNYA",
-    ...followUp.map((item, index) => `${index + 1}. ${item}`),
+    "REKOMENDASI NUTRISI",
+    ...recommendations.nutrition.map((item, index) => `${index + 1}. ${item}`),
+    "",
+    "PENANGANAN / LANGKAH SELANJUTNYA",
+    ...recommendations.nextSteps.map((item, index) => `${index + 1}. ${item}`),
     "",
     "Hasil ini merupakan skrining, bukan diagnosis. TB/U WHO merupakan hasil utama untuk skrining stunting. Analisis wajah adalah indikator eksperimental tambahan.",
     "Foto wajah tidak disertakan dalam laporan.",

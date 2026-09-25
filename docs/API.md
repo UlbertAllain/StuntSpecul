@@ -48,6 +48,21 @@ Format error:
 - POST /api/parent-account/chat — ask result assistant.
 - POST /api/uploads/profile-photo — profile upload flow.
 
+## Blog
+
+Parent-authenticated:
+
+- GET /api/blogs — daftar artikel published.
+- GET /api/blogs/:id — detail artikel published.
+
+Staff-authenticated:
+
+- GET /api/staff/blogs — daftar semua artikel termasuk draft.
+- POST /api/staff/blogs — buat artikel.
+- GET /api/staff/blogs/:id — detail artikel untuk editor.
+- PATCH /api/staff/blogs/:id — ubah konten/status artikel.
+- DELETE /api/staff/blogs/:id — hapus artikel.
+
 ## Staff and admin
 
 - GET /api/staff — list staff, admin only.

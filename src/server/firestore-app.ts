@@ -1,13 +1,23 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import type {
+  BlogPost,
+  BlogPostInput,
   ChildProfile,
   ChatMessage,
   Examination,
   Staff,
 } from "../lib/portal";
-import { ageInMonths, childProfileSchema } from "../lib/portal";
+import {
+  ageInMonths,
+  blogInputSchema,
+  childProfileSchema,
+} from "../lib/portal";
 import { assessHeightForAge } from "../lib/growth";
+import {
+  growthRecommendationsFor,
+  type GrowthRecommendations,
+} from "../lib/growth-recommendations";
 import type { Env } from "./env";
 import {
   FirestoreError,
@@ -97,6 +107,7 @@ type ExamRecord = {
   facialProbability: number | null;
   facialReason: string | null;
   facialModelVersion: string | null;
+  recommendations?: GrowthRecommendations | null;
   createdAt: number;
   completedAt: number | null;
   finalizedAt: number | null;
@@ -135,6 +146,14 @@ type StoredChat = ChatMessage & {
   examId: string;
 };
 
+type BlogRecord = BlogPostInput & {
+  authorId: string;
+  authorName: string;
+  createdAt: number;
+  updatedAt: number;
+  publishedAt: number | null;
+};
+
 function store(env: Env): FirestoreRest {
   if (!env.FIRESTORE) {
     throw new ApiError(
@@ -171,6 +190,8 @@ function asChild(doc: FirestoreDoc<ChildRecord>): ChildProfile {
 function asExam(doc: FirestoreDoc<ExamRecord>): Examination {
   const value = doc.data;
   const growth = assessHeightForAge(value.ageMonths, value.sex, value.heightCm);
+  const recommendations =
+    value.recommendations ?? growthRecommendationsFor(growth.growthStatus);
 
   return {
     id: doc.id,
@@ -192,9 +213,26 @@ function asExam(doc: FirestoreDoc<ExamRecord>): Examination {
     facialReason: value.facialReason,
     facialModelVersion: value.facialModelVersion,
     growthStatus: growth.growthStatus,
+    recommendations,
     createdAt: value.createdAt,
     completedAt: value.completedAt,
     finalizedAt: value.finalizedAt,
+  };
+}
+
+function asBlog(doc: FirestoreDoc<BlogRecord>): BlogPost {
+  return {
+    id: doc.id,
+    title: doc.data.title,
+    excerpt: doc.data.excerpt,
+    content: doc.data.content,
+    category: doc.data.category,
+    status: doc.data.status,
+    authorId: doc.data.authorId,
+    authorName: doc.data.authorName,
+    createdAt: doc.data.createdAt,
+    updatedAt: doc.data.updatedAt,
+    publishedAt: doc.data.publishedAt,
   };
 }
 
@@ -824,6 +862,12 @@ async function listExams(env: Env) {
   );
 }
 
+async function listBlogs(env: Env) {
+  return (await store(env).list<BlogRecord>("blogs")).sort(
+    (a, b) => b.data.updatedAt - a.data.updatedAt,
+  );
+}
+
 async function getExam(env: Env, id: string) {
   const exam = await store(env).get<ExamRecord>(`examinations/${id}`);
   if (!exam) throw new ApiError(404, "Pemeriksaan tidak ditemukan.");
@@ -971,6 +1015,7 @@ async function createActiveExam(
     facialProbability: null,
     facialReason: null,
     facialModelVersion: null,
+    recommendations: null,
     createdAt: now,
     completedAt: null,
     finalizedAt: null,
@@ -1491,6 +1536,98 @@ async function parentView(request: Request, env: Env) {
   });
 }
 
+async function parentBlogs(request: Request, env: Env) {
+  await requireParent(request, env);
+  const posts = (await listBlogs(env))
+    .filter((item) => item.data.status === "published")
+    .sort(
+      (a, b) =>
+        (b.data.publishedAt ?? b.data.updatedAt) -
+        (a.data.publishedAt ?? a.data.updatedAt),
+    )
+    .slice(0, 100)
+    .map(asBlog);
+  return ok(posts);
+}
+
+async function parentBlog(request: Request, env: Env, blogId: string) {
+  await requireParent(request, env);
+  const post = await store(env).get<BlogRecord>(`blogs/${blogId}`);
+  if (!post || post.data.status !== "published") {
+    throw new ApiError(404, "Artikel tidak ditemukan.");
+  }
+  return ok(asBlog(post));
+}
+
+async function staffBlogs(request: Request, env: Env) {
+  await requireStaff(request, env);
+  return ok((await listBlogs(env)).slice(0, 150).map(asBlog));
+}
+
+async function staffBlog(request: Request, env: Env, blogId: string) {
+  await requireStaff(request, env);
+  const post = await store(env).get<BlogRecord>(`blogs/${blogId}`);
+  if (!post) throw new ApiError(404, "Artikel tidak ditemukan.");
+  return ok(asBlog(post));
+}
+
+async function createBlog(request: Request, env: Env) {
+  const actor = await requireStaff(request, env);
+  const input = await body(request, blogInputSchema);
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  const record: BlogRecord = {
+    ...input,
+    authorId: actor.id,
+    authorName: actor.name,
+    createdAt: now,
+    updatedAt: now,
+    publishedAt: input.status === "published" ? now : null,
+  };
+
+  await store(env).set(`blogs/${id}`, record, {
+    precondition: { exists: false },
+  });
+
+  return ok(asBlog({ id, data: record, updateTime: "" }), 201);
+}
+
+async function updateBlog(request: Request, env: Env, blogId: string) {
+  const actor = await requireStaff(request, env);
+  const input = await body(request, blogInputSchema);
+  const current = await store(env).get<BlogRecord>(`blogs/${blogId}`);
+  if (!current) throw new ApiError(404, "Artikel tidak ditemukan.");
+
+  const now = Date.now();
+  const publishedAt =
+    input.status === "published" ? (current.data.publishedAt ?? now) : null;
+  const patch: BlogRecord = {
+    ...current.data,
+    ...input,
+    authorId: actor.id,
+    authorName: actor.name,
+    updatedAt: now,
+    publishedAt,
+  };
+
+  await store(env).set(`blogs/${blogId}`, patch, {
+    precondition: { updateTime: current.updateTime },
+  });
+
+  return ok(
+    asBlog({ id: blogId, data: patch, updateTime: current.updateTime }),
+  );
+}
+
+async function deleteBlog(request: Request, env: Env, blogId: string) {
+  await requireStaff(request, env);
+  const current = await store(env).get<BlogRecord>(`blogs/${blogId}`);
+  if (!current) return ok({ deleted: false });
+
+  await store(env).delete(`blogs/${blogId}`);
+  return ok({ deleted: true });
+}
+
 async function uploadParentProfilePhoto(request: Request, env: Env) {
   const parent = await requireParent(request, env);
   const cloudName = env.CLOUDINARY_CLOUD_NAME;
@@ -1970,6 +2107,10 @@ async function stationComplete(request: Request, env: Env) {
     heightCm !== null && weightKg !== null
       ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
+  const recommendations = growthRecommendationsFor(
+    assessHeightForAge(exam.data.ageMonths, exam.data.sex, heightCm)
+      .growthStatus,
+  );
 
   try {
     await store(env).set(
@@ -1984,6 +2125,7 @@ async function stationComplete(request: Request, env: Env) {
         facialProbability: input.facialProbability ?? null,
         facialReason: input.facialReason ?? null,
         facialModelVersion: input.facialModelVersion ?? null,
+        recommendations,
         completedAt: Date.now(),
       },
       {
@@ -1997,6 +2139,7 @@ async function stationComplete(request: Request, env: Env) {
           "facialProbability",
           "facialReason",
           "facialModelVersion",
+          "recommendations",
           "completedAt",
         ],
         precondition: { updateTime: exam.updateTime },
@@ -2207,6 +2350,10 @@ async function staffComplete(request: Request, env: Env, examId: string) {
     heightCm !== null && weightKg !== null
       ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
+  const recommendations = growthRecommendationsFor(
+    assessHeightForAge(exam.data.ageMonths, exam.data.sex, heightCm)
+      .growthStatus,
+  );
   await store(env).set(
     `examinations/${exam.id}`,
     {
@@ -2219,6 +2366,7 @@ async function staffComplete(request: Request, env: Env, examId: string) {
       facialProbability: input.facialProbability ?? null,
       facialReason: input.facialReason ?? null,
       facialModelVersion: input.facialModelVersion ?? null,
+      recommendations,
       completedAt: Date.now(),
     },
     {
@@ -2232,6 +2380,7 @@ async function staffComplete(request: Request, env: Env, examId: string) {
         "facialProbability",
         "facialReason",
         "facialModelVersion",
+        "recommendations",
         "completedAt",
       ],
       precondition: { updateTime: exam.updateTime },
@@ -2496,6 +2645,12 @@ export async function routeFirestore(
       return deviceMonitoring(request, env);
     case "GET /api/insights":
       return insights(request, env);
+    case "GET /api/blogs":
+      return parentBlogs(request, env);
+    case "GET /api/staff/blogs":
+      return staffBlogs(request, env);
+    case "POST /api/staff/blogs":
+      return createBlog(request, env);
     case "GET /api/children":
       return staffChildren(request, env);
     case "POST /api/children":
@@ -2544,6 +2699,21 @@ export async function routeFirestore(
       return parentChat(request, env);
     case "POST /api/parent-account/examinations":
       return parentStartExam(request, env);
+  }
+
+  const blogPost = path.match(/^\/api\/(staff\/)?blogs\/([^/]+)$/);
+  if (blogPost) {
+    const [, staffPrefix, rawId] = blogPost;
+    const parsed = idSchema.safeParse(rawId);
+    if (!parsed.success) throw new ApiError(404, "Halaman tidak ditemukan.");
+
+    if (staffPrefix) {
+      if (method === "GET") return staffBlog(request, env, parsed.data);
+      if (method === "PATCH") return updateBlog(request, env, parsed.data);
+      if (method === "DELETE") return deleteBlog(request, env, parsed.data);
+    } else if (method === "GET") {
+      return parentBlog(request, env, parsed.data);
+    }
   }
 
   const parentExam = path.match(
