@@ -56,7 +56,7 @@ export function MonitoringPanel() {
       } finally {
         if (!controller.signal.aborted) {
           setRefreshing(false);
-          timer = setTimeout(() => void load(true), 3000);
+          timer = setTimeout(() => void load(true), 5000);
         }
       }
     }

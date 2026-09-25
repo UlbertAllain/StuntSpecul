@@ -25,7 +25,7 @@ import { ageInMonths } from "@/lib/portal";
 import { formatAge } from "@/lib/screening";
 import { Message, PortalShell } from "../shared/shell";
 import { ParentAssistant } from "./assistant";
-import { ParentBlog } from "./blog";
+import { ParentBlog, prefetchParentBlogs } from "./blog";
 import { ParentHome } from "./home";
 import { ParentInsights } from "./insights";
 import { ParentProfile } from "./profile";
@@ -202,6 +202,7 @@ export function ParentPortal() {
         const latest = completed(value.examinations)[0];
         if (latest) setSelectedExamId(latest.id);
         if (value.children[0]) setSelectedChildId(value.children[0].id);
+        prefetchParentBlogs();
       })
       .catch((e) => {
         if (controller.signal.aborted) return;

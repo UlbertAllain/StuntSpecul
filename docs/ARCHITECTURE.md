@@ -142,3 +142,19 @@ Expected business error menggunakan `ApiError` dengan status HTTP dan code stabi
 ## Scalability
 
 Arsitektur saat ini sengaja sederhana untuk satu station utama dan traffic aplikasi skrining kecil/menengah. Jangan menambah queue, microservice, atau repository abstraction sampai ada kebutuhan operasional yang nyata.
+
+## Performance read path
+
+Untuk endpoint yang sering dibuka/polling, backend tidak boleh melakukan full-scan collection lalu memfilter di memory bila filter dapat dilakukan Firestore.
+
+Optimasi yang dipakai:
+
+- parent dashboard memakai structured query berdasarkan `parentId`, dan query anak + examination dijalankan paralel;
+- riwayat petugas memakai query berurutan + limit/offset, bukan membaca seluruh examination;
+- monitoring hanya membaca examination hari ini + 8 examination terbaru, sedangkan jumlah anak dicache singkat pada warm serverless instance;
+- insight 30 hari memakai range query `createdAt`, bukan full scan;
+- parent messages difilter Firestore berdasarkan `parentId`;
+- daftar blog memakai cache server singkat, payload parent tidak membawa isi artikel penuh, dan client melakukan prefetch setelah dashboard siap;
+- starter blog pertama kali ditulis dalam satu Firestore commit, bukan beberapa request berurutan.
+
+Cache tidak digunakan sebagai sumber otorisasi. Validasi session tetap dilakukan pada setiap endpoint terproteksi.

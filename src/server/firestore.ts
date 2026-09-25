@@ -26,6 +26,22 @@ export type FirestoreWrite = {
   precondition?: FirestorePrecondition;
 };
 
+export type FirestoreQueryOperator = "EQUAL" | "GREATER_THAN_OR_EQUAL";
+
+export type FirestoreQueryOptions = {
+  where?: {
+    field: string;
+    op: FirestoreQueryOperator;
+    value: unknown;
+  };
+  orderBy?: {
+    field: string;
+    direction: "ASCENDING" | "DESCENDING";
+  }[];
+  limit?: number;
+  offset?: number;
+};
+
 export class FirestoreError extends Error {
   status: number;
   code: string;
@@ -320,6 +336,71 @@ export class FirestoreRest {
     }
 
     return items;
+  }
+
+  async query<T extends Record<string, unknown>>(
+    collectionId: string,
+    options: FirestoreQueryOptions = {},
+  ): Promise<FirestoreDoc<T>[]> {
+    if (!collectionId || collectionId.includes("/")) {
+      throw new TypeError("Structured query hanya mendukung koleksi root.");
+    }
+
+    const structuredQuery: Record<string, unknown> = {
+      from: [{ collectionId }],
+    };
+
+    if (options.where) {
+      structuredQuery.where = {
+        fieldFilter: {
+          field: { fieldPath: options.where.field },
+          op: options.where.op,
+          value: encodeValue(options.where.value),
+        },
+      };
+    }
+
+    if (options.orderBy?.length) {
+      structuredQuery.orderBy = options.orderBy.map((item) => ({
+        field: { fieldPath: item.field },
+        direction: item.direction,
+      }));
+    }
+
+    if (options.offset !== undefined) {
+      structuredQuery.offset = Math.max(0, Math.trunc(options.offset));
+    }
+
+    if (options.limit !== undefined) {
+      structuredQuery.limit = Math.max(
+        1,
+        Math.min(1000, Math.trunc(options.limit)),
+      );
+    }
+
+    const result = await this.request<
+      {
+        document?: {
+          name: string;
+          fields?: Record<string, Record<string, unknown>>;
+          updateTime: string;
+        };
+      }[]
+    >(`${this.root()}:runQuery`, {
+      method: "POST",
+      body: JSON.stringify({ structuredQuery }),
+    });
+
+    return (result ?? []).flatMap((item) => {
+      if (!item.document) return [];
+      return [
+        {
+          id: documentId(item.document.name),
+          data: decodeFields(item.document.fields ?? {}) as T,
+          updateTime: item.document.updateTime,
+        },
+      ];
+    });
   }
 
   async set(

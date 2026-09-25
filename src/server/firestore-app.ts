@@ -3,6 +3,7 @@ import { z } from "zod";
 import type {
   BlogPost,
   BlogPostInput,
+  BlogPostSummary,
   ChildProfile,
   ChatMessage,
   Examination,
@@ -155,6 +156,12 @@ type BlogRecord = BlogPostInput & {
   publishedAt: number | null;
 };
 
+const BLOG_CACHE_MS = 30_000;
+const CHILD_COUNT_CACHE_MS = 60_000;
+let blogCache: { expiresAt: number; items: FirestoreDoc<BlogRecord>[] } | null =
+  null;
+let childCountCache: { expiresAt: number; value: number } | null = null;
+
 function store(env: Env): FirestoreRest {
   if (!env.FIRESTORE) {
     throw new ApiError(
@@ -246,6 +253,21 @@ function asBlog(doc: FirestoreDoc<BlogRecord>): BlogPost {
     title: doc.data.title,
     excerpt: doc.data.excerpt,
     content: doc.data.content,
+    category: doc.data.category,
+    status: doc.data.status,
+    authorId: doc.data.authorId,
+    authorName: doc.data.authorName,
+    createdAt: doc.data.createdAt,
+    updatedAt: doc.data.updatedAt,
+    publishedAt: doc.data.publishedAt,
+  };
+}
+
+function asBlogSummary(doc: FirestoreDoc<BlogRecord>): BlogPostSummary {
+  return {
+    id: doc.id,
+    title: doc.data.title,
+    excerpt: doc.data.excerpt,
     category: doc.data.category,
     status: doc.data.status,
     authorId: doc.data.authorId,
@@ -872,14 +894,37 @@ async function requireParent(request: Request, env: Env) {
   };
 }
 
-async function listChildren(env: Env) {
-  return (await store(env).list<ChildRecord>("children")).sort(byCreatedDesc);
-}
-
-async function listExams(env: Env) {
-  return (await store(env).list<ExamRecord>("examinations")).sort(
+async function listChildren(env: Env, maxItems = 5000) {
+  return (await store(env).list<ChildRecord>("children", maxItems)).sort(
     byCreatedDesc,
   );
+}
+
+async function childrenForParent(env: Env, parentId: string) {
+  const items = await store(env).query<ChildRecord>("children", {
+    where: { field: "parentId", op: "EQUAL", value: parentId },
+  });
+  return items.sort((a, b) => a.data.createdAt - b.data.createdAt);
+}
+
+async function examsForParent(env: Env, parentId: string) {
+  const items = await store(env).query<ExamRecord>("examinations", {
+    where: { field: "parentId", op: "EQUAL", value: parentId },
+  });
+  return items.sort(byCreatedDesc);
+}
+
+async function totalChildren(env: Env) {
+  if (childCountCache && childCountCache.expiresAt > Date.now()) {
+    return childCountCache.value;
+  }
+
+  const value = (await store(env).list<ChildRecord>("children")).length;
+  childCountCache = {
+    value,
+    expiresAt: Date.now() + CHILD_COUNT_CACHE_MS,
+  };
+  return value;
 }
 
 async function recommendationsForExam(
@@ -892,13 +937,20 @@ async function recommendationsForExam(
     exam.data.sex,
     heightCm,
   );
-  const previous = (await listExams(env)).find(
-    (item) =>
-      item.id !== exam.id &&
-      item.data.childId === exam.data.childId &&
-      item.data.status === "completed" &&
-      item.data.heightCm !== null,
+  const previousCandidates = await store(env).query<ExamRecord>(
+    "examinations",
+    {
+      where: { field: "childId", op: "EQUAL", value: exam.data.childId },
+    },
   );
+  const previous = previousCandidates
+    .sort(byCreatedDesc)
+    .find(
+      (item) =>
+        item.id !== exam.id &&
+        item.data.status === "completed" &&
+        item.data.heightCm !== null,
+    );
   const previousGrowth = previous
     ? assessHeightForAge(
         previous.data.ageMonths,
@@ -914,54 +966,60 @@ async function recommendationsForExam(
 }
 
 async function listBlogs(env: Env) {
+  if (blogCache && blogCache.expiresAt > Date.now()) {
+    return blogCache.items;
+  }
+
   const db = store(env);
   const markerPath = "config/blogSeed";
-  const existing = await db.list<BlogRecord>("blogs");
+  let items = await db.list<BlogRecord>("blogs");
 
-  if (existing.length > 0) {
+  if (items.length === 0) {
     const marker = await db.get<{ version: string; seededAt: number }>(
       markerPath,
     );
+
     if (!marker) {
-      await db.set(markerPath, {
-        version: "starter-blogs-v1",
-        seededAt: Date.now(),
+      const now = Date.now();
+      const writes = STARTER_BLOGS.map((post, index) => {
+        const timestamp = now - index * 60_000;
+        const record: BlogRecord = {
+          title: post.title,
+          excerpt: post.excerpt,
+          content: post.content,
+          category: post.category,
+          status: post.status,
+          authorId: "system-blog-seed",
+          authorName: "StuntSpecula Edukasi",
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          publishedAt: timestamp,
+        };
+        return {
+          path: `blogs/${post.id}`,
+          data: record,
+          precondition: { exists: false } as const,
+        };
       });
+
+      await db.commit([
+        ...writes,
+        {
+          path: markerPath,
+          data: { version: "starter-blogs-v1", seededAt: now },
+          precondition: { exists: false },
+        },
+      ]);
+      items = await db.list<BlogRecord>("blogs");
     }
-    return existing.sort((a, b) => b.data.updatedAt - a.data.updatedAt);
   }
 
-  const marker = await db.get<{ version: string; seededAt: number }>(
-    markerPath,
-  );
-  if (marker) return existing;
-
-  const now = Date.now();
-  for (const [index, post] of STARTER_BLOGS.entries()) {
-    const timestamp = now - index * 60_000;
-    const record: BlogRecord = {
-      title: post.title,
-      excerpt: post.excerpt,
-      content: post.content,
-      category: post.category,
-      status: post.status,
-      authorId: "system-blog-seed",
-      authorName: "StuntSpecula Edukasi",
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      publishedAt: timestamp,
-    };
-    await db.set(`blogs/${post.id}`, record);
-  }
-
-  await db.set(markerPath, {
-    version: "starter-blogs-v1",
-    seededAt: now,
-  });
-
-  return (await db.list<BlogRecord>("blogs")).sort(
-    (a, b) => b.data.updatedAt - a.data.updatedAt,
-  );
+  items.sort((a, b) => b.data.updatedAt - a.data.updatedAt);
+  blogCache = {
+    items,
+    expiresAt: Date.now() + BLOG_CACHE_MS,
+  };
+  return items;
 }
 
 async function getExam(env: Env, id: string) {
@@ -1610,14 +1668,12 @@ async function parentLogout(request: Request, env: Env) {
 
 async function parentView(request: Request, env: Env) {
   const parent = await requireParent(request, env);
-  const children = (await listChildren(env))
-    .filter((item) => item.data.parentId === parent.id)
-    .sort((a, b) => a.data.createdAt - b.data.createdAt)
-    .map(asChild);
-  const exams = (await listExams(env))
-    .filter((item) => item.data.parentId === parent.id)
-    .slice(0, 100)
-    .map(asExam);
+  const [childDocs, examDocs] = await Promise.all([
+    childrenForParent(env, parent.id),
+    examsForParent(env, parent.id),
+  ]);
+  const children = childDocs.map(asChild);
+  const exams = examDocs.slice(0, 100).map(asExam);
 
   return ok({
     parent: {
@@ -1642,7 +1698,7 @@ async function parentBlogs(request: Request, env: Env) {
         (a.data.publishedAt ?? a.data.updatedAt),
     )
     .slice(0, 100)
-    .map(asBlog);
+    .map(asBlogSummary);
   return ok(posts);
 }
 
@@ -1684,6 +1740,7 @@ async function createBlog(request: Request, env: Env) {
   await store(env).set(`blogs/${id}`, record, {
     precondition: { exists: false },
   });
+  blogCache = null;
 
   return ok(asBlog({ id, data: record, updateTime: "" }), 201);
 }
@@ -1709,6 +1766,7 @@ async function updateBlog(request: Request, env: Env, blogId: string) {
   await store(env).set(`blogs/${blogId}`, patch, {
     precondition: { updateTime: current.updateTime },
   });
+  blogCache = null;
 
   return ok(
     asBlog({ id: blogId, data: patch, updateTime: current.updateTime }),
@@ -1721,6 +1779,7 @@ async function deleteBlog(request: Request, env: Env, blogId: string) {
   if (!current) return ok({ deleted: false });
 
   await store(env).delete(`blogs/${blogId}`);
+  blogCache = null;
   return ok({ deleted: true });
 }
 
@@ -1846,7 +1905,8 @@ async function staffChildren(request: Request, env: Env) {
     .toLowerCase()
     .slice(0, 80);
 
-  const values = (await listChildren(env))
+  const source = await listChildren(env, search ? 1000 : 100);
+  const values = source
     .filter((item) => {
       if (!search) return true;
       return (
@@ -1887,6 +1947,7 @@ async function createChild(request: Request, env: Env) {
   await store(env).set(`children/${id}`, value, {
     precondition: { exists: false },
   });
+  childCountCache = null;
   return ok({ id }, 201);
 }
 
@@ -1902,11 +1963,22 @@ async function staffExams(request: Request, env: Env) {
     throw new ApiError(422, "Profil tidak valid.");
   }
 
-  const exams = (await listExams(env))
-    .filter((item) => !childId || item.data.childId === childId)
-    .slice(page * 50, page * 50 + 50)
-    .map(asExam);
-  return ok(exams);
+  const db = store(env);
+  const docs = childId
+    ? (
+        await db.query<ExamRecord>("examinations", {
+          where: { field: "childId", op: "EQUAL", value: childId },
+        })
+      )
+        .sort(byCreatedDesc)
+        .slice(page * 50, page * 50 + 50)
+    : await db.query<ExamRecord>("examinations", {
+        orderBy: [{ field: "createdAt", direction: "DESCENDING" }],
+        offset: page * 50,
+        limit: 50,
+      });
+
+  return ok(docs.map(asExam));
 }
 
 async function startStaffExam(request: Request, env: Env) {
@@ -1998,11 +2070,12 @@ async function parentMessages(request: Request, env: Env) {
     throw new ApiError(404, "Hasil pemeriksaan tidak ditemukan.");
   }
 
-  const messages = (await store(env).list<StoredChat>("parentMessages"))
-    .filter(
-      (item) =>
-        item.data.parentId === parent.id && item.data.examId === exam.id,
-    )
+  const messages = (
+    await store(env).query<StoredChat>("parentMessages", {
+      where: { field: "parentId", op: "EQUAL", value: parent.id },
+    })
+  )
+    .filter((item) => item.data.examId === exam.id)
     .sort((a, b) => a.data.createdAt - b.data.createdAt)
     .slice(0, 40)
     .map((item) => ({
@@ -2373,11 +2446,13 @@ async function iotCancel(request: Request, env: Env) {
 
 async function mirrorAssignment(request: Request, env: Env) {
   const actor = await requireStaff(request, env);
-  const exam = (await listExams(env)).find(
-    (item) =>
-      item.data.staffId === actor.id &&
-      ["queued", "running"].includes(item.data.status),
-  );
+  const exam = (
+    await store(env).query<ExamRecord>("examinations", {
+      where: { field: "staffId", op: "EQUAL", value: actor.id },
+    })
+  )
+    .sort(byCreatedDesc)
+    .find((item) => ["queued", "running"].includes(item.data.status));
   return ok({
     assignment: exam
       ? {
@@ -2497,11 +2572,20 @@ async function monitoringOverview(request: Request, env: Env) {
     throw new ApiError(422, "Rentang monitoring tidak valid.");
   }
 
-  const children = await listChildren(env);
-  const exams = await listExams(env);
-  const today = exams.filter((item) => item.data.createdAt >= since);
-  const { exam: activeExam } = await activeStation(env);
-  const recent = exams.slice(0, 8).map((item) => ({
+  const db = store(env);
+  const [childrenTotal, today, recentDocs, active] = await Promise.all([
+    totalChildren(env),
+    db.query<ExamRecord>("examinations", {
+      where: { field: "createdAt", op: "GREATER_THAN_OR_EQUAL", value: since },
+    }),
+    db.query<ExamRecord>("examinations", {
+      orderBy: [{ field: "createdAt", direction: "DESCENDING" }],
+      limit: 8,
+    }),
+    activeStation(env),
+  ]);
+  const activeExam = active.exam;
+  const recent = recentDocs.map((item) => ({
     id: item.id,
     childName: item.data.childName,
     ageMonths: item.data.ageMonths,
@@ -2516,7 +2600,7 @@ async function monitoringOverview(request: Request, env: Env) {
 
   return ok({
     stats: {
-      totalChildren: children.length,
+      totalChildren: childrenTotal,
       todayExaminations: today.length,
       todayCompleted: today.filter((item) => item.data.status === "completed")
         .length,
@@ -2602,10 +2686,20 @@ async function insights(request: Request, env: Env) {
   const now = Date.now();
   const currentStart = now - 30 * DAY;
   const previousStart = now - 60 * DAY;
-  const exams = (await listExams(env)).filter(
-    (item) =>
-      item.data.status === "completed" && item.data.createdAt >= previousStart,
-  );
+  const db = store(env);
+  const [examDocs, parents] = await Promise.all([
+    db.query<ExamRecord>("examinations", {
+      where: {
+        field: "createdAt",
+        op: "GREATER_THAN_OR_EQUAL",
+        value: previousStart,
+      },
+    }),
+    db.query<ParentRecord>("parents", {
+      where: { field: "active", op: "EQUAL", value: true },
+    }),
+  ]);
+  const exams = examDocs.filter((item) => item.data.status === "completed");
 
   const growth = {
     normal: 0,
@@ -2644,9 +2738,6 @@ async function insights(request: Request, env: Env) {
     }
   }
 
-  const parents = (await store(env).list<ParentRecord>("parents")).filter(
-    (item) => item.data.active,
-  );
   const current = exams.filter((item) => item.data.createdAt >= currentStart);
   const previous = exams.filter(
     (item) =>

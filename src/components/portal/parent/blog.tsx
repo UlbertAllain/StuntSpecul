@@ -8,27 +8,60 @@ import {
   blogCategories,
   blogCategoryLabel,
   type BlogCategory,
-  type BlogPost,
+  type BlogPostSummary,
 } from "@/lib/portal";
 import { Message } from "../shared/shell";
 
+const BLOG_CLIENT_CACHE_MS = 60_000;
+let cachedPosts: BlogPostSummary[] | null = null;
+let cachedAt = 0;
+let pendingPosts: Promise<BlogPostSummary[]> | null = null;
+
+function loadParentBlogs() {
+  if (cachedPosts && Date.now() - cachedAt < BLOG_CLIENT_CACHE_MS) {
+    return Promise.resolve(cachedPosts);
+  }
+  pendingPosts ??= api<BlogPostSummary[]>("/blogs")
+    .then((posts) => {
+      cachedPosts = posts;
+      cachedAt = Date.now();
+      return posts;
+    })
+    .finally(() => {
+      pendingPosts = null;
+    });
+  return pendingPosts;
+}
+
+export function prefetchParentBlogs() {
+  void loadParentBlogs().catch(() => {});
+}
+
 export function ParentBlog() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [posts, setPosts] = useState<BlogPostSummary[]>(cachedPosts ?? []);
   const [category, setCategory] = useState<BlogCategory | "all">("all");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(cachedPosts === null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const controller = new AbortController();
-    api<BlogPost[]>("/blogs", { signal: controller.signal })
-      .then(setPosts)
+    let active = true;
+
+    loadParentBlogs()
+      .then((value) => {
+        if (!active) return;
+        setPosts(value);
+        setError("");
+      })
       .catch((cause) => {
-        if (!controller.signal.aborted) setError(errorMessage(cause));
+        if (active) setError(errorMessage(cause));
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (active) setLoading(false);
       });
-    return () => controller.abort();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const visible = useMemo(
@@ -73,7 +106,7 @@ export function ParentBlog() {
         ))}
       </div>
 
-      {loading && <Message>Memuat artikel…</Message>}
+      {loading && <Message>Menyiapkan artikel…</Message>}
       {error && <Message error>{error}</Message>}
 
       {!loading && !error && visible.length === 0 && (

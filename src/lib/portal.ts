@@ -93,6 +93,8 @@ export type BlogPost = BlogPostInput & {
   publishedAt: number | null;
 };
 
+export type BlogPostSummary = Omit<BlogPost, "content">;
+
 export function blogCategoryLabel(category: BlogCategory): string {
   switch (category) {
     case "nutrition":
