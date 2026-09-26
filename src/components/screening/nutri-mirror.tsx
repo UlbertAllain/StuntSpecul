@@ -37,10 +37,6 @@ import type { Readings } from "@/lib/screening";
 import { CameraStep } from "./camera-step";
 import type { MirrorAssignment } from "@/lib/portal";
 import { errorMessage } from "@/lib/api-client";
-import {
-  createSeededRandom,
-  generateFallbackMeasurements,
-} from "@/lib/fallback-measurements";
 import { ExaminationStage } from "./examination-stage";
 import { Mascot } from "./mascot";
 import { ProcessingStage } from "./processing-stage";
@@ -79,7 +75,6 @@ export function NutriMirror({
   onBegin,
   onComplete,
   onFinish,
-  hardwareMode = false,
   hardwareMeasurements = null,
   waitingLabel = "Petugas menyiapkan pemeriksaan.",
   awaitingParentFinalize = false,
@@ -91,7 +86,6 @@ export function NutriMirror({
     payload: ScreeningCompletion,
   ) => Promise<GrowthRecommendations | void>;
   onFinish?: (cancel: boolean) => Promise<void>;
-  hardwareMode?: boolean;
   hardwareMeasurements?: Readings | null;
   waitingLabel?: string;
   awaitingParentFinalize?: boolean;
@@ -206,7 +200,6 @@ export function NutriMirror({
                   : null
             }
             soundEnabled={soundEnabled}
-            readingSource={hardwareMode ? "sensor" : "demo"}
           />
         );
       case "camera":
@@ -251,7 +244,6 @@ export function NutriMirror({
               report={report}
               onFinish={awaitingParentFinalize ? undefined : reset}
               awaitingParentFinalize={awaitingParentFinalize}
-              temporaryMeasurements={!hardwareMode && !!demoReadings}
               recommendations={savedRecommendations}
             />
           )
@@ -259,21 +251,10 @@ export function NutriMirror({
     }
   }
 
-  const demoReadings = session.child
-    ? generateFallbackMeasurements(
-        session.child,
-        createSeededRandom(
-          assignment?.id ??
-            `legacy:${session.child.ageMonths}:${session.child.sex}`,
-        ),
-      )
-    : null;
-  const effectiveReadings = hardwareMode
-    ? {
-        heightCm: hardwareMeasurements?.heightCm ?? null,
-        weightKg: hardwareMeasurements?.weightKg ?? null,
-      }
-    : demoReadings;
+  const effectiveReadings = {
+    heightCm: hardwareMeasurements?.heightCm ?? null,
+    weightKg: hardwareMeasurements?.weightKg ?? null,
+  };
   const resultLocked = awaitingParentFinalize && step === "result";
 
   return (

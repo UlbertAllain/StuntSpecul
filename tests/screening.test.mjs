@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { assessHeightForAge } from "../src/lib/growth.ts";
-import { generateFallbackMeasurements } from "../src/lib/fallback-measurements.ts";
 import {
   childSchema,
   createScreeningReport,
@@ -72,35 +71,6 @@ test("WHO engine rejects unavailable, out-of-scope and biologically implausible 
     "unavailable",
   );
   assert.equal(assessHeightForAge(36, "male", 200).growthStatus, "unavailable");
-});
-
-test("temporary fallback measurements produce plausible readings and let WHO classify the generated height", () => {
-  const severe = generateFallbackMeasurements(
-    { ageMonths: 39, sex: "male" },
-    (() => {
-      const values = [0, 0.5];
-      return () => values.shift() ?? 0.5;
-    })(),
-  );
-  const normal = generateFallbackMeasurements(
-    { ageMonths: 39, sex: "male" },
-    (() => {
-      const values = [1, 0.5];
-      return () => values.shift() ?? 0.5;
-    })(),
-  );
-
-  assert.equal(
-    assessHeightForAge(39, "male", severe.heightCm).growthStatus,
-    "severely_stunted",
-  );
-  assert.equal(
-    assessHeightForAge(39, "male", normal.heightCm).growthStatus,
-    "within_range",
-  );
-  assert.notEqual(severe.heightCm, normal.heightCm);
-  assert.ok(severe.weightKg > 0);
-  assert.ok(normal.weightKg > 0);
 });
 
 test("disconnected sensors remain missing values throughout the report", () => {

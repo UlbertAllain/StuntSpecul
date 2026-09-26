@@ -31,14 +31,12 @@ export function ExaminationStage({
   paused,
   onComplete,
   reading,
-  readingSource = "demo",
   soundEnabled = false,
 }: {
   phase: MeasurementPhase;
   paused: boolean;
   onComplete: () => void;
   reading?: number | null;
-  readingSource?: "sensor" | "demo";
   soundEnabled?: boolean;
 }) {
   function finishStage() {
@@ -51,8 +49,12 @@ export function ExaminationStage({
     window.setTimeout(onComplete, 180);
   }
 
-  const remaining = useCountdown(7, paused, finishStage);
-  const finished = phase !== "prepare" && remaining <= 1;
+  const readingReady =
+    phase === "prepare" || (reading !== null && reading !== undefined);
+  const remaining = useCountdown(7, paused, finishStage, readingReady);
+  const waitingForSensor =
+    phase !== "prepare" && remaining === 0 && !readingReady;
+  const finished = phase !== "prepare" && remaining === 0 && readingReady;
   const progress = Math.min(100, ((7 - remaining) / 5) * 100);
   const item = instructions[phase];
   return (
@@ -64,9 +66,19 @@ export function ExaminationStage({
           <item.icon size={18} />
           {item.label}
         </span>
-        <h1>{finished ? "Terima kasih!" : item.title}</h1>
+        <h1>
+          {finished
+            ? "Terima kasih!"
+            : waitingForSensor
+              ? "Tunggu sebentar…"
+              : item.title}
+        </h1>
         <p>
-          {finished ? "Kamu sudah melakukannya dengan baik." : item.subtitle}
+          {finished
+            ? "Kamu sudah melakukannya dengan baik."
+            : waitingForSensor
+              ? "Sensor sedang mengambil hasil. Tetap di posisi, ya."
+              : item.subtitle}
         </p>
       </div>
       <div className="measurement-scene">
@@ -104,23 +116,19 @@ export function ExaminationStage({
             <strong>
               {finished && reading !== null && reading !== undefined
                 ? reading.toFixed(1)
-                : finished
+                : waitingForSensor
                   ? "—"
                   : "···"}
               <small>{phase === "height" ? "cm" : "kg"}</small>
             </strong>
             <span>
               {finished
-                ? reading !== null && reading !== undefined
-                  ? readingSource === "sensor"
-                    ? "Data sensor"
-                    : "Data demo sementara"
-                  : readingSource === "sensor"
-                    ? "Data sensor belum diterima"
-                    : "Sensor belum terhubung"
-                : paused
-                  ? "Pengukuran dijeda"
-                  : "Tahan posisi sebentar"}
+                ? "Data sensor"
+                : waitingForSensor
+                  ? "Menunggu data sensor"
+                  : paused
+                    ? "Pengukuran dijeda"
+                    : "Tahan posisi sebentar"}
             </span>
           </>
         )}

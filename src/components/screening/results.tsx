@@ -33,13 +33,11 @@ export function Results({
   report,
   onFinish,
   awaitingParentFinalize = false,
-  temporaryMeasurements = false,
   recommendations: savedRecommendations = null,
 }: {
   report: ScreeningReport;
   onFinish?: () => void;
   awaitingParentFinalize?: boolean;
-  temporaryMeasurements?: boolean;
   recommendations?: GrowthRecommendations | null;
 }) {
   const [detail, setDetail] = useState(false);
@@ -116,13 +114,6 @@ export function Results({
           </strong>
         </div>
       </div>
-
-      {temporaryMeasurements && (
-        <p className="temporary-reading-note">
-          Sensor fisik belum terhubung — nilai TB/BB sementara digunakan agar
-          alur pemeriksaan tetap dapat diuji.
-        </p>
-      )}
 
       <div
         className={`growth-result ${report.growthStatus === "unavailable" ? "unavailable-result" : ""}`}

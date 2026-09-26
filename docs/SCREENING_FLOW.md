@@ -69,7 +69,7 @@ ESP32 mengirim tinggi/berat melalui /api/iot/measurements. Selama sesi aktif, ha
 
 Jika perangkat IoT online, hasil sensor menjadi sumber utama dan backend memprioritaskan nilai IoT saat examination diselesaikan.
 
-Fallback measurement generator hanya digunakan ketika hardware belum aktif dan tetap harus dianggap development/demo fallback, bukan pengganti sensor production.
+Tidak ada generator TB/BB dummy. Tahap tinggi dan berat menunggu nilai sensor IoT yang valid; jika nilai belum diterima, UI tetap berada pada tahap pengukuran dan tidak melanjutkan ke hasil.
 
 Setelah TB/U WHO dihitung, backend membuat snapshot rekomendasi edukasi berdasarkan growthStatus dan tren TB/U dibanding examination completed sebelumnya untuk anak yang sama:
 

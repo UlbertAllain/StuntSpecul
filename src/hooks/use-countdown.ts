@@ -7,6 +7,7 @@ export function useCountdown(
   seconds: number,
   paused: boolean,
   onComplete: () => void,
+  canComplete = true,
 ) {
   const [remaining, setRemaining] = useState(seconds);
   const count = useRef(seconds);
@@ -14,9 +15,11 @@ export function useCountdown(
 
   const tick = useEffectEvent(() => {
     if (paused || finished.current) return;
-    count.current = Math.max(0, count.current - 1);
-    setRemaining(count.current);
-    if (count.current === 0) {
+    if (count.current > 0) {
+      count.current = Math.max(0, count.current - 1);
+      setRemaining(count.current);
+    }
+    if (count.current === 0 && canComplete) {
       finished.current = true;
       onComplete();
     }

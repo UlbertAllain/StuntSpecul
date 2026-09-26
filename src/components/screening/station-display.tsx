@@ -33,7 +33,6 @@ export function StationDisplay() {
   const [state, setState] = useState<StationState | null>(null);
   const [assignment, setAssignment] = useState<MirrorAssignment | null>(null);
   const [busy, setBusy] = useState(false);
-  const [hardwareMode, setHardwareMode] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -51,7 +50,6 @@ export function StationDisplay() {
 
         setState(value);
         setError("");
-        if (value.device.online) setHardwareMode(true);
 
         if (value.active && value.active.status !== "completed") {
           setBusy(true);
@@ -100,11 +98,9 @@ export function StationDisplay() {
         if (controller.signal.aborted) return;
 
         setState(value);
-        if (value.device.online) setHardwareMode(true);
 
         if (!value.active) {
           setAssignment(null);
-          setHardwareMode(false);
           setError("");
           return;
         }
@@ -145,7 +141,6 @@ export function StationDisplay() {
 
     setAssignment(null);
     setState(null);
-    setHardwareMode(false);
     setError("");
   }
 
@@ -157,7 +152,6 @@ export function StationDisplay() {
         canBegin
         onComplete={saveCompletion}
         onFinish={finish}
-        hardwareMode={hardwareMode}
         hardwareMeasurements={
           state?.active
             ? {

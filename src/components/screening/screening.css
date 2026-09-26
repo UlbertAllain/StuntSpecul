@@ -2034,7 +2034,7 @@
   }
 }
 
-/* Temporary sensor readings + compact result layout. */
+/* Compact result layout. */
 .results-screen .result-intro {
   grid-template-columns: minmax(0, 1fr) 112px;
   align-items: center;
@@ -2059,14 +2059,6 @@
 
 .results-screen .body-results strong {
   font-size: 31px;
-}
-
-.temporary-reading-note {
-  margin: -2px 0 14px;
-  color: #6a7f8e;
-  font-size: 10px;
-  line-height: 1.45;
-  text-align: center;
 }
 
 .results-screen .growth-result {
