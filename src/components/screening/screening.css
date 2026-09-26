@@ -2697,3 +2697,13 @@
     padding: 12px 14px;
   }
 }
+
+/* Keep completion copy optically centered inside the portrait station card. */
+.station-page .station-complete-card > h1,
+.station-page .station-complete-card > p {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center !important;
+  justify-self: center;
+}
