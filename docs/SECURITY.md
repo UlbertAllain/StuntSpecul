@@ -46,7 +46,7 @@ Zod digunakan untuk request JSON. Perhatikan email normalization, UUID validatio
 
 ## Image handling
 
-Foto wajah screening diproses untuk inference dan tidak disimpan sebagai raw photo pada examination report.
+Foto wajah screening dikirim sementara ke endpoint server-side Gemini visual analysis dan tidak disimpan sebagai raw photo pada examination report/Firestore. Gemini credential tidak pernah dikirim ke browser.
 
 Foto profil menggunakan Cloudinary. Credential signing tetap server-side.
 
@@ -75,7 +75,7 @@ Jalankan:
 
 Jangan menjalankan npm audit fix --force tanpa review karena dapat melakukan major upgrade.
 
-Python dependency Model A dipin agar runtime reproducible.
+Python dependency Model A legacy tetap dipin selama endpoint rollback masih dipertahankan.
 
 ## Checklist perubahan sensitif
 

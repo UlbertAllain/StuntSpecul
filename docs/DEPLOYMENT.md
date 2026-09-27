@@ -5,7 +5,8 @@ Production berjalan di Vercel.
 ## Runtime
 
 - Next.js: Node.js 22.x
-- Model A: Python serverless function
+- Gemini visual/result assistant: external Google API via server-side secret
+- Model A Python function: legacy compatibility only
 - Database: Firebase Firestore
 - Build command: npm run build:vercel
 
@@ -36,7 +37,7 @@ Diperlukan untuk upload foto profil.
     GEMINI_API_KEY=
     GEMINI_MODEL=
 
-Jika tidak diisi, fitur asisten tidak tersedia tetapi screening tetap berjalan.
+Jika tidak diisi, asisten dan analisis visual tidak tersedia; WHO screening tetap harus berjalan.
 
 ### Google OAuth
 
@@ -63,7 +64,7 @@ Gunakan random key minimal 32 byte. Generate contoh:
 
 Key yang sama dipasang pada firmware ESP32. Jangan memakai prefix NEXT*PUBLIC*.
 
-## Model A production files
+## Model A legacy production files
 
     models/
     ├─ face_detection_yunet_2023mar.onnx
@@ -101,11 +102,13 @@ Application:
 
 Expected: ready true, databaseReady true, databaseProvider firestore.
 
-Model A:
+Visual analysis:
 
-    GET /api/model-a-screening
+    POST /api/visual-analysis
 
-Expected: ready, filesReady, dependenciesReady, dan runtimeReady true.
+Expected pada pemeriksaan dengan kamera: response visual terstruktur atau failure yang tidak menggagalkan WHO result.
+
+Model A legacy boleh dicek terpisah melalui GET /api/model-a-screening jika compatibility runtime masih dipertahankan.
 
 Functional smoke:
 
@@ -113,12 +116,13 @@ Functional smoke:
 2. Mulai examination.
 3. Buka /alat.
 4. Station auto-claim.
-5. Selesaikan screening.
-6. Hasil muncul di parent.
-7. Monitoring petugas berubah.
-8. Admin functions bekerja.
-9. GET /api/iot/session tanpa Bearer token menghasilkan 401 jika IOT_API_KEY terkonfigurasi.
-10. ESP32 heartbeat membuat status alat online di halaman admin.
+5. Pastikan TB/BB dari ESP32 mendapat ACK server.
+6. Selesaikan kamera/Gemini visual analysis.
+7. Hasil WHO muncul di parent dan tidak bergantung pada AI visual.
+8. Monitoring petugas berubah.
+9. Admin functions bekerja.
+10. GET /api/iot/session tanpa Bearer token menghasilkan 401 jika IOT_API_KEY terkonfigurasi.
+11. ESP32 heartbeat membuat status alat online di halaman admin.
 
 ## Rollback
 

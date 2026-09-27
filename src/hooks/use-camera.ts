@@ -2,8 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { captureFrame, requestCamera, stopCamera } from "@/lib/camera";
-import { analyzeFacePhoto, modelAErrorReason } from "@/lib/model-a";
-import { UNAVAILABLE_FACIAL_ANALYSIS, type Capture } from "@/lib/screening";
+import {
+  analyzeVisualPhoto,
+  visualAnalysisErrorReason,
+  type VisualAnalysisContext,
+} from "@/lib/visual-analysis";
+import {
+  UNAVAILABLE_FACIAL_ANALYSIS,
+  UNAVAILABLE_VISUAL_ANALYSIS,
+  type Capture,
+} from "@/lib/screening";
 
 const CAMERA_TIMEOUT_MS = 15_000;
 type CameraStatus =
@@ -15,7 +23,7 @@ type CameraStatus =
 
 export function useCamera(
   onCapture: (capture: Capture) => void,
-  ageMonths: number,
+  context: VisualAnalysisContext,
 ) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controllerRef = useRef<AbortController | null>(null);
@@ -126,11 +134,25 @@ export function useCamera(
       if (controller.signal.aborted) return;
 
       setStatus("analyzing");
-      const facialAnalysis = await analyzeFacePhoto(photo, ageMonths);
+      const visualAnalysis = await analyzeVisualPhoto(photo, context);
       if (controller.signal.aborted) return;
 
       stopCamera(streamRef.current);
-      onCapture({ status: "captured", photo, facialAnalysis });
+      if (visualAnalysis.status === "rejected") {
+        setError(
+          visualAnalysis.reason ||
+            "Foto belum cukup jelas. Atur posisi wajah lalu ambil ulang.",
+        );
+        setStatus("error");
+        return;
+      }
+
+      onCapture({
+        status: "captured",
+        photo,
+        facialAnalysis: UNAVAILABLE_FACIAL_ANALYSIS,
+        visualAnalysis,
+      });
     } catch (cause) {
       if (!controller.signal.aborted) {
         // Facial AI is supporting data only. A model/service failure must never
@@ -144,10 +166,11 @@ export function useCamera(
         onCapture({
           status: "captured",
           photo,
-          facialAnalysis: {
-            ...UNAVAILABLE_FACIAL_ANALYSIS,
-            reason: modelAErrorReason(cause),
-            modelVersion: "model-a-v2.1",
+          facialAnalysis: UNAVAILABLE_FACIAL_ANALYSIS,
+          visualAnalysis: {
+            ...UNAVAILABLE_VISUAL_ANALYSIS,
+            reason: visualAnalysisErrorReason(cause),
+            modelVersion: "gemini",
           },
         });
       }

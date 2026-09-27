@@ -22,7 +22,7 @@ tests/
 
 ### `api/`
 
-Endpoint Python yang harus menjadi Vercel Function terpisah dari Next.js. Saat ini hanya Model A.
+Berisi Python Vercel Function legacy Model A. Flow screening aktif tidak bergantung pada folder ini; endpoint dipertahankan sementara untuk rollback/audit.
 
 ### `docs/`
 
@@ -142,7 +142,8 @@ Pure/domain utility dan client adapter kecil:
 - `growth.ts`: WHO height-for-age
 - `screening.ts`: domain screening
 - `session.ts`: state machine pemeriksaan
-- `model-a.ts`: Model A client contract
+- `visual-analysis.ts`: browser client untuk Gemini visual analysis
+- `model-a.ts`: legacy Model A client contract
 - `camera.ts`: browser camera utility
 - `api-client.ts`: HTTP client browser
 - `cloudinary.ts`: upload client
@@ -161,7 +162,8 @@ Server-only code:
 - `security.ts`: password, token, request identity
 - `iot-auth.ts`: Bearer authentication khusus ESP32
 - `http.ts`: response/error/request parsing
-- `gemini.ts`: Gemini adapter
+- `gemini.ts`: Gemini result assistant adapter
+- `gemini-vision.ts`: Gemini visual analysis adapter
 - `env.ts`: environment contract
 - `runtime-config.ts`: validation konfigurasi runtime
 - `runtime.ts`: dependency initialization
@@ -192,6 +194,8 @@ API route
 ```
 
 Client component tidak boleh import file dari `src/server`.
+
+Route khusus `src/app/api/visual-analysis/route.ts` menjadi boundary image upload. API key Gemini tetap server-only.
 
 ## Kapan membuat file baru
 

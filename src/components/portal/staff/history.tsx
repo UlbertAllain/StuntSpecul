@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import type { Examination } from "@/lib/portal";
 import { api, errorMessage } from "@/lib/api-client";
-import { facialAnalysisLabel, formatReading } from "@/lib/screening";
+import {
+  facialAnalysisLabel,
+  formatReading,
+  visualAnalysisStatusLabel,
+} from "@/lib/screening";
 import { growthStatusLabel } from "@/lib/growth";
 import { Message } from "../shared/shell";
 
@@ -109,11 +113,13 @@ export function ExaminationHistory({ childId = "" }: { childId?: string }) {
                 </div>
               </div>
               <div className="history-support-row">
-                <span>Model A V2.1</span>
+                <span>AI visual pendukung</span>
                 <strong>
-                  {item.facialStatus
-                    ? facialAnalysisLabel(item.facialStatus)
-                    : "Belum tersedia"}
+                  {item.visualAnalysis
+                    ? visualAnalysisStatusLabel(item.visualAnalysis.status)
+                    : item.facialStatus
+                      ? facialAnalysisLabel(item.facialStatus)
+                      : "Belum tersedia"}
                 </strong>
               </div>
             </article>

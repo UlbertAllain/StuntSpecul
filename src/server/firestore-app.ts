@@ -16,6 +16,7 @@ import {
 } from "../lib/portal";
 import { STARTER_BLOGS } from "../lib/blog-seeds";
 import { assessHeightForAge } from "../lib/growth";
+import type { VisualAnalysis } from "../lib/screening";
 import {
   growthRecommendationsFor,
   type GrowthRecommendations,
@@ -109,6 +110,7 @@ type ExamRecord = {
   facialProbability: number | null;
   facialReason: string | null;
   facialModelVersion: string | null;
+  visualAnalysis?: VisualAnalysis | null;
   recommendations?: Partial<GrowthRecommendations> | null;
   createdAt: number;
   completedAt: number | null;
@@ -239,6 +241,7 @@ function asExam(doc: FirestoreDoc<ExamRecord>): Examination {
     facialProbability: value.facialProbability,
     facialReason: value.facialReason,
     facialModelVersion: value.facialModelVersion,
+    visualAnalysis: value.visualAnalysis ?? null,
     growthStatus: growth.growthStatus,
     recommendations,
     createdAt: value.createdAt,
@@ -1169,6 +1172,7 @@ async function createActiveExam(
     facialProbability: null,
     facialReason: null,
     facialModelVersion: null,
+    visualAnalysis: null,
     recommendations: null,
     createdAt: now,
     completedAt: null,
@@ -1281,6 +1285,27 @@ const completionSchema = z
       .default(null),
     facialReason: z.string().trim().max(80).nullable().default(null),
     facialModelVersion: z.string().trim().max(40).nullable().default(null),
+    visualAnalysis: z
+      .object({
+        status: z.enum(["ok", "rejected", "unavailable"]),
+        faceDetected: z.boolean().nullable(),
+        singleFace: z.boolean().nullable(),
+        eyes: z.enum(["visible", "partial", "not_visible", "unclear"]),
+        nose: z.enum(["visible", "partial", "not_visible", "unclear"]),
+        mouth: z.enum(["visible", "partial", "not_visible", "unclear"]),
+        facePosition: z.enum([
+          "frontal",
+          "slightly_turned",
+          "partial",
+          "unclear",
+        ]),
+        lighting: z.enum(["good", "low", "bright", "uneven", "unclear"]),
+        observations: z.array(z.string().trim().min(1).max(180)).max(4),
+        reason: z.string().trim().max(180).nullable(),
+        modelVersion: z.string().trim().max(80).nullable(),
+      })
+      .nullable()
+      .default(null),
   })
   .strict();
 
@@ -2236,6 +2261,7 @@ async function stationStatus(_request: Request, env: Env) {
           heightCm: exam.data.heightCm,
           weightKg: exam.data.weightKg,
           measurementUpdatedAt: exam.data.measurementUpdatedAt ?? null,
+          measurementSource: exam.data.measurementSource ?? null,
         }
       : null,
     device,
@@ -2291,6 +2317,7 @@ async function stationComplete(request: Request, env: Env) {
         facialProbability: input.facialProbability ?? null,
         facialReason: input.facialReason ?? null,
         facialModelVersion: input.facialModelVersion ?? null,
+        visualAnalysis: input.visualAnalysis ?? null,
         recommendations,
         completedAt: Date.now(),
       },
@@ -2305,6 +2332,7 @@ async function stationComplete(request: Request, env: Env) {
           "facialProbability",
           "facialReason",
           "facialModelVersion",
+          "visualAnalysis",
           "recommendations",
           "completedAt",
         ],
@@ -2348,6 +2376,8 @@ async function iotSession(request: Request, env: Env) {
           cameraEnabled: exam.data.cameraEnabled,
           heightCm: exam.data.heightCm,
           weightKg: exam.data.weightKg,
+          measurementUpdatedAt: exam.data.measurementUpdatedAt ?? null,
+          measurementSource: exam.data.measurementSource ?? null,
         }
       : null,
     serverTime: Date.now(),
@@ -2412,10 +2442,17 @@ async function iotMeasurements(request: Request, env: Env) {
 
   return ok({
     saved: true,
+    ack: "measurement_saved",
     examinationId: exam.id,
+    accepted: {
+      heightCm: input.heightCm !== undefined,
+      weightKg: input.weightKg !== undefined,
+    },
     heightCm: input.heightCm ?? exam.data.heightCm,
     weightKg: input.weightKg ?? exam.data.weightKg,
-    updatedAt: now,
+    source: "iot",
+    measurementUpdatedAt: now,
+    serverTime: now,
   });
 }
 
@@ -2427,6 +2464,10 @@ async function iotHeartbeat(request: Request, env: Env) {
 
   return ok({
     online: device.online,
+    lastSeen: device.lastSeen,
+    heightSensor: device.heightSensor,
+    weightSensor: device.weightSensor,
+    firmwareVersion: device.firmwareVersion,
     serverTime: Date.now(),
   });
 }
@@ -2531,6 +2572,7 @@ async function staffComplete(request: Request, env: Env, examId: string) {
       facialProbability: input.facialProbability ?? null,
       facialReason: input.facialReason ?? null,
       facialModelVersion: input.facialModelVersion ?? null,
+      visualAnalysis: input.visualAnalysis ?? null,
       recommendations,
       completedAt: Date.now(),
     },
@@ -2545,6 +2587,7 @@ async function staffComplete(request: Request, env: Env, examId: string) {
         "facialProbability",
         "facialReason",
         "facialModelVersion",
+        "visualAnalysis",
         "recommendations",
         "completedAt",
       ],

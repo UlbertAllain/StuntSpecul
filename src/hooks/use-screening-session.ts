@@ -5,6 +5,7 @@ import {
   createScreeningReport,
   readMeasurements,
   type Readings,
+  type VisualAnalysis,
 } from "@/lib/screening";
 import { api, errorMessage } from "@/lib/api-client";
 import type { GrowthRecommendations } from "@/lib/growth-recommendations";
@@ -31,6 +32,7 @@ export type ScreeningCompletion = {
   facialProbability: number | null;
   facialReason: string | null;
   facialModelVersion: string | null;
+  visualAnalysis: VisualAnalysis | null;
 };
 
 export function useScreeningSession(
@@ -80,6 +82,7 @@ export function useScreeningSession(
       facialProbability: report.facialAnalysis.probability,
       facialReason: report.facialAnalysis.reason,
       facialModelVersion: report.facialAnalysis.modelVersion,
+      visualAnalysis: report.visualAnalysis,
     };
 
     setSaving(true);

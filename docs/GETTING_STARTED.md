@@ -4,9 +4,9 @@
 
 - Node.js 22.x
 - npm
-- Python 3.12 untuk Model A lokal
 - Firebase project dengan Firestore Native mode
-- Windows PowerShell untuk launcher `npm run dev`
+- Gemini API key/model untuk analisis visual dan asisten
+- Windows PowerShell hanya diperlukan jika menjalankan Model A legacy
 
 ## 1. Install dependency
 
@@ -46,36 +46,29 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 ```
 
-## 3. Model A local
+## 3. Jalankan
 
-Pastikan file berikut tersedia:
-
-```text
-models/
-├─ face_detection_yunet_2023mar.onnx
-├─ mobilenetv3_stunting_v2.onnx
-└─ mobilenetv3_stunting_v2.onnx.data
-```
-
-Jika menggunakan artifact ZIP:
-
-```powershell
-.\scripts\model-a\install.ps1 -ArtifactZip ".\stuntspecula_model_a_v2_artifacts.zip"
-```
-
-## 4. Jalankan
-
-Full stack lokal:
+Flow aktif:
 
 ```powershell
 npm run dev
 ```
 
-Web saja:
+Alias web-only tetap tersedia:
 
 ```powershell
 npm run dev:web
 ```
+
+Model A legacy hanya dijalankan bila dibutuhkan untuk audit/rollback:
+
+```powershell
+npm run dev:model-a
+```
+
+## 4. Visual analysis
+
+Isi `GEMINI_API_KEY` dan `GEMINI_MODEL`. Kamera mengirim foto ke `/api/visual-analysis`; API key tetap server-side.
 
 Default web URL:
 
@@ -102,7 +95,8 @@ Health endpoint:
 
 ```text
 GET /api/health
-GET /api/model-a-screening
+
+Flow kamera aktif diverifikasi dari POST /api/visual-analysis saat pemeriksaan. GET /api/model-a-screening hanya legacy.
 ```
 
 ## Development workflow

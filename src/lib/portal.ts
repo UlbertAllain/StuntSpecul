@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { GrowthStatus } from "./growth";
 import type { GrowthRecommendations } from "./growth-recommendations";
-import type { FacialAnalysisStatus } from "./screening";
+import type { FacialAnalysisStatus, VisualAnalysis } from "./screening";
 
 export const childProfileSchema = z.object({
   code: z
@@ -49,6 +49,7 @@ export type Examination = {
   facialProbability: number | null;
   facialReason: string | null;
   facialModelVersion: string | null;
+  visualAnalysis: VisualAnalysis | null;
   growthStatus: GrowthStatus;
   recommendations: GrowthRecommendations;
   createdAt: number;

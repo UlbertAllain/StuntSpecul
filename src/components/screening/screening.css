@@ -2699,3 +2699,82 @@
   text-align: center !important;
   justify-self: center;
 }
+
+/* Sensor acknowledgement + Gemini visual analysis. */
+.sensor-receipt {
+  width: min(100%, 520px);
+  margin: 10px auto 0;
+  padding: 11px 13px;
+  display: grid;
+  gap: 3px;
+  border: 1px solid #d7e4ec;
+  border-radius: 13px;
+  background: #f7fbfd;
+  color: #587286;
+  text-align: center;
+}
+
+.sensor-receipt strong {
+  color: #315f87;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.sensor-receipt span {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.sensor-receipt small {
+  color: #82929e;
+  font-size: 9px;
+}
+
+.sensor-receipt.received {
+  border-color: #cfe4d1;
+  background: #f7fcf7;
+}
+
+.sensor-receipt.received strong {
+  color: #39734a;
+}
+
+.sensor-receipt.offline:not(.received) {
+  border-color: #ecd9d9;
+  background: #fff9f9;
+}
+
+.sensor-receipt.offline:not(.received) strong {
+  color: #9a4f59;
+}
+
+.visual-observation-list {
+  margin: 11px 0 0;
+  padding-left: 18px;
+  color: #607789;
+}
+
+.visual-observation-list li {
+  padding: 3px 0;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (orientation: portrait) and (min-width: 700px) {
+  .station-page .sensor-receipt {
+    padding: 13px 15px;
+  }
+
+  .station-page .sensor-receipt strong {
+    font-size: 13px;
+  }
+
+  .station-page .sensor-receipt span {
+    font-size: 12px;
+  }
+
+  .station-page .sensor-receipt small,
+  .station-page .visual-observation-list li {
+    font-size: 11px;
+  }
+}

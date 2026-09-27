@@ -6,8 +6,9 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/model-a/dev.ps1",
+    "dev": "next dev --hostname 127.0.0.1",
     "dev:web": "next dev --hostname 127.0.0.1",
+    "dev:model-a": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/model-a/dev.ps1",
     "build": "next build",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint src tests scripts --max-warnings=0",

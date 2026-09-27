@@ -36,6 +36,47 @@ export type FacialAnalysis = {
   modelVersion: string | null;
 };
 
+export type VisualAnalysisStatus = "ok" | "rejected" | "unavailable";
+export type VisualVisibility =
+  | "visible"
+  | "partial"
+  | "not_visible"
+  | "unclear";
+export type VisualFacePosition =
+  | "frontal"
+  | "slightly_turned"
+  | "partial"
+  | "unclear";
+export type VisualLighting = "good" | "low" | "bright" | "uneven" | "unclear";
+
+export type VisualAnalysis = {
+  status: VisualAnalysisStatus;
+  faceDetected: boolean | null;
+  singleFace: boolean | null;
+  eyes: VisualVisibility;
+  nose: VisualVisibility;
+  mouth: VisualVisibility;
+  facePosition: VisualFacePosition;
+  lighting: VisualLighting;
+  observations: string[];
+  reason: string | null;
+  modelVersion: string | null;
+};
+
+export const UNAVAILABLE_VISUAL_ANALYSIS: VisualAnalysis = {
+  status: "unavailable",
+  faceDetected: null,
+  singleFace: null,
+  eyes: "unclear",
+  nose: "unclear",
+  mouth: "unclear",
+  facePosition: "unclear",
+  lighting: "unclear",
+  observations: [],
+  reason: null,
+  modelVersion: null,
+};
+
 export const UNAVAILABLE_FACIAL_ANALYSIS: FacialAnalysis = {
   status: "unavailable",
   probability: null,
@@ -50,7 +91,8 @@ export type Capture =
   | {
       status: "captured";
       photo: Blob;
-      facialAnalysis: FacialAnalysis;
+      facialAnalysis?: FacialAnalysis;
+      visualAnalysis?: VisualAnalysis;
     }
   | { status: "skipped" | "failed" };
 
@@ -77,6 +119,7 @@ export type ScreeningReport = {
   growthStatus: GrowthStatus;
   stuntingScreening: StuntingScreening;
   facialAnalysis: FacialAnalysis;
+  visualAnalysis: VisualAnalysis | null;
 };
 
 export function readMeasurements(): Readings {
@@ -121,9 +164,11 @@ export function createScreeningReport(
     growthStatus: growth.growthStatus,
     stuntingScreening: growth.stuntingScreening,
     facialAnalysis:
-      capture.status === "captured"
+      capture.status === "captured" && capture.facialAnalysis
         ? capture.facialAnalysis
         : UNAVAILABLE_FACIAL_ANALYSIS,
+    visualAnalysis:
+      capture.status === "captured" ? (capture.visualAnalysis ?? null) : null,
   };
 }
 
@@ -192,4 +237,58 @@ export function formatAge(months: number): string {
 
 export function formatReading(value: number | null): string {
   return value === null ? "—" : String(value);
+}
+
+export function visualAnalysisStatusLabel(
+  status: VisualAnalysisStatus | null,
+): string {
+  switch (status) {
+    case "ok":
+      return "Foto dapat dianalisis";
+    case "rejected":
+      return "Foto perlu diambil ulang";
+    default:
+      return "Belum tersedia";
+  }
+}
+
+export function visualVisibilityLabel(value: VisualVisibility): string {
+  switch (value) {
+    case "visible":
+      return "Terlihat jelas";
+    case "partial":
+      return "Terlihat sebagian";
+    case "not_visible":
+      return "Tidak terlihat";
+    default:
+      return "Belum dapat dinilai";
+  }
+}
+
+export function visualFacePositionLabel(value: VisualFacePosition): string {
+  switch (value) {
+    case "frontal":
+      return "Frontal";
+    case "slightly_turned":
+      return "Sedikit menoleh";
+    case "partial":
+      return "Sebagian wajah";
+    default:
+      return "Belum dapat dinilai";
+  }
+}
+
+export function visualLightingLabel(value: VisualLighting): string {
+  switch (value) {
+    case "good":
+      return "Cukup";
+    case "low":
+      return "Kurang cahaya";
+    case "bright":
+      return "Terlalu terang";
+    case "uneven":
+      return "Tidak merata";
+    default:
+      return "Belum dapat dinilai";
+  }
 }

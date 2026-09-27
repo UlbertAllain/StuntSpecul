@@ -14,7 +14,12 @@ import {
 import { growthStatusLabel } from "@/lib/growth";
 import type { Examination, ParentAccountView } from "@/lib/portal";
 import { ageInMonths } from "@/lib/portal";
-import { facialAnalysisLabel, formatAge, formatReading } from "@/lib/screening";
+import {
+  facialAnalysisLabel,
+  formatAge,
+  formatReading,
+  visualAnalysisStatusLabel,
+} from "@/lib/screening";
 
 function MiniGrowthChart({ examinations }: { examinations: Examination[] }) {
   const values = examinations
@@ -166,8 +171,10 @@ export function ParentHome({
               <span>HASIL PERTUMBUHAN WHO</span>
               <strong>{growthStatusLabel(latest.growthStatus)}</strong>
               <small>
-                TB/U {formatReading(latest.heightForAgeZ)} SD · Model A{" "}
-                {facialAnalysisLabel(latest.facialStatus)}
+                TB/U {formatReading(latest.heightForAgeZ)} SD · AI visual{" "}
+                {latest.visualAnalysis
+                  ? visualAnalysisStatusLabel(latest.visualAnalysis.status)
+                  : facialAnalysisLabel(latest.facialStatus)}
               </small>
             </div>
             <Link

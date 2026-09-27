@@ -1,86 +1,99 @@
-# Model A V2.1
+# Model A V2.1 — Legacy
 
-Model A adalah analisis wajah pendukung, bukan penentu status stunting. WHO TB/U tetap menjadi sumber hasil pertumbuhan utama.
+Model A V2.1 adalah pipeline wajah lama StuntSpecula. Sejak migrasi ke Gemini visual analysis, Model A **tidak lagi dipanggil oleh flow screening aktif**.
 
-## Pipeline
+WHO TB/U tetap menjadi sumber hasil pertumbuhan utama baik pada flow lama maupun baru.
 
-    JPEG camera
-    → decode
-    → YuNet face detection
-    → face quality gate
-    → inner-face crop
-    → grayscale/preprocessing
-    → MobileNetV3-Small ONNX
-    → sigmoid probability
-    → threshold
-    → supporting indication
+## Status saat ini
 
-Classifier threshold saat ini: 0.40.
+Active:
 
-## Runtime assets
+```text
+camera
+→ /api/visual-analysis
+→ Gemini
+→ kualitas foto + visibilitas area wajah
+```
 
-    models/
-    ├─ face_detection_yunet_2023mar.onnx
-    ├─ mobilenetv3_stunting_v2.onnx
-    └─ mobilenetv3_stunting_v2.onnx.data
+Legacy:
 
-## Dependency
+```text
+camera
+→ /api/model-a-screening
+→ YuNet
+→ MobileNetV3-Small ONNX
+→ supporting facial indication
+```
+
+Model A dipertahankan sementara untuk:
+
+- rollback;
+- audit hasil lama;
+- compatibility endpoint;
+- referensi eksperimen/model validation.
+
+Jangan menambahkan kembali Model A sebagai penentu status stunting tanpa validasi klinis yang memadai.
+
+## Legacy runtime assets
+
+```text
+models/
+├─ face_detection_yunet_2023mar.onnx
+├─ mobilenetv3_stunting_v2.onnx
+└─ mobilenetv3_stunting_v2.onnx.data
+```
+
+Dependency legacy:
 
 - numpy == 2.1.3
 - opencv-python-headless == 4.10.0.84
 - onnxruntime == 1.20.1
 
-## Local development
+## Legacy local development
 
-Install artifact bila diperlukan:
+Flow aplikasi normal:
 
-    .\scripts\model-a\install.ps1 -ArtifactZip ".\stuntspecula_model_a_v2_artifacts.zip"
+```powershell
+npm run dev
+```
 
-Run:
+Jika perlu menjalankan Model A lama:
 
-    npm run dev
+```powershell
+npm run dev:model-a
+```
 
-Launcher menjalankan Model A lokal di 127.0.0.1:8787 dan Next.js.
+## Legacy production endpoints
 
-## Production
+```text
+GET  /api/model-a-screening
+POST /api/model-a-screening
+```
 
-Endpoints:
+Endpoint di atas tidak dipanggil oleh UI screening aktif.
 
-    GET  /api/model-a-screening
-    POST /api/model-a-screening
+## Historical data
 
-GET health check melakukan file check, dependency import, YuNet load, ONNX load, dan dummy inference/warmup. Karena itu ready true berarti runtime berhasil diload.
-
-## Failure behavior
-
-Jika Model A gagal, facialStatus menjadi unavailable dan screening antropometri tetap harus dapat diselesaikan.
-
-## Data persisted
-
-Hanya supporting result:
+Examination lama dapat memiliki:
 
 - facialStatus
 - facialProbability
 - facialReason
 - facialModelVersion
 
-Raw screening photo tidak disimpan pada examination.
+UI tetap membaca field tersebut sebagai fallback untuk riwayat lama yang belum memiliki `visualAnalysis`.
+
+Examination baru memakai `visualAnalysis` Gemini dan tidak menghasilkan probabilitas stunting dari wajah.
 
 ## Validation limitation
 
-Model A V2.1 masih harus diperlakukan sebagai model eksperimental/supporting. Internal accuracy tidak sama dengan validitas klinis atau generalisasi real-world.
-
-Known risks:
+Model A V2.1 tetap dianggap eksperimental/supporting karena memiliki risiko:
 
 - weak-label public dataset;
 - source/domain bias;
 - device/lighting shift;
 - demographic distribution shift.
 
-Jangan menulis copy yang menyatakan Model A mendiagnosis stunting.
+Internal accuracy tidak sama dengan validitas klinis atau generalisasi real-world.
 
-## External validation
-
-Validasi yang benar membutuhkan subjek independen dengan age, sex, measured height, WHO Height-for-Age ground truth, serta foto dari kondisi capture yang bervariasi.
-
-Split harus subject-wise, bukan image-wise.
+Untuk flow baru lihat [Visual Analysis](VISUAL_ANALYSIS.md).

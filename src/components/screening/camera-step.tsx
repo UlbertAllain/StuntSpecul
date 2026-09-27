@@ -10,6 +10,9 @@ import type { Capture } from "@/lib/screening";
 type CameraStepProps = {
   paused: boolean;
   ageMonths: number;
+  sex: "male" | "female";
+  heightCm: number;
+  weightKg: number;
   soundEnabled?: boolean;
   onComplete: (capture: Capture) => void;
 };
@@ -44,12 +47,15 @@ function CaptureCountdown({
 export function CameraStep({
   paused,
   ageMonths,
+  sex,
+  heightCm,
+  weightKg,
   soundEnabled = false,
   onComplete,
 }: CameraStepProps) {
   const { videoRef, status, attempt, capture, error, retry } = useCamera(
     onComplete,
-    ageMonths,
+    { ageMonths, sex, heightCm, weightKg },
   );
 
   return (
@@ -87,7 +93,7 @@ export function CameraStep({
         )}
         {status === "analyzing" && (
           <div className="camera-message" role="status">
-            Menganalisis wajah sebagai data pendukung…
+            Menganalisis kualitas wajah sebagai data pendukung…
           </div>
         )}
         {status === "error" && (
@@ -121,8 +127,8 @@ export function CameraStep({
         </div>
       )}
       <p className="parent-caption">
-        Foto wajah hanya menjadi analisis pendukung. Hasil utama tetap dihitung
-        dari pengukuran pertumbuhan berdasarkan standar WHO.
+        Gemini hanya menilai kualitas dan bagian wajah yang terlihat. Status
+        stunting tetap ditentukan dari TB/U WHO, bukan dari wajah.
       </p>
     </div>
   );

@@ -24,6 +24,10 @@ import {
   facialReasonLabel,
   formatAge,
   formatReading,
+  visualAnalysisStatusLabel,
+  visualFacePositionLabel,
+  visualLightingLabel,
+  visualVisibilityLabel,
 } from "@/lib/screening";
 import { Message, PortalShell } from "../shared/shell";
 
@@ -126,6 +130,7 @@ export function ParentHistoryDetailPage() {
   }
 
   const recommendations = exam.recommendations;
+  const visual = exam.visualAnalysis;
   const showFacialReason =
     Boolean(exam.facialReason) &&
     (exam.facialStatus === "rejected" || exam.facialStatus === "unavailable");
@@ -213,29 +218,75 @@ export function ParentHistoryDetailPage() {
           <div className="parent-history-model-title">
             <ScanFace size={20} />
             <div>
-              <span>ANALISIS WAJAH — PENDUKUNG</span>
-              <strong>{facialAnalysisLabel(exam.facialStatus)}</strong>
+              <span>ANALISIS VISUAL AI — PENDUKUNG</span>
+              <strong>
+                {visual
+                  ? visualAnalysisStatusLabel(visual.status)
+                  : facialAnalysisLabel(exam.facialStatus)}
+              </strong>
             </div>
           </div>
 
-          <dl>
-            <div>
-              <dt>Skor model</dt>
-              <dd>{modelScore(exam)}</dd>
-            </div>
-            <div>
-              <dt>Versi model</dt>
-              <dd>{exam.facialModelVersion || "Model A V2.1"}</dd>
-            </div>
-          </dl>
+          {visual ? (
+            <>
+              <dl>
+                <div>
+                  <dt>Mata</dt>
+                  <dd>{visualVisibilityLabel(visual.eyes)}</dd>
+                </div>
+                <div>
+                  <dt>Hidung</dt>
+                  <dd>{visualVisibilityLabel(visual.nose)}</dd>
+                </div>
+                <div>
+                  <dt>Mulut</dt>
+                  <dd>{visualVisibilityLabel(visual.mouth)}</dd>
+                </div>
+                <div>
+                  <dt>Posisi wajah</dt>
+                  <dd>{visualFacePositionLabel(visual.facePosition)}</dd>
+                </div>
+                <div>
+                  <dt>Pencahayaan</dt>
+                  <dd>{visualLightingLabel(visual.lighting)}</dd>
+                </div>
+                <div>
+                  <dt>Model</dt>
+                  <dd>{visual.modelVersion || "Gemini"}</dd>
+                </div>
+              </dl>
 
-          {showFacialReason && exam.facialReason && (
-            <p>{facialReasonLabel(exam.facialReason)}</p>
+              {visual.observations.length > 0 && (
+                <ul className="parent-history-visual-observations">
+                  {visual.observations.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              )}
+
+              {visual.reason && <p>{visual.reason}</p>}
+            </>
+          ) : (
+            <>
+              <dl>
+                <div>
+                  <dt>Skor model lama</dt>
+                  <dd>{modelScore(exam)}</dd>
+                </div>
+                <div>
+                  <dt>Versi model</dt>
+                  <dd>{exam.facialModelVersion || "Model A V2.1"}</dd>
+                </div>
+              </dl>
+              {showFacialReason && exam.facialReason && (
+                <p>{facialReasonLabel(exam.facialReason)}</p>
+              )}
+            </>
           )}
 
           <p>
-            Analisis wajah hanya informasi pendukung. Hasil utama tetap berasal
-            dari TB/U WHO.
+            AI visual hanya menilai kualitas foto dan bagian wajah yang
+            terlihat. Status stunting tetap ditentukan dari TB/U WHO.
           </p>
         </section>
 
@@ -262,8 +313,12 @@ export function ParentHistoryDetailPage() {
               <dd>{growthStatusLabel(exam.growthStatus)}</dd>
             </div>
             <div>
-              <dt>Analisis wajah pendukung</dt>
-              <dd>{facialAnalysisLabel(exam.facialStatus)}</dd>
+              <dt>Analisis visual pendukung</dt>
+              <dd>
+                {visual
+                  ? visualAnalysisStatusLabel(visual.status)
+                  : facialAnalysisLabel(exam.facialStatus)}
+              </dd>
             </div>
             <div>
               <dt>Pengambilan wajah</dt>
@@ -273,8 +328,9 @@ export function ParentHistoryDetailPage() {
 
           <p>
             Status stunting utama dihitung dari tinggi menurut umur berdasarkan
-            standar WHO untuk anak usia 24–59 bulan. Model wajah ditampilkan
-            terpisah sebagai skrining eksperimental dan bukan diagnosis.
+            standar WHO untuk anak usia 24–59 bulan. Analisis visual AI
+            ditampilkan terpisah untuk kualitas foto dan visibilitas area wajah,
+            bukan untuk menentukan status stunting.
           </p>
 
           <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">

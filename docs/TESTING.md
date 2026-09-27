@@ -59,18 +59,21 @@ Sesudah perubahan flow utama:
 5. Google registration parent.
 6. Parent mulai examination.
 7. Halaman alat auto-claim tanpa tombol manual.
-8. Height, weight, camera sampai result.
-9. Model A failure tidak menggagalkan WHO result.
-10. Parent melihat riwayat.
-11. Staff melihat monitoring.
-12. Admin melihat device dan staff.
-13. Logout tiap role.
+8. Height dan weight hanya lanjut setelah measurement IoT diterima.
+9. Kamera/Gemini visual analysis sampai result.
+10. Gemini failure tidak menggagalkan WHO result.
+11. Parent melihat riwayat dan observasi visual.
+12. Staff melihat monitoring.
+13. Admin melihat device dan staff.
+14. Logout tiap role.
 
-## Model A smoke
+## Visual analysis smoke
 
-GET /api/model-a-screening harus mengembalikan filesReady, dependenciesReady, runtimeReady, dan ready bernilai true.
+Pada sesi aktif dengan kamera, POST /api/visual-analysis harus menghasilkan structured visual observation. Failure Gemini harus tetap membiarkan WHO screening selesai.
 
-POST harus menghasilkan status ok atau rejection reason yang valid, bukan HTTP 500.
+## Model A legacy smoke
+
+GET/POST /api/model-a-screening hanya perlu diuji jika runtime legacy masih dipertahankan untuk rollback.
 
 ## Regression principle
 

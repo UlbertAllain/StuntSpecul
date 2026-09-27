@@ -92,19 +92,37 @@ Camera flow:
 1. request camera permission;
 2. capture frame;
 3. resize/compress;
-4. kirim ke Model A;
-5. hasil Model A dimasukkan ke screening completion.
+4. kirim ke `POST /api/visual-analysis`;
+5. server menghitung konteks WHO dari age/sex/height;
+6. Gemini menilai kualitas foto dan visibilitas area wajah;
+7. hasil visual terstruktur dimasukkan ke screening completion.
 
-Kegagalan Model A tidak boleh menggagalkan WHO screening.
+Gemini menerima usia, jenis kelamin, TB, BB, TB/U z-score, dan status WHO sebagai konteks. Gemini tidak boleh menentukan, menghitung ulang, atau mengubah status stunting.
 
-## Model A outcomes
+Kegagalan Gemini tidak boleh menggagalkan WHO screening.
 
-- `stunting_indication`
-- `non_stunting_indication`
+## Visual analysis outcomes
+
+Status utama visual:
+
+- `ok`
 - `rejected`
 - `unavailable`
 
-Model A adalah pendukung, bukan diagnosis.
+Field pendukung:
+
+- faceDetected
+- singleFace
+- eyes
+- nose
+- mouth
+- facePosition
+- lighting
+- observations[]
+- reason
+- modelVersion
+
+Tidak ada probability stunting dari wajah pada flow aktif.
 
 ## WHO outcome
 
@@ -122,4 +140,4 @@ Cancellation tersedia untuk session yang tidak perlu diteruskan. Backend harus m
 
 ## Data privacy
 
-Raw photo tidak menjadi bagian dari persisted examination report. Field persisted hanya status/probability/reason/model version hasil Model A.
+Raw photo tidak menjadi bagian dari persisted examination report. Foto diproses sementara melalui Gemini dan tidak disimpan di Firestore. Yang dipersist hanya observasi visual terstruktur. Field Model A lama tetap dibaca untuk compatibility riwayat lama.

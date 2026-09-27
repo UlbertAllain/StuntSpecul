@@ -1,19 +1,22 @@
 # Troubleshooting
 
-## Model A: Belum tersedia
+## Analisis visual Gemini belum tersedia
 
-Buka GET /api/model-a-screening dan pastikan filesReady, dependenciesReady, runtimeReady, dan ready bernilai true.
+Buka Network tab pada tahap kamera dan periksa POST /api/visual-analysis.
 
-Kemudian lihat Network tab untuk POST model-a-screening.
+Common case:
 
-Common status:
+- 503 visual_not_configured: GEMINI_API_KEY/GEMINI_MODEL belum lengkap.
+- 429 visual_quota_exceeded: quota provider habis.
+- 413: foto terlalu besar.
+- 422 visual_context_invalid: TB/BB/usia/sex belum lengkap.
+- visual_timeout / visual_network_error: provider tidak merespons.
 
-- 500 model_inference_failed: inference exception.
-- 503 model_runtime_not_ready: runtime/model load gagal.
-- 413: image/request terlalu besar.
-- 200 reject: runtime bekerja, image gagal quality gate.
+WHO screening tetap harus selesai karena AI visual hanya pendukung.
 
-Lihat Vercel Function logs untuk diagnostic server-side.
+## Model A legacy
+
+GET/POST /api/model-a-screening hanya relevan untuk rollback/audit flow lama. Endpoint ini bukan jalur kamera aktif.
 
 ## Google belum terhubung
 

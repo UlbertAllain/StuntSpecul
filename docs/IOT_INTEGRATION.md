@@ -117,7 +117,29 @@ Validation:
 - minimal satu field harus ada
 - examination harus berstatus running
 
-Data IoT yang sudah tersimpan diprioritaskan backend ketika web alat menyelesaikan pemeriksaan, sehingga tidak ditimpa fallback demo.
+Data IoT yang sudah tersimpan diprioritaskan backend ketika web alat menyelesaikan pemeriksaan. Tidak ada lagi generator TB/BB dummy pada flow aktif.
+
+Response sukses measurement:
+
+    {
+      "success": true,
+      "data": {
+        "saved": true,
+        "ack": "measurement_saved",
+        "examinationId": "uuid",
+        "accepted": {
+          "heightCm": true,
+          "weightKg": true
+        },
+        "heightCm": 93.5,
+        "weightKg": 18.9,
+        "source": "iot",
+        "measurementUpdatedAt": 1790524800000,
+        "serverTime": 1790524800000
+      }
+    }
+
+Firmware boleh menganggap measurement berhasil diterima backend hanya jika HTTP status 200 dan `data.saved === true` / `data.ack === "measurement_saved"`.
 
 ### POST /api/iot/heartbeat
 
@@ -176,11 +198,15 @@ Gunakan hanya ketika firmware benar-benar perlu membatalkan sesi. Normal complet
     ↓
     tetap kirim heartbeat/session polling
     ↓
-    web /alat menangani kamera + Model A
+    web /alat menangani kamera
     ↓
-    backend menggabungkan hasil sensor + wajah
+    Gemini menganalisis kualitas/visibilitas wajah sebagai pendukung
+    ↓
+    backend menggabungkan hasil sensor + observasi visual
     ↓
     WHO TB/U dihitung dari tinggi, umur, dan jenis kelamin
+    ↓
+    WHO tetap menentukan hasil stunting utama
 
 ## ESP32 example
 
@@ -218,12 +244,30 @@ Contoh helper HTTP:
 
 Contoh kirim measurement:
 
-    postJson(
+    int status = postJson(
       "/api/iot/measurements",
       "{\"heightCm\":93.5,\"weightKg\":18.9}"
     );
 
+    if (status == 200) {
+      Serial.println("Measurement diterima server");
+    } else {
+      Serial.printf("Measurement gagal, HTTP %d\\n", status);
+    }
+
+Untuk production, firmware sebaiknya juga membaca JSON response dan memastikan `saved=true` atau `ack=measurement_saved`, bukan hanya HTTP 200.
+
 Catatan: client.setInsecure() hanya sesuai prototype. Firmware production sebaiknya memverifikasi sertifikat TLS/CA.
+
+## Cara memastikan data sensor benar-benar sampai
+
+Gunakan tiga lapis pengecekan:
+
+1. **ESP32 Serial Monitor** — pastikan POST mendapat HTTP 200 dan JSON response memiliki `saved=true` / `ack=measurement_saved`.
+2. **GET /api/iot/session** — response sesi aktif menampilkan `heightCm`, `weightKg`, `measurementUpdatedAt`, dan `measurementSource`.
+3. **UI /alat** — pada tahap tinggi/berat tampil status ESP32, status sensor, dan indikator `Data sensor diterima` setelah backend menyimpan measurement.
+
+Dengan begitu keberhasilan tidak dinilai dari angka yang muncul di sensor saja; harus ada acknowledgement dari server.
 
 ## HTTP status penting
 
@@ -257,14 +301,15 @@ Web alat:
 
 - UI pemeriksaan
 - kamera
-- Model A
+- menampilkan status sensor/measurement yang sudah diterima
 
 Backend:
 
 - session coordination
 - validation
 - persistence
-- menggabungkan sensor + Model A
+- ACK measurement
+- menggabungkan sensor + observasi visual Gemini
 - WHO TB/U
 
-ESP32 tidak perlu menghitung WHO dan tidak perlu menjalankan Model A.
+ESP32 tidak perlu menghitung WHO dan tidak perlu menjalankan AI wajah.

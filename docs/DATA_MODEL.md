@@ -87,10 +87,22 @@ Index lookup:
 - measurementSource: iot atau null
 - bmi
 - captureStatus
-- facialStatus
-- facialProbability
-- facialReason
-- facialModelVersion
+- facialStatus (legacy Model A)
+- facialProbability (legacy Model A)
+- facialReason (legacy Model A)
+- facialModelVersion (legacy Model A)
+- visualAnalysis
+  - status
+  - faceDetected
+  - singleFace
+  - eyes
+  - nose
+  - mouth
+  - facePosition
+  - lighting
+  - observations[]
+  - reason
+  - modelVersion
 - recommendations
   - version
   - basedOn
@@ -105,6 +117,8 @@ Index lookup:
 - finalizedAt
 
 WHO-derived values dikalkulasi dari data examination saat dibaca/dibentuk menjadi response.
+
+`visualAnalysis` adalah hasil observasi Gemini terhadap kualitas foto/visibilitas area wajah. Field ini tidak boleh digunakan untuk menentukan `growthStatus`. Raw photo tidak disimpan pada examination.
 
 ### `blogs/{id}`
 

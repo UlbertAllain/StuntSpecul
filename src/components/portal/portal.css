@@ -5729,3 +5729,16 @@
     padding: 12px;
   }
 }
+
+/* Gemini visual observations in parent history detail. */
+.parent-history-visual-observations {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: #607789;
+}
+
+.parent-history-visual-observations li {
+  padding: 4px 0;
+  font-size: 11px;
+  line-height: 1.55;
+}

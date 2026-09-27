@@ -8,6 +8,10 @@ import {
   facialReasonLabel,
   formatAge,
   formatReading,
+  visualAnalysisStatusLabel,
+  visualFacePositionLabel,
+  visualLightingLabel,
+  visualVisibilityLabel,
   type ScreeningReport,
 } from "./screening.ts";
 
@@ -24,6 +28,30 @@ export function reportText(
       currentHeightForAgeZ: report.heightForAgeZ,
     });
   const facial = report.facialAnalysis;
+  const visual = report.visualAnalysis;
+  const visualLines = visual
+    ? [
+        "ANALISIS VISUAL AI — PENDUKUNG",
+        `Status foto: ${visualAnalysisStatusLabel(visual.status)}`,
+        `Mata: ${visualVisibilityLabel(visual.eyes)}`,
+        `Hidung: ${visualVisibilityLabel(visual.nose)}`,
+        `Mulut: ${visualVisibilityLabel(visual.mouth)}`,
+        `Posisi wajah: ${visualFacePositionLabel(visual.facePosition)}`,
+        `Pencahayaan: ${visualLightingLabel(visual.lighting)}`,
+        ...visual.observations.map((item) => `Observasi: ${item}`),
+        visual.reason ? `Catatan: ${visual.reason}` : "",
+        "AI visual tidak menentukan status stunting.",
+      ]
+    : [
+        "SKRINING WAJAH LEGACY — MODEL A V2.1",
+        `Hasil: ${facialAnalysisLabel(facial.status)}`,
+        facial.probability === null
+          ? "Skor model: —"
+          : `Skor model: ${Math.round(facial.probability * 100)}%`,
+        facial.status === "rejected"
+          ? `Catatan: ${facialReasonLabel(facial.reason)}`
+          : "",
+      ];
   return [
     "STUNTSPECULA — HASIL SCREENING",
     "",
@@ -38,14 +66,7 @@ export function reportText(
     `Status pertumbuhan: ${growthStatusLabel(report.growthStatus)}`,
     `Skrining stunting WHO: ${stuntingScreeningLabel(report.stuntingScreening)}`,
     "",
-    "SKRINING WAJAH AI — MODEL A V2.1",
-    `Hasil: ${facialAnalysisLabel(facial.status)}`,
-    facial.probability === null
-      ? "Skor model: —"
-      : `Skor model: ${Math.round(facial.probability * 100)}%`,
-    facial.status === "rejected"
-      ? `Catatan: ${facialReasonLabel(facial.reason)}`
-      : "",
+    ...visualLines,
     "",
     "REKOMENDASI NUTRISI",
     ...recommendations.nutrition.map((item, index) => `${index + 1}. ${item}`),
@@ -62,7 +83,7 @@ export function reportText(
               : "relatif stabil"
         } ${Math.abs(recommendations.trendDelta).toFixed(2)} SD.`,
     "",
-    "Hasil ini merupakan skrining, bukan diagnosis. TB/U WHO merupakan hasil utama untuk skrining stunting. Analisis wajah adalah indikator eksperimental tambahan.",
+    "Hasil ini merupakan skrining, bukan diagnosis. TB/U WHO merupakan hasil utama untuk skrining stunting. Analisis visual AI hanya mendeskripsikan kualitas foto dan bagian wajah yang terlihat.",
     "Foto wajah tidak disertakan dalam laporan.",
     `Referensi: ${WHO_REFERENCE_URL}`,
   ]

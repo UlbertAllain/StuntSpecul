@@ -2,7 +2,7 @@
 
 StuntSpecula adalah sistem skrining pertumbuhan anak usia 24–59 bulan. Orang tua memulai pemeriksaan dari HP, alat menjalankan alur pengukuran, petugas memonitor proses, dan admin mengelola perangkat serta akun petugas.
 
-Status pertumbuhan utama menggunakan **TB/U WHO**. Model A V2.1 hanya menghasilkan analisis wajah pendukung dan tidak boleh mengganti keputusan antropometri WHO.
+Status pertumbuhan utama menggunakan **TB/U WHO**. Gemini dipakai untuk analisis visual pendukung (kualitas foto dan bagian wajah yang terlihat) dan tidak boleh menentukan atau mengganti status stunting WHO.
 
 ## Stack
 
@@ -12,8 +12,8 @@ Status pertumbuhan utama menggunakan **TB/U WHO**. Model A V2.1 hanya menghasilk
 - bcrypt untuk password hashing
 - Google OAuth untuk login dan registrasi parent
 - Cloudinary untuk foto profil
-- Gemini untuk asisten penjelasan hasil
-- Python + OpenCV YuNet + ONNX Runtime untuk Model A
+- Gemini untuk asisten penjelasan hasil dan analisis visual pendukung
+- Python/OpenCV/ONNX Model A hanya legacy/rollback, bukan jalur aktif screening
 - Vercel untuk deployment
 
 ## Quick start
@@ -21,8 +21,8 @@ Status pertumbuhan utama menggunakan **TB/U WHO**. Model A V2.1 hanya menghasilk
 Persyaratan:
 
 - Node.js 22.x
-- Python 3.12 untuk Model A lokal
 - Firestore project dan service-account credential
+- Gemini API key/model untuk analisis visual dan asisten
 
 ```powershell
 npm ci
@@ -30,10 +30,12 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-`npm run dev` menjalankan web Next.js dan runtime Model A lokal. Jika hanya mengembangkan web:
+`npm run dev` menjalankan Next.js. Model A legacy tidak diperlukan untuk flow screening aktif.
+
+Jika perlu menjalankan runtime Model A lama untuk audit/rollback:
 
 ```powershell
-npm run dev:web
+npm run dev:model-a
 ```
 
 ## Route aplikasi
@@ -100,14 +102,15 @@ node tests/deployment-smoke.mjs
 - [Security](docs/SECURITY.md)
 - [Testing](docs/TESTING.md)
 - [Deployment](docs/DEPLOYMENT.md)
-- [Model A](docs/MODEL_A.md)
+- [Visual Analysis](docs/VISUAL_ANALYSIS.md)
+- [Model A Legacy](docs/MODEL_A.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
 ## Prinsip penting
 
 1. WHO TB/U adalah sumber hasil pertumbuhan utama.
-2. Model A hanya supporting signal.
-3. Raw photo pemeriksaan diproses sementara dan tidak menjadi bagian laporan.
+2. Gemini visual hanya menilai kualitas foto/visibilitas area wajah dan tidak menentukan stunting.
+3. Raw photo pemeriksaan diproses sementara dan tidak menjadi bagian laporan atau Firestore.
 4. Client input selalu divalidasi kembali di server.
 5. Controller/route tetap tipis; business flow berada di server application layer.
 6. Jangan menaruh credential di source code.

@@ -16,7 +16,14 @@ export function resultContext(exam: Examination) {
     heightForAgeZ: exam.heightForAgeZ,
     growthStatus: exam.growthStatus,
     standard: "WHO Child Growth Standards height-for-age 2-5 years",
-    facialAnalysis: "unavailable",
+    visualAnalysis: exam.visualAnalysis,
+    legacyFacialAnalysis: exam.visualAnalysis
+      ? null
+      : {
+          status: exam.facialStatus,
+          probability: exam.facialProbability,
+          modelVersion: exam.facialModelVersion,
+        },
     captured: exam.captureStatus,
     completedAt: exam.completedAt,
   };

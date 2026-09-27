@@ -160,6 +160,18 @@ export function StationDisplay() {
               }
             : null
         }
+        sensorState={
+          state
+            ? {
+                online: state.device.online,
+                lastSeen: state.device.lastSeen,
+                heightSensor: state.device.heightSensor,
+                weightSensor: state.device.weightSensor,
+                measurementUpdatedAt:
+                  state.active?.measurementUpdatedAt ?? null,
+              }
+            : null
+        }
         awaitingParentFinalize
       />
     );

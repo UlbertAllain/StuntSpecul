@@ -137,6 +137,39 @@ test("raw camera photos are not retained in reports or exported text", () => {
   assert.doesNotMatch(reportText(report), /private-photo/);
 });
 
+test("Gemini visual observations are retained without persisting the raw photo", () => {
+  const capture = {
+    status: "captured",
+    photo: new Blob(["private-visual-photo"], { type: "image/jpeg" }),
+    visualAnalysis: {
+      status: "ok",
+      faceDetected: true,
+      singleFace: true,
+      eyes: "visible",
+      nose: "visible",
+      mouth: "visible",
+      facePosition: "frontal",
+      lighting: "good",
+      observations: ["Wajah berada di tengah frame."],
+      reason: null,
+      modelVersion: "gemini:test",
+    },
+  };
+
+  const report = createScreeningReport(
+    child,
+    { heightCm: 96.1, weightKg: 15 },
+    capture,
+    completedAt,
+  );
+
+  assert.equal(report.visualAnalysis.status, "ok");
+  assert.equal(report.visualAnalysis.eyes, "visible");
+  assert.equal(Object.hasOwn(report, "photo"), false);
+  assert.match(reportText(report), /ANALISIS VISUAL AI/);
+  assert.doesNotMatch(reportText(report), /private-visual-photo/);
+});
+
 test("invalid readings and timestamps are rejected before report creation", () => {
   for (const readings of [
     { heightCm: 0, weightKg: 15 },

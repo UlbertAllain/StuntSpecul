@@ -2,7 +2,7 @@
 
 ## Overview
 
-StuntSpecula memakai dua runtime:
+Flow aktif StuntSpecula memakai Next.js/Node.js untuk aplikasi, API, Firestore orchestration, dan integrasi Gemini:
 
 ```text
 Browser
@@ -13,15 +13,16 @@ Browser
 │  ├─ parent portal
 │  ├─ staff/admin portal
 │  ├─ station UI
-│  └─ /api/* Node.js route
+│  └─ /api/* Node.js routes
+│      ├─ Firestore application flow
+│      ├─ IoT coordination
+│      └─ Gemini visual/result assistant
 │
 └─ /api/model-a-screening
-   └─ Python serverless function
-      ├─ OpenCV YuNet
-      └─ ONNX Runtime
+   └─ Python legacy function (rollback/audit only)
 ```
 
-Persistence utama adalah Firebase Firestore. Cloudinary hanya untuk foto profil. Gemini hanya untuk penjelasan hasil yang sudah dihitung sistem.
+Persistence utama adalah Firebase Firestore. Cloudinary hanya untuk foto profil. Gemini digunakan untuk asisten penjelasan hasil dan analisis visual pendukung.
 
 ## Frontend boundaries
 
@@ -100,7 +101,9 @@ Integrasi eksternal dipanggil server-side bila mengandung credential.
 - `src/server/http.ts` — JSON parsing, response, API error.
 - `src/server/runtime.ts` — runtime dependency initialization.
 - `src/server/runtime-config.ts` — environment validation.
-- `src/server/gemini.ts` — Gemini adapter.
+- `src/server/gemini.ts` — Gemini result assistant.
+- `src/server/gemini-vision.ts` — Gemini visual analysis adapter.
+- `src/app/api/visual-analysis/route.ts` — image upload boundary untuk Gemini visual.
 - `src/lib/growth.ts` — WHO TB/U.
 - `src/lib/session.ts` — screening state machine.
 - `src/lib/model-a.ts` — Model A browser contract.
@@ -116,24 +119,28 @@ age + sex + measured height
 
 Weight disimpan sebagai informasi tambahan.
 
-Model A:
+Analisis visual aktif:
 
 ```text
 camera frame
-→ face detection
-→ quality gate
-→ classifier
-→ supporting facial indication
+→ /api/visual-analysis
+→ Gemini multimodal
+→ kualitas foto + visibilitas mata/hidung/mulut
+→ supporting visual observation
 ```
 
-Model A tidak boleh mengubah `growthStatus`.
+Gemini menerima konteks usia, jenis kelamin, TB, BB, dan hasil WHO yang sudah dihitung, tetapi tidak boleh menghitung ulang atau mengubah `growthStatus`. Tidak ada probabilitas stunting dari wajah pada flow aktif.
+
+Model A V2.1 dipertahankan sebagai legacy/rollback dan bukan jalur kamera aktif.
 
 ## State ownership
 
 - Browser menyimpan state UI sementara.
 - Firestore menyimpan account, child, examination, session, device, dan message data.
-- Raw screening photo tidak menjadi field laporan.
-- Python Model A memproses image in-memory.
+- Raw screening photo tidak menjadi field laporan/Firestore.
+- Foto dikirim sementara ke Gemini melalui endpoint server-side visual analysis.
+- Credential Gemini tidak pernah dikirim ke browser.
+- Python Model A hanya legacy dan tidak dipanggil flow screening aktif.
 
 ## Error strategy
 

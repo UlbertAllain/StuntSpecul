@@ -96,20 +96,28 @@ Semua endpoint berikut menggunakan header:
 
 - GET /api/iot/session — poll active examination dan update device lastSeen.
 - POST /api/iot/session/claim — claim examination menjadi running.
-- POST /api/iot/measurements — kirim tinggi dan/atau berat.
+- POST /api/iot/measurements — kirim tinggi dan/atau berat; response mengembalikan `saved`, `ack=measurement_saved`, field yang diterima, nilai terakhir, dan `measurementUpdatedAt`.
 - POST /api/iot/heartbeat — kirim firmware/sensor health.
 - POST /api/iot/session/cancel — cancel active queued/running session.
 
 IoT request tidak menggunakan browser same-origin guard karena diautentikasi dengan Bearer key. Detail payload ada di IOT_INTEGRATION.md.
 
-## Model A
+## Visual analysis
 
-Python function:
+Active screening:
 
-- GET /api/model-a-screening — runtime health dan warmup.
-- POST /api/model-a-screening — facial inference.
+- POST /api/visual-analysis — menerima image JPEG/PNG/WebP + header konteks age/sex/TB/BB, menghitung konteks WHO server-side, lalu meminta Gemini menghasilkan observasi visual terstruktur.
 
-Detail ada di MODEL_A.md.
+Response visual tidak mengandung diagnosis atau probabilitas stunting. Detail ada di VISUAL_ANALYSIS.md.
+
+## Model A legacy
+
+Python compatibility function:
+
+- GET /api/model-a-screening — runtime health/warmup legacy.
+- POST /api/model-a-screening — inference Model A legacy.
+
+Endpoint ini tidak dipakai oleh flow screening aktif. Detail ada di MODEL_A.md.
 
 ## HTTP rules
 

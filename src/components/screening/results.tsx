@@ -25,6 +25,10 @@ import {
   facialReasonLabel,
   formatAge,
   formatReading,
+  visualAnalysisStatusLabel,
+  visualFacePositionLabel,
+  visualLightingLabel,
+  visualVisibilityLabel,
   type ScreeningReport,
 } from "@/lib/screening";
 import { Mascot } from "./mascot";
@@ -49,6 +53,7 @@ export function Results({
       currentHeightForAgeZ: report.heightForAgeZ,
     });
   const facial = report.facialAnalysis;
+  const visual = report.visualAnalysis;
   const showFacialReason =
     Boolean(facial.reason) &&
     (facial.status === "rejected" || facial.status === "unavailable");
@@ -142,24 +147,65 @@ export function Results({
       <div className="facial-results">
         <h2>
           <ScanFace size={22} />
-          Analisis wajah — pendukung
+          Analisis visual AI — pendukung
         </h2>
-        <div>
-          <span>Model A V2.1</span>
-          <strong>{facialAnalysisLabel(facial.status)}</strong>
-        </div>
-        {facial.probability !== null && (
-          <div>
-            <span>Skor model</span>
-            <strong>{Math.round(facial.probability * 100)}%</strong>
-          </div>
+
+        {visual ? (
+          <>
+            <div>
+              <span>Gemini visual</span>
+              <strong>{visualAnalysisStatusLabel(visual.status)}</strong>
+            </div>
+            <div>
+              <span>Mata</span>
+              <strong>{visualVisibilityLabel(visual.eyes)}</strong>
+            </div>
+            <div>
+              <span>Hidung</span>
+              <strong>{visualVisibilityLabel(visual.nose)}</strong>
+            </div>
+            <div>
+              <span>Mulut</span>
+              <strong>{visualVisibilityLabel(visual.mouth)}</strong>
+            </div>
+            <div>
+              <span>Posisi wajah</span>
+              <strong>{visualFacePositionLabel(visual.facePosition)}</strong>
+            </div>
+            <div>
+              <span>Pencahayaan</span>
+              <strong>{visualLightingLabel(visual.lighting)}</strong>
+            </div>
+            {visual.observations.length > 0 && (
+              <ul className="visual-observation-list">
+                {visual.observations.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            )}
+            {visual.reason && <p>{visual.reason}</p>}
+          </>
+        ) : (
+          <>
+            <div>
+              <span>Model A V2.1 (riwayat lama)</span>
+              <strong>{facialAnalysisLabel(facial.status)}</strong>
+            </div>
+            {facial.probability !== null && (
+              <div>
+                <span>Skor model</span>
+                <strong>{Math.round(facial.probability * 100)}%</strong>
+              </div>
+            )}
+            {showFacialReason && facial.reason && (
+              <p>{facialReasonLabel(facial.reason)}</p>
+            )}
+          </>
         )}
-        {showFacialReason && facial.reason && (
-          <p>{facialReasonLabel(facial.reason)}</p>
-        )}
+
         <p>
-          Analisis wajah hanya menjadi informasi pendukung. Hasil utama tetap
-          berasal dari TB/U WHO.
+          AI visual tidak menentukan status stunting. Hasil utama tetap berasal
+          dari TB/U WHO berdasarkan usia, jenis kelamin, dan tinggi badan.
         </p>
       </div>
 
@@ -225,8 +271,12 @@ export function Results({
                 <dd>{growthStatusLabel(report.growthStatus)}</dd>
               </div>
               <div>
-                <dt>Analisis wajah pendukung</dt>
-                <dd>{facialAnalysisLabel(facial.status)}</dd>
+                <dt>Analisis visual pendukung</dt>
+                <dd>
+                  {visual
+                    ? visualAnalysisStatusLabel(visual.status)
+                    : facialAnalysisLabel(facial.status)}
+                </dd>
               </div>
               <div>
                 <dt>Pengambilan wajah</dt>
@@ -235,9 +285,9 @@ export function Results({
             </dl>
             <p>
               Status stunting utama dihitung dari tinggi menurut umur
-              berdasarkan standar WHO untuk anak usia 24–59 bulan. Model wajah
-              ditampilkan terpisah sebagai skrining eksperimental dan bukan
-              diagnosis.
+              berdasarkan standar WHO untuk anak usia 24–59 bulan. Gemini hanya
+              menilai kualitas foto dan bagian wajah yang terlihat; AI visual
+              tidak menentukan status stunting.
             </p>
             <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
               Referensi WHO: panjang/tinggi menurut umur ↗
