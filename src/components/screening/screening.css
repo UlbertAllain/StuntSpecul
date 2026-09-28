@@ -2779,7 +2779,6 @@
   }
 }
 
-
 /* Result preview stays local to the current browser session and is not persisted. */
 .visual-photo-preview {
   min-height: 250px;

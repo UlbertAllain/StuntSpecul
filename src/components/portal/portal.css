@@ -5743,7 +5743,6 @@
   line-height: 1.55;
 }
 
-
 .ref-device-diagnostics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

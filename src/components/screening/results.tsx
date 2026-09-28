@@ -193,8 +193,7 @@ export function Results({
             <div className="facial-result-row">
               <span>Bibir</span>
               <strong>
-                {visualObservation("Bibir") ??
-                  visualVisibilityLabel(visual.mouth)}
+                {visualObservation("Bibir") ?? visualVisibilityLabel(visual.mouth)}
               </strong>
             </div>
             <div className="facial-result-row">
