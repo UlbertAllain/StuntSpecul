@@ -5742,3 +5742,34 @@
   font-size: 11px;
   line-height: 1.55;
 }
+
+.ref-device-diagnostics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 16px 18px 0;
+}
+
+.ref-device-diagnostics > span {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #e4ebf0;
+  border-radius: 12px;
+  color: var(--ref-muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.ref-device-diagnostics strong {
+  display: block;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+  color: var(--ref-ink);
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .ref-device-diagnostics {
+    grid-template-columns: 1fr 1fr;
+  }
+}

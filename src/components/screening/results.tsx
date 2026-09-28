@@ -38,11 +38,13 @@ export function Results({
   onFinish,
   awaitingParentFinalize = false,
   recommendations: savedRecommendations = null,
+  photoPreviewUrl = null,
 }: {
   report: ScreeningReport;
   onFinish?: () => void;
   awaitingParentFinalize?: boolean;
   recommendations?: GrowthRecommendations | null;
+  photoPreviewUrl?: string | null;
 }) {
   const [detail, setDetail] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -150,10 +152,21 @@ export function Results({
           Analisis visual AI — pendukung
         </h2>
 
+        {photoPreviewUrl && (
+          <div
+            className="visual-photo-preview"
+            role="img"
+            aria-label="Foto wajah yang baru diambil"
+            style={{ backgroundImage: `url("${photoPreviewUrl}")` }}
+          >
+            <span>Foto sesi ini — tidak disimpan</span>
+          </div>
+        )}
+
         {visual ? (
           <>
             <div>
-              <span>Gemini visual</span>
+              <span>Status foto</span>
               <strong>{visualAnalysisStatusLabel(visual.status)}</strong>
             </div>
             <div>
@@ -177,11 +190,14 @@ export function Results({
               <strong>{visualLightingLabel(visual.lighting)}</strong>
             </div>
             {visual.observations.length > 0 && (
-              <ul className="visual-observation-list">
-                {visual.observations.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
+              <>
+                <p className="visual-detail-title">Detail tampilan wajah</p>
+                <ul className="visual-observation-list">
+                  {visual.observations.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </>
             )}
             {visual.reason && <p>{visual.reason}</p>}
           </>
@@ -203,9 +219,19 @@ export function Results({
           </>
         )}
 
-        <p>
-          AI visual tidak menentukan status stunting. Hasil utama tetap berasal
-          dari TB/U WHO berdasarkan usia, jenis kelamin, dan tinggi badan.
+        <div className="visual-who-summary">
+          <span>HASIL SKRINING STUNTING</span>
+          <strong>{stuntingScreeningLabel(report.stuntingScreening)}</strong>
+          <p>
+            Kesimpulan ini berasal dari TB/U WHO berdasarkan usia, jenis
+            kelamin, dan tinggi badan. Bukan prediksi dari tampilan wajah.
+          </p>
+        </div>
+
+        <p className="visual-disclaimer">
+          Gemini dipakai untuk membaca kualitas foto dan ciri visual yang
+          tampak. Hasil visual hanya data pendukung dan tidak menggantikan
+          skrining WHO.
         </p>
       </div>
 
@@ -286,8 +312,8 @@ export function Results({
             <p>
               Status stunting utama dihitung dari tinggi menurut umur
               berdasarkan standar WHO untuk anak usia 24–59 bulan. Gemini hanya
-              menilai kualitas foto dan bagian wajah yang terlihat; AI visual
-              tidak menentukan status stunting.
+              menilai kualitas foto dan ciri visual yang tampak; hasil visual
+              tidak menentukan atau menggantikan status TB/U WHO.
             </p>
             <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
               Referensi WHO: panjang/tinggi menurut umur ↗

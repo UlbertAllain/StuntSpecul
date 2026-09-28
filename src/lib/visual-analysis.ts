@@ -106,23 +106,7 @@ export async function analyzeVisualPhoto(
   photo: Blob,
   context: VisualAnalysisContext,
 ): Promise<VisualAnalysis> {
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      return await requestVisualAnalysis(photo, context);
-    } catch (error) {
-      lastError = error;
-      const retry =
-        error instanceof VisualAnalysisRequestError &&
-        error.retryable &&
-        attempt === 0;
-      if (!retry) throw error;
-      await new Promise((resolve) => window.setTimeout(resolve, 350));
-    }
-  }
-
-  throw lastError;
+  return requestVisualAnalysis(photo, context);
 }
 
 export function visualAnalysisErrorReason(error: unknown): string {

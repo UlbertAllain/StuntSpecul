@@ -94,10 +94,11 @@ Camera flow:
 3. resize/compress;
 4. kirim ke `POST /api/visual-analysis`;
 5. server menghitung konteks WHO dari age/sex/height;
-6. Gemini menilai kualitas foto dan visibilitas area wajah;
-7. hasil visual terstruktur dimasukkan ke screening completion.
+6. Gemini menilai kualitas foto, visibilitas area wajah, serta ciri visual netral seperti kelopak mata, raut yang tampak, dan bibir;
+7. hasil visual terstruktur dimasukkan ke screening completion;
+8. foto tangkapan ditampilkan sementara pada layar hasil, tetapi tidak dipersist.
 
-Gemini menerima usia, jenis kelamin, TB, BB, TB/U z-score, dan status WHO sebagai konteks. Gemini tidak boleh menentukan, menghitung ulang, atau mengubah status stunting.
+Gemini menerima usia, jenis kelamin, TB, BB, TB/U z-score, dan status WHO sebagai konteks. Gemini tidak boleh menentukan, menghitung ulang, atau mengubah status stunting. UI dapat menampilkan kesimpulan stunting di dekat hasil visual, tetapi sumber kesimpulan tersebut tetap TB/U WHO.
 
 Kegagalan Gemini tidak boleh menggagalkan WHO screening.
 
@@ -122,7 +123,7 @@ Field pendukung:
 - reason
 - modelVersion
 
-Tidak ada probability stunting dari wajah pada flow aktif.
+Tidak ada probability atau prediksi stunting dari wajah pada flow aktif. Hasil stunting di layar tetap bersumber dari TB/U WHO.
 
 ## WHO outcome
 
