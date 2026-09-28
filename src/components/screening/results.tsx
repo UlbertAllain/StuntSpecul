@@ -311,9 +311,9 @@ export function Results({
             </dl>
             <p>
               Status stunting utama dihitung dari tinggi menurut umur
-              berdasarkan standar WHO untuk anak usia 24–59 bulan. Gemini
-              hanya menilai kualitas foto dan ciri visual yang tampak; hasil
-              visual tidak menentukan atau menggantikan status TB/U WHO.
+              berdasarkan standar WHO untuk anak usia 24–59 bulan. Gemini hanya
+              menilai kualitas foto dan ciri visual yang tampak; hasil visual
+              tidak menentukan atau menggantikan status TB/U WHO.
             </p>
             <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
               Referensi WHO: panjang/tinggi menurut umur ↗
