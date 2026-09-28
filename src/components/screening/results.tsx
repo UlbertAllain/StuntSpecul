@@ -38,11 +38,13 @@ export function Results({
   onFinish,
   awaitingParentFinalize = false,
   recommendations: savedRecommendations = null,
+  photoPreviewUrl = null,
 }: {
   report: ScreeningReport;
   onFinish?: () => void;
   awaitingParentFinalize?: boolean;
   recommendations?: GrowthRecommendations | null;
+  photoPreviewUrl?: string | null;
 }) {
   const [detail, setDetail] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -57,6 +59,15 @@ export function Results({
   const showFacialReason =
     Boolean(facial.reason) &&
     (facial.status === "rejected" || facial.status === "unavailable");
+
+  function visualObservation(label: string) {
+    if (!visual) return null;
+    const prefix = `${label.toLowerCase()}:`;
+    const item = visual.observations.find((observation) =>
+      observation.toLowerCase().startsWith(prefix),
+    );
+    return item?.slice(item.indexOf(":") + 1).trim() || null;
+  }
 
   function save() {
     try {
@@ -150,49 +161,78 @@ export function Results({
           Analisis visual AI — pendukung
         </h2>
 
+        {photoPreviewUrl && (
+          <div
+            className="visual-photo-preview"
+            role="img"
+            aria-label="Foto wajah yang baru diambil"
+            style={{ backgroundImage: `url("${photoPreviewUrl}")` }}
+          >
+            <span>Foto sesi ini — tidak disimpan</span>
+          </div>
+        )}
+
         {visual ? (
           <>
-            <div>
-              <span>Gemini visual</span>
+            <div className="facial-result-row">
+              <span>Status foto</span>
               <strong>{visualAnalysisStatusLabel(visual.status)}</strong>
             </div>
-            <div>
-              <span>Mata</span>
+            <div className="facial-result-row">
+              <span>Kelopak mata</span>
+              <strong>
+                {visualObservation("Kelopak mata") ?? "Belum dapat dinilai"}
+              </strong>
+            </div>
+            <div className="facial-result-row">
+              <span>Raut wajah</span>
+              <strong>
+                {visualObservation("Raut wajah") ?? "Belum dapat dinilai"}
+              </strong>
+            </div>
+            <div className="facial-result-row">
+              <span>Bibir</span>
+              <strong>
+                {visualObservation("Bibir") ??
+                  visualVisibilityLabel(visual.mouth)}
+              </strong>
+            </div>
+            <div className="facial-result-row">
+              <span>Mata terlihat</span>
               <strong>{visualVisibilityLabel(visual.eyes)}</strong>
             </div>
-            <div>
+            <div className="facial-result-row">
               <span>Hidung</span>
               <strong>{visualVisibilityLabel(visual.nose)}</strong>
             </div>
-            <div>
-              <span>Mulut</span>
-              <strong>{visualVisibilityLabel(visual.mouth)}</strong>
-            </div>
-            <div>
+            <div className="facial-result-row">
               <span>Posisi wajah</span>
               <strong>{visualFacePositionLabel(visual.facePosition)}</strong>
             </div>
-            <div>
+            <div className="facial-result-row">
               <span>Pencahayaan</span>
               <strong>{visualLightingLabel(visual.lighting)}</strong>
             </div>
             {visual.observations.length > 0 && (
-              <ul className="visual-observation-list">
-                {visual.observations.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
+              <div className="visual-observation-group">
+                <span>Catatan visual</span>
+                <ul className="visual-observation-list">
+                  {visual.observations.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
             )}
             {visual.reason && <p>{visual.reason}</p>}
           </>
         ) : (
           <>
-            <div>
+            <div className="facial-result-row">
               <span>Model A V2.1 (riwayat lama)</span>
               <strong>{facialAnalysisLabel(facial.status)}</strong>
             </div>
             {facial.probability !== null && (
-              <div>
+              <div className="facial-result-row">
                 <span>Skor model</span>
                 <strong>{Math.round(facial.probability * 100)}%</strong>
               </div>
@@ -203,9 +243,19 @@ export function Results({
           </>
         )}
 
-        <p>
-          AI visual tidak menentukan status stunting. Hasil utama tetap berasal
-          dari TB/U WHO berdasarkan usia, jenis kelamin, dan tinggi badan.
+        <div className="visual-who-summary">
+          <span>HASIL SKRINING STUNTING</span>
+          <strong>{stuntingScreeningLabel(report.stuntingScreening)}</strong>
+          <p>
+            Kesimpulan ini berasal dari TB/U WHO berdasarkan usia, jenis
+            kelamin, dan tinggi badan. Bukan prediksi dari tampilan wajah.
+          </p>
+        </div>
+
+        <p className="visual-disclaimer">
+          Gemini dipakai untuk membaca kualitas foto dan ciri visual yang
+          tampak. Hasil visual hanya data pendukung dan tidak menggantikan
+          skrining WHO.
         </p>
       </div>
 
@@ -285,9 +335,9 @@ export function Results({
             </dl>
             <p>
               Status stunting utama dihitung dari tinggi menurut umur
-              berdasarkan standar WHO untuk anak usia 24–59 bulan. Gemini hanya
-              menilai kualitas foto dan bagian wajah yang terlihat; AI visual
-              tidak menentukan status stunting.
+              berdasarkan standar WHO untuk anak usia 24–59 bulan. Gemini
+              hanya menilai kualitas foto dan ciri visual yang tampak; hasil
+              visual tidak menentukan atau menggantikan status TB/U WHO.
             </p>
             <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
               Referensi WHO: panjang/tinggi menurut umur ↗

@@ -76,7 +76,6 @@ export function NutriMirror({
   onComplete,
   onFinish,
   hardwareMeasurements = null,
-  sensorState = null,
   waitingLabel = "Petugas menyiapkan pemeriksaan.",
   awaitingParentFinalize = false,
 }: {
@@ -88,13 +87,6 @@ export function NutriMirror({
   ) => Promise<GrowthRecommendations | void>;
   onFinish?: (cancel: boolean) => Promise<void>;
   hardwareMeasurements?: Readings | null;
-  sensorState?: {
-    online: boolean;
-    lastSeen: number | null;
-    heightSensor: "ok" | "error" | "unknown";
-    weightSensor: "ok" | "error" | "unknown";
-    measurementUpdatedAt: number | null;
-  } | null;
   waitingLabel?: string;
   awaitingParentFinalize?: boolean;
 }) {
@@ -107,6 +99,7 @@ export function NutriMirror({
     saveError,
     saving,
     savedRecommendations,
+    photoPreviewUrl,
   } = useScreeningSession(assignment, onComplete);
   const { step, report, paused, exitOpen } = session;
   const [soundEnabled, setSoundEnabled] = useState(false);
@@ -208,15 +201,6 @@ export function NutriMirror({
                   : null
             }
             soundEnabled={soundEnabled}
-            sensorOnline={sensorState?.online ?? false}
-            sensorHealth={
-              step === "height"
-                ? (sensorState?.heightSensor ?? "unknown")
-                : step === "weight"
-                  ? (sensorState?.weightSensor ?? "unknown")
-                  : "unknown"
-            }
-            measurementUpdatedAt={sensorState?.measurementUpdatedAt ?? null}
           />
         );
       case "camera":
@@ -265,6 +249,7 @@ export function NutriMirror({
               onFinish={awaitingParentFinalize ? undefined : reset}
               awaitingParentFinalize={awaitingParentFinalize}
               recommendations={savedRecommendations}
+              photoPreviewUrl={photoPreviewUrl}
             />
           )
         );

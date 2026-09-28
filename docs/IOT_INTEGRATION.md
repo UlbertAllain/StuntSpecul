@@ -62,7 +62,7 @@ Contoh response dengan sesi:
       }
     }
 
-Recommended polling interval: 2 detik ketika alat idle.
+Recommended polling interval firmware: 2 detik ketika alat idle. Web station memakai interval lebih rapat agar sesi baru dan measurement yang sudah tersimpan lebih cepat terlihat di layar.
 
 ### POST /api/iot/session/claim
 
@@ -265,9 +265,9 @@ Gunakan tiga lapis pengecekan:
 
 1. **ESP32 Serial Monitor** — pastikan POST mendapat HTTP 200 dan JSON response memiliki `saved=true` / `ack=measurement_saved`.
 2. **GET /api/iot/session** — response sesi aktif menampilkan `heightCm`, `weightKg`, `measurementUpdatedAt`, dan `measurementSource`.
-3. **UI /alat** — pada tahap tinggi/berat tampil status ESP32, status sensor, dan indikator `Data sensor diterima` setelah backend menyimpan measurement.
+3. **Admin → Monitoring alat** — tampil status koneksi/sensor, firmware, nilai tinggi/berat terakhir, dan waktu measurement terakhir. Halaman `/alat` hanya menampilkan instruksi ramah anak, bukan informasi debugging.
 
-Dengan begitu keberhasilan tidak dinilai dari angka yang muncul di sensor saja; harus ada acknowledgement dari server.
+Dengan begitu keberhasilan tidak dinilai dari angka yang muncul di sensor saja; harus ada acknowledgement dari server. Informasi teknis dipusatkan di halaman admin.
 
 ## HTTP status penting
 

@@ -26,10 +26,15 @@ type DeviceState = {
   online: boolean;
   lastSeen: number | null;
   status: "offline" | "ready" | "assigned" | "in_use";
+  firmwareVersion: string | null;
   examination: {
     status: "queued" | "running" | "completed";
     createdAt: number;
     childName: string;
+    heightCm: number | null;
+    weightKg: number | null;
+    measurementUpdatedAt: number | null;
+    measurementSource: "iot" | null;
   } | null;
   checks: {
     application: DeviceCheck;
@@ -204,6 +209,45 @@ export function DeviceMonitoringPanel() {
                   <Clock3 />
                   <span>{lastSeenLabel(item.lastSeen)}</span>
                 </div>
+              </div>
+
+              <div className="ref-device-diagnostics">
+                <span>
+                  Firmware
+                  <strong>{item.firmwareVersion || "Belum dilaporkan"}</strong>
+                </span>
+                <span>
+                  Measurement terakhir
+                  <strong>
+                    {item.examination?.measurementUpdatedAt
+                      ? new Date(
+                          item.examination.measurementUpdatedAt,
+                        ).toLocaleTimeString("id-ID", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })
+                      : "Belum ada"}
+                  </strong>
+                </span>
+                <span>
+                  Tinggi diterima
+                  <strong>
+                    {item.examination?.heightCm === null ||
+                    item.examination?.heightCm === undefined
+                      ? "—"
+                      : `${item.examination.heightCm} cm`}
+                  </strong>
+                </span>
+                <span>
+                  Berat diterima
+                  <strong>
+                    {item.examination?.weightKg === null ||
+                    item.examination?.weightKg === undefined
+                      ? "—"
+                      : `${item.examination.weightKg} kg`}
+                  </strong>
+                </span>
               </div>
 
               <div className="ref-device-grid">

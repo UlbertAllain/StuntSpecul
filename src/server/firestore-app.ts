@@ -2237,6 +2237,13 @@ async function claimActiveExam(env: Env) {
       );
     } catch (error) {
       if (preconditionConflict(error)) {
+        const latest = await activeStation(env);
+        if (
+          latest.exam?.id === exam.id &&
+          latest.exam.data.status === "running"
+        ) {
+          return latest.exam;
+        }
         throw new ApiError(409, "Pemeriksaan sudah berubah. Coba lagi.");
       }
       throw error;
@@ -2247,10 +2254,7 @@ async function claimActiveExam(env: Env) {
 }
 
 async function stationStatus(_request: Request, env: Env) {
-  const [{ exam }, device] = await Promise.all([
-    activeStation(env),
-    stationDeviceState(env),
-  ]);
+  const { exam } = await activeStation(env);
 
   return ok({
     active: exam
@@ -2264,14 +2268,13 @@ async function stationStatus(_request: Request, env: Env) {
           measurementSource: exam.data.measurementSource ?? null,
         }
       : null,
-    device,
   });
 }
 
 async function stationClaim(_request: Request, env: Env) {
   const exam = await claimActiveExam(env);
   return ok({
-    id: "station-active",
+    id: exam.id,
     ageMonths: exam.data.ageMonths,
     sex: exam.data.sex,
     status: "running",
@@ -2363,8 +2366,10 @@ async function stationCancel(_request: Request, env: Env) {
 
 async function iotSession(request: Request, env: Env) {
   requireIotApiKey(request, env);
-  await touchIotDevice(env);
-  const { exam } = await activeStation(env);
+  const [, { exam }] = await Promise.all([
+    touchIotDevice(env),
+    activeStation(env),
+  ]);
 
   return ok({
     active: exam
@@ -2386,8 +2391,10 @@ async function iotSession(request: Request, env: Env) {
 
 async function iotClaim(request: Request, env: Env) {
   requireIotApiKey(request, env);
-  await touchIotDevice(env);
-  const exam = await claimActiveExam(env);
+  const [, exam] = await Promise.all([
+    touchIotDevice(env),
+    claimActiveExam(env),
+  ]);
 
   return ok({
     examinationId: exam.id,
@@ -2402,12 +2409,13 @@ async function iotMeasurements(request: Request, env: Env) {
   requireIotApiKey(request, env);
   const input = await body(request, iotMeasurementSchema);
 
-  await touchIotDevice(env, {
-    heightSensor: input.heightCm !== undefined ? "ok" : undefined,
-    weightSensor: input.weightKg !== undefined ? "ok" : undefined,
-  });
-
-  const { exam } = await activeStation(env);
+  const [, { exam }] = await Promise.all([
+    touchIotDevice(env, {
+      heightSensor: input.heightCm !== undefined ? "ok" : undefined,
+      weightSensor: input.weightKg !== undefined ? "ok" : undefined,
+    }),
+    activeStation(env),
+  ]);
   if (!exam || exam.data.status !== "running") {
     throw new ApiError(
       409,
@@ -2702,6 +2710,10 @@ async function deviceMonitoring(request: Request, env: Env) {
               status: exam.data.status,
               createdAt: exam.data.createdAt,
               childName: exam.data.childName,
+              heightCm: exam.data.heightCm,
+              weightKg: exam.data.weightKg,
+              measurementUpdatedAt: exam.data.measurementUpdatedAt ?? null,
+              measurementSource: exam.data.measurementSource ?? null,
             }
           : null,
         checks: {

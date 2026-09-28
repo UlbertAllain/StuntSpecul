@@ -32,18 +32,12 @@ export function ExaminationStage({
   onComplete,
   reading,
   soundEnabled = false,
-  sensorOnline = false,
-  sensorHealth = "unknown",
-  measurementUpdatedAt = null,
 }: {
   phase: MeasurementPhase;
   paused: boolean;
   onComplete: () => void;
   reading?: number | null;
   soundEnabled?: boolean;
-  sensorOnline?: boolean;
-  sensorHealth?: "ok" | "error" | "unknown";
-  measurementUpdatedAt?: number | null;
 }) {
   function finishStage() {
     if (!soundEnabled) {
@@ -139,40 +133,10 @@ export function ExaminationStage({
           </>
         )}
       </div>
-      {phase !== "prepare" && (
-        <div
-          className={`sensor-receipt ${readingReady ? "received" : ""} ${!sensorOnline ? "offline" : ""}`}
-          role="status"
-          aria-live="polite"
-        >
-          <strong>
-            {readingReady
-              ? "✓ Data sensor diterima"
-              : sensorOnline
-                ? "● ESP32 terhubung"
-                : "○ ESP32 belum terhubung"}
-          </strong>
-          <span>
-            {readingReady
-              ? `${phase === "height" ? "Tinggi" : "Berat"} sudah tersimpan di sesi.`
-              : sensorHealth === "error"
-                ? "Sensor melaporkan error."
-                : sensorHealth === "ok"
-                  ? "Sensor siap, menunggu hasil pengukuran."
-                  : "Menunggu status sensor dari alat."}
-          </span>
-          <small>
-            {measurementUpdatedAt
-              ? `Update data terakhir ${new Date(
-                  measurementUpdatedAt,
-                ).toLocaleTimeString("id-ID", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                })}`
-              : "Belum ada measurement yang diterima backend."}
-          </small>
-        </div>
+      {phase !== "prepare" && waitingForSensor && (
+        <p className="measurement-sensor-note" role="status">
+          Data akan muncul otomatis setelah alat selesai mengukur.
+        </p>
       )}
 
       {phase !== "prepare" && !finished && (

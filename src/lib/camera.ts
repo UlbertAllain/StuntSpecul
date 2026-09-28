@@ -1,7 +1,7 @@
-const CAPTURE_MAX_WIDTH = 960;
-const CAPTURE_MAX_HEIGHT = 1280;
-const CAPTURE_TARGET_BYTES = 1_500_000;
-const CAPTURE_QUALITIES = [0.8, 0.7, 0.6] as const;
+const CAPTURE_MAX_WIDTH = 768;
+const CAPTURE_MAX_HEIGHT = 1024;
+const CAPTURE_TARGET_BYTES = 900_000;
+const CAPTURE_QUALITIES = [0.78, 0.68, 0.58] as const;
 
 export function stopCamera(stream: MediaStream | null): void {
   stream?.getTracks().forEach((track) => track.stop());

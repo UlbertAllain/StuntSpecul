@@ -2778,3 +2778,99 @@
     font-size: 11px;
   }
 }
+
+
+/* Result preview stays local to the current browser session and is not persisted. */
+.visual-photo-preview {
+  min-height: 250px;
+  margin: 4px 0 18px;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: flex-start !important;
+  border: 0 !important;
+  border-radius: 20px;
+  overflow: hidden;
+  background-position: center;
+  background-size: cover;
+}
+
+.visual-photo-preview > span {
+  margin: 12px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(15, 42, 62, 0.82);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.facial-results > .facial-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.facial-results > .visual-observation-group {
+  display: block;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.visual-observation-group > span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.visual-observation-group .visual-observation-list {
+  margin-top: 5px;
+}
+
+.facial-results > .visual-who-summary {
+  display: block;
+  margin: 18px 0 4px;
+  padding: 17px;
+  border: 1px solid #cfe4d1;
+  border-radius: 16px;
+  background: #f7fcf7;
+}
+
+.visual-who-summary > span {
+  display: block;
+  color: #64816b;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+}
+
+.visual-who-summary > strong {
+  display: block;
+  margin-top: 7px;
+  text-align: left;
+  font-size: 19px;
+}
+
+.facial-results > .visual-who-summary > p {
+  margin-top: 8px;
+  font-size: 11px;
+}
+
+.facial-results > .visual-disclaimer {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--border);
+}
+
+.measurement-sensor-note {
+  margin: 10px auto 0;
+  color: var(--muted-foreground);
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.5;
+}

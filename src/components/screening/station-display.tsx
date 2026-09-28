@@ -20,14 +20,10 @@ type StationActive = {
 
 type StationState = {
   active: StationActive | null;
-  device: {
-    online: boolean;
-    lastSeen: number | null;
-    firmwareVersion: string | null;
-    heightSensor: "ok" | "error" | "unknown";
-    weightSensor: "ok" | "error" | "unknown";
-  };
 };
+
+const IDLE_POLL_MS = 1_000;
+const ACTIVE_POLL_MS = 700;
 
 export function StationDisplay() {
   const [state, setState] = useState<StationState | null>(null);
@@ -74,7 +70,7 @@ export function StationDisplay() {
         }
       }
 
-      if (!controller.signal.aborted) timer = setTimeout(poll, 2000);
+      if (!controller.signal.aborted) timer = setTimeout(poll, IDLE_POLL_MS);
     }
 
     void poll();
@@ -109,11 +105,11 @@ export function StationDisplay() {
       }
 
       if (!controller.signal.aborted) {
-        timer = setTimeout(watchFinalization, 2000);
+        timer = setTimeout(watchFinalization, ACTIVE_POLL_MS);
       }
     }
 
-    timer = setTimeout(watchFinalization, 2000);
+    timer = setTimeout(watchFinalization, ACTIVE_POLL_MS);
     return () => {
       controller.abort();
       clearTimeout(timer);
@@ -157,18 +153,6 @@ export function StationDisplay() {
             ? {
                 heightCm: state.active.heightCm,
                 weightKg: state.active.weightKg,
-              }
-            : null
-        }
-        sensorState={
-          state
-            ? {
-                online: state.device.online,
-                lastSeen: state.device.lastSeen,
-                heightSensor: state.device.heightSensor,
-                weightSensor: state.device.weightSensor,
-                measurementUpdatedAt:
-                  state.active?.measurementUpdatedAt ?? null,
               }
             : null
         }

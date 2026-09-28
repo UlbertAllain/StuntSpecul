@@ -1,6 +1,6 @@
 # Visual Analysis
 
-Analisis visual StuntSpecula menggunakan Gemini sebagai **pendukung kualitas foto dan visibilitas area wajah**. Gemini **tidak menentukan status stunting** dan tidak menghasilkan probabilitas stunting.
+Analisis visual StuntSpecula menggunakan Gemini sebagai **pendukung kualitas foto dan ciri visual yang tampak pada wajah**. Gemini **tidak menentukan status stunting** dan tidak menghasilkan probabilitas stunting. Kesimpulan stunting yang ditampilkan di bawah bagian visual tetap berasal dari TB/U WHO.
 
 ## Decision boundary
 
@@ -45,7 +45,7 @@ Output yang disimpan:
 - mouth: visible | partial | not_visible | unclear
 - facePosition: frontal | slightly_turned | partial | unclear
 - lighting: good | low | bright | uneven | unclear
-- observations[]
+- observations[] — deskripsi netral; bila dapat dinilai mencakup awalan `Kelopak mata:`, `Raut wajah:`, dan `Bibir:`
 - reason
 - modelVersion
 
@@ -79,6 +79,7 @@ Raw photo:
 - diambil dari kamera browser;
 - dikirim sementara ke endpoint server-side visual analysis;
 - diteruskan ke Gemini untuk analisis;
+- ditampilkan sementara pada layar hasil melalui object URL browser;
 - tidak disimpan sebagai field examination di Firestore;
 - tidak dimasukkan ke laporan teks.
 

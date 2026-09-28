@@ -181,6 +181,8 @@ export async function analyzeVisualWithGemini(
     "- Jangan menebak penyakit, kekurangan gizi, etnis, emosi, kecerdasan, atau kondisi medis dari wajah.",
     "- Tugas Anda hanya menilai apakah wajah dan area wajah terlihat serta kualitas foto.",
     "- observations harus deskripsi visual netral yang benar-benar tampak pada foto, maksimal 4 item.",
+    "- Jika dapat dinilai, gunakan tiga observation dengan awalan persis: Kelopak mata:, Raut wajah:, dan Bibir:.",
+    "- Raut wajah harus deskriptif secara visual dan tidak boleh menebak emosi, kondisi psikologis, penyakit, atau status gizi.",
     "- Jika tidak ada wajah atau ada lebih dari satu wajah, status harus rejected.",
     "- Balas JSON saja, tanpa markdown.",
     "",
@@ -206,7 +208,7 @@ export async function analyzeVisualWithGemini(
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
-      signal: AbortSignal.timeout(25_000),
+      signal: AbortSignal.timeout(12_000),
       body: JSON.stringify({
         contents: [
           {
@@ -224,7 +226,7 @@ export async function analyzeVisualWithGemini(
         ],
         generationConfig: {
           temperature: 0,
-          maxOutputTokens: 800,
+          maxOutputTokens: 450,
           responseMimeType: "application/json",
         },
       }),

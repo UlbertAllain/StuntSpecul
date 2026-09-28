@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useState, useSyncExternalStore } from "react";
+import { useEffect, useReducer, useState, useSyncExternalStore } from "react";
 import {
   createScreeningReport,
   readMeasurements,
@@ -60,12 +60,20 @@ export function useScreeningSession(
   const [saving, setSaving] = useState(false);
   const [savedRecommendations, setSavedRecommendations] =
     useState<GrowthRecommendations | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const hidden = useSyncExternalStore(
     subscribeVisibility,
     getHidden,
     getServerHidden,
   );
   const active = !["welcome", "result"].includes(session.step);
+
+  useEffect(
+    () => () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    },
+    [photoPreviewUrl],
+  );
 
   async function complete(readingsOverride?: Readings) {
     if (!session.child || !session.capture) return;
@@ -74,6 +82,10 @@ export function useScreeningSession(
       readingsOverride ?? readMeasurements(),
       session.capture,
     );
+    if (session.capture.status === "captured") {
+      setPhotoPreviewUrl(URL.createObjectURL(session.capture.photo));
+    }
+
     const payload: ScreeningCompletion = {
       heightCm: report.readings.heightCm,
       weightKg: report.readings.weightKg,
@@ -121,5 +133,6 @@ export function useScreeningSession(
     saveError,
     saving,
     savedRecommendations,
+    photoPreviewUrl,
   };
 }
