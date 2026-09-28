@@ -60,15 +60,6 @@ export function Results({
     Boolean(facial.reason) &&
     (facial.status === "rejected" || facial.status === "unavailable");
 
-  function visualObservation(label: string) {
-    if (!visual) return null;
-    const prefix = `${label.toLowerCase()}:`;
-    const item = visual.observations.find((observation) =>
-      observation.toLowerCase().startsWith(prefix),
-    );
-    return item?.slice(item.indexOf(":") + 1).trim() || null;
-  }
-
   function save() {
     try {
       downloadReport(report, recommendations);
@@ -174,64 +165,50 @@ export function Results({
 
         {visual ? (
           <>
-            <div className="facial-result-row">
+            <div>
               <span>Status foto</span>
               <strong>{visualAnalysisStatusLabel(visual.status)}</strong>
             </div>
-            <div className="facial-result-row">
-              <span>Kelopak mata</span>
-              <strong>
-                {visualObservation("Kelopak mata") ?? "Belum dapat dinilai"}
-              </strong>
-            </div>
-            <div className="facial-result-row">
-              <span>Raut wajah</span>
-              <strong>
-                {visualObservation("Raut wajah") ?? "Belum dapat dinilai"}
-              </strong>
-            </div>
-            <div className="facial-result-row">
-              <span>Bibir</span>
-              <strong>
-                {visualObservation("Bibir") ?? visualVisibilityLabel(visual.mouth)}
-              </strong>
-            </div>
-            <div className="facial-result-row">
-              <span>Mata terlihat</span>
+            <div>
+              <span>Mata</span>
               <strong>{visualVisibilityLabel(visual.eyes)}</strong>
             </div>
-            <div className="facial-result-row">
+            <div>
               <span>Hidung</span>
               <strong>{visualVisibilityLabel(visual.nose)}</strong>
             </div>
-            <div className="facial-result-row">
+            <div>
+              <span>Mulut</span>
+              <strong>{visualVisibilityLabel(visual.mouth)}</strong>
+            </div>
+            <div>
               <span>Posisi wajah</span>
               <strong>{visualFacePositionLabel(visual.facePosition)}</strong>
             </div>
-            <div className="facial-result-row">
+            <div>
               <span>Pencahayaan</span>
               <strong>{visualLightingLabel(visual.lighting)}</strong>
             </div>
             {visual.observations.length > 0 && (
-              <div className="visual-observation-group">
-                <span>Catatan visual</span>
+              <>
+                <p className="visual-detail-title">Detail tampilan wajah</p>
                 <ul className="visual-observation-list">
                   {visual.observations.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
-              </div>
+              </>
             )}
             {visual.reason && <p>{visual.reason}</p>}
           </>
         ) : (
           <>
-            <div className="facial-result-row">
+            <div>
               <span>Model A V2.1 (riwayat lama)</span>
               <strong>{facialAnalysisLabel(facial.status)}</strong>
             </div>
             {facial.probability !== null && (
-              <div className="facial-result-row">
+              <div>
                 <span>Skor model</span>
                 <strong>{Math.round(facial.probability * 100)}%</strong>
               </div>
