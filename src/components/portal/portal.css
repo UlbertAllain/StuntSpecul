@@ -5888,11 +5888,14 @@
 }
 
 .face-test-photo {
+  width: 100%;
   min-height: 380px;
+  height: min(520px, 70vh);
   border-radius: 18px;
-  background-position: center;
-  background-size: cover;
   background-color: #edf6fb;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
 }
 
 .face-test-result-detail dl {

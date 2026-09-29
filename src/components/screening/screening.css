@@ -2781,7 +2781,9 @@
 
 /* Result preview stays local to the current browser session and is not persisted. */
 .visual-photo-preview {
-  min-height: 250px;
+  width: 100%;
+  min-height: 320px;
+  height: min(520px, 70vh);
   margin: 4px 0 18px;
   padding: 0 !important;
   display: flex !important;
@@ -2790,8 +2792,10 @@
   border: 0 !important;
   border-radius: 20px;
   overflow: hidden;
+  background-color: #edf6fb;
   background-position: center;
-  background-size: cover;
+  background-repeat: no-repeat;
+  background-size: contain;
 }
 
 .visual-photo-preview > span {
