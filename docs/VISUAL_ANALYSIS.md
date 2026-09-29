@@ -105,3 +105,26 @@ Endpoint memakai `GEMINI_API_KEY` dan `GEMINI_MODEL` dari server environment. Cr
 Model A V2.1 tidak lagi menjadi jalur aktif pemeriksaan. File/runtime lama tetap dapat dipertahankan sementara untuk rollback atau audit, tetapi UI kamera baru memakai Gemini visual analysis.
 
 Lihat `MODEL_A.md` untuk catatan legacy.
+
+
+## Admin face test
+
+Selama sensor tinggi/berat masih dikalibrasi, admin dapat memakai menu **Pengujian wajah**.
+
+Flow:
+
+    Admin
+    -> isi usia, jenis kelamin, tinggi manual, berat manual
+    -> mulai kamera
+    -> ambil foto
+    -> endpoint visual analysis yang sama
+    -> Gemini
+    -> preview analisis visual + TB/U WHO
+
+Batasan:
+
+- tidak membuat examination;
+- tidak menyimpan data ke riwayat orang tua;
+- tidak membutuhkan ESP32;
+- foto hanya hidup sementara pada browser selama hasil pengujian ditampilkan;
+- nilai tinggi/berat manual hanya konteks test dan bukan pengukuran sensor.
