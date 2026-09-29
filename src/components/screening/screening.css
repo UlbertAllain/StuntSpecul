@@ -436,7 +436,8 @@
 .camera-window video {
   height: 100%;
   width: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #0f2232;
   transform: scaleX(-1);
 }
 .camera-window .mascot {
@@ -2876,4 +2877,19 @@
   text-align: center;
   font-size: 11px;
   line-height: 1.5;
+}
+
+
+/* Portrait station: never crop the captured face preview.
+   Keep a stable 4:5 canvas so the complete portrait frame remains visible. */
+@media (orientation: portrait) and (min-width: 700px) {
+  .station-page .results-screen .facial-results > .visual-photo-preview {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 4 / 5;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain !important;
+  }
 }

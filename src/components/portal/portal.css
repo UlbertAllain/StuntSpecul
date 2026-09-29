@@ -5835,7 +5835,8 @@
   width: 100%;
   height: 420px;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
+  background: #0f2232;
   transform: scaleX(-1);
 }
 
@@ -5988,5 +5989,17 @@
 
   .face-test-photo {
     min-height: 320px;
+  }
+}
+
+
+@media (orientation: portrait) and (min-width: 700px) {
+  .face-test-photo {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 4 / 5;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain !important;
   }
 }
