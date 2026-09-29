@@ -111,16 +111,21 @@ export function FaceTestPanel() {
     [context],
   );
 
-  useEffect(() => {
-    if (capture?.status !== "captured") {
-      setPhotoUrl(null);
-      return;
-    }
+  useEffect(
+    () => () => {
+      if (photoUrl) URL.revokeObjectURL(photoUrl);
+    },
+    [photoUrl],
+  );
 
-    const url = URL.createObjectURL(capture.photo);
-    setPhotoUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [capture]);
+  function handleCapture(nextCapture: Capture) {
+    setCapture(nextCapture);
+    setPhotoUrl(
+      nextCapture.status === "captured"
+        ? URL.createObjectURL(nextCapture.photo)
+        : null,
+    );
+  }
 
   function startTest(form: HTMLFormElement) {
     const data = new FormData(form);
@@ -253,7 +258,7 @@ export function FaceTestPanel() {
         {context && !capture && (
           <FaceTestCamera
             context={context}
-            onCapture={setCapture}
+            onCapture={handleCapture}
             onCancel={() => setContext(null)}
           />
         )}
@@ -379,6 +384,7 @@ export function FaceTestPanel() {
               className="portal-primary"
               onClick={() => {
                 setCapture(null);
+                setPhotoUrl(null);
                 setContext(null);
               }}
             >
