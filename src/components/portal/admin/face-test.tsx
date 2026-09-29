@@ -146,7 +146,7 @@ export function FaceTestPanel() {
   }
 
   const visual =
-    capture?.status === "captured" ? capture.visualAnalysis ?? null : null;
+    capture?.status === "captured" ? (capture.visualAnalysis ?? null) : null;
   const unavailable = "Belum tersedia";
   const photoStatus = visual
     ? visualAnalysisStatusLabel(visual.status)

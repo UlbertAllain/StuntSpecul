@@ -25,10 +25,6 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
-      - name: Show Prettier diff
-        run: |
-          npx prettier src/components/portal/admin/face-test.tsx --write
-          git diff -- src/components/portal/admin/face-test.tsx
-          exit 1
+      - run: npm run check
       - run: npm run build
       - run: node tests/deployment-smoke.mjs
