@@ -5773,3 +5773,217 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Admin-only face test harness. Manual anthropometry never creates an examination. */
+.face-test-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 18px;
+}
+
+.face-test-input-unit {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.face-test-input-unit > span {
+  min-width: 48px;
+  color: var(--ref-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.face-test-placeholder {
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--ref-muted);
+}
+
+.face-test-placeholder > svg {
+  width: 44px;
+  height: 44px;
+  color: #4e8bc4;
+}
+
+.face-test-placeholder > strong {
+  color: var(--ref-ink);
+  font-size: 16px;
+}
+
+.face-test-placeholder > p {
+  max-width: 360px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.face-test-camera {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid #d7e4ec;
+  border-radius: 18px;
+  background: #edf6fb;
+}
+
+.face-test-camera video {
+  width: 100%;
+  height: 420px;
+  display: block;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.face-test-guide {
+  position: absolute;
+  width: 46%;
+  height: 65%;
+  top: 12%;
+  left: 27%;
+  border: 2px dashed rgba(255, 255, 255, 0.82);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.face-test-camera-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(237, 246, 251, 0.9);
+  color: #315f87;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.face-test-actions {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.face-test-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.face-test-result {
+  margin-top: 18px;
+}
+
+.face-test-result-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
+  gap: 18px;
+}
+
+.face-test-photo {
+  min-height: 380px;
+  border-radius: 18px;
+  background-position: center;
+  background-size: cover;
+  background-color: #edf6fb;
+}
+
+.face-test-result-detail dl {
+  margin: 0;
+}
+
+.face-test-result-detail dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid #e4ebf0;
+  font-size: 12px;
+}
+
+.face-test-result-detail dt {
+  color: var(--ref-muted);
+}
+
+.face-test-result-detail dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 850;
+}
+
+.face-test-observations {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f7fafc;
+}
+
+.face-test-observations > strong {
+  font-size: 11px;
+}
+
+.face-test-observations ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--ref-muted);
+}
+
+.face-test-observations li {
+  padding: 3px 0;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.face-test-who {
+  margin-top: 14px;
+  padding: 15px;
+  border: 1px solid #cfe4d1;
+  border-radius: 14px;
+  background: #f7fcf7;
+}
+
+.face-test-who > span,
+.face-test-who > strong,
+.face-test-who > small {
+  display: block;
+}
+
+.face-test-who > span {
+  color: #64816b;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+}
+
+.face-test-who > strong {
+  margin-top: 6px;
+  font-size: 17px;
+}
+
+.face-test-who > small {
+  margin-top: 5px;
+  color: var(--ref-muted);
+  font-size: 10px;
+}
+
+@media (max-width: 820px) {
+  .face-test-grid,
+  .face-test-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .face-test-camera video {
+    height: 360px;
+  }
+
+  .face-test-photo {
+    min-height: 320px;
+  }
+}
