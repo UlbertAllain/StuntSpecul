@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Camera,
   RotateCcw,
@@ -99,17 +99,9 @@ export function FaceTestPanel() {
   const [capture, setCapture] = useState<Capture | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
-  const growth = useMemo(
-    () =>
-      context
-        ? assessHeightForAge(
-            context.ageMonths,
-            context.sex,
-            context.heightCm,
-          )
-        : null,
-    [context],
-  );
+  const growth = context
+    ? assessHeightForAge(context.ageMonths, context.sex, context.heightCm)
+    : null;
 
   useEffect(
     () => () => {
@@ -155,6 +147,27 @@ export function FaceTestPanel() {
 
   const visual =
     capture?.status === "captured" ? capture.visualAnalysis ?? null : null;
+  const unavailable = "Belum tersedia";
+  const photoStatus = visual
+    ? visualAnalysisStatusLabel(visual.status)
+    : unavailable;
+  const eyesStatus = visual ? visualVisibilityLabel(visual.eyes) : unavailable;
+  const noseStatus = visual ? visualVisibilityLabel(visual.nose) : unavailable;
+  const mouthStatus = visual
+    ? visualVisibilityLabel(visual.mouth)
+    : unavailable;
+  const positionStatus = visual
+    ? visualFacePositionLabel(visual.facePosition)
+    : unavailable;
+  const lightingStatus = visual
+    ? visualLightingLabel(visual.lighting)
+    : unavailable;
+  const whoStatus = growth
+    ? stuntingScreeningLabel(growth.stuntingScreening)
+    : unavailable;
+  const growthSummary = growth
+    ? growthStatusLabel(growth.growthStatus)
+    : unavailable;
 
   return (
     <>
@@ -304,51 +317,27 @@ export function FaceTestPanel() {
               <dl>
                 <div>
                   <dt>Status foto</dt>
-                  <dd>
-                    {visual
-                      ? visualAnalysisStatusLabel(visual.status)
-                      : "Belum tersedia"}
-                  </dd>
+                  <dd>{photoStatus}</dd>
                 </div>
                 <div>
                   <dt>Mata</dt>
-                  <dd>
-                    {visual
-                      ? visualVisibilityLabel(visual.eyes)
-                      : "Belum tersedia"}
-                  </dd>
+                  <dd>{eyesStatus}</dd>
                 </div>
                 <div>
                   <dt>Hidung</dt>
-                  <dd>
-                    {visual
-                      ? visualVisibilityLabel(visual.nose)
-                      : "Belum tersedia"}
-                  </dd>
+                  <dd>{noseStatus}</dd>
                 </div>
                 <div>
                   <dt>Mulut</dt>
-                  <dd>
-                    {visual
-                      ? visualVisibilityLabel(visual.mouth)
-                      : "Belum tersedia"}
-                  </dd>
+                  <dd>{mouthStatus}</dd>
                 </div>
                 <div>
                   <dt>Posisi wajah</dt>
-                  <dd>
-                    {visual
-                      ? visualFacePositionLabel(visual.facePosition)
-                      : "Belum tersedia"}
-                  </dd>
+                  <dd>{positionStatus}</dd>
                 </div>
                 <div>
                   <dt>Pencahayaan</dt>
-                  <dd>
-                    {visual
-                      ? visualLightingLabel(visual.lighting)
-                      : "Belum tersedia"}
-                  </dd>
+                  <dd>{lightingStatus}</dd>
                 </div>
               </dl>
 
@@ -365,15 +354,9 @@ export function FaceTestPanel() {
 
               <div className="face-test-who">
                 <span>PREVIEW TB/U WHO</span>
-                <strong>
-                  {growth
-                    ? stuntingScreeningLabel(growth.stuntingScreening)
-                    : "Belum tersedia"}
-                </strong>
+                <strong>{whoStatus}</strong>
                 <small>
-                  {growth
-                    ? growthStatusLabel(growth.growthStatus)
-                    : "Belum tersedia"}
+                  {growthSummary}
                   {growth && <> · Z-score {growth.heightForAgeZ ?? "—"}</>}
                 </small>
               </div>
