@@ -1,12 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  LogOut,
-  MonitorCog,
-  ScanFace,
-  UserRoundCog,
-} from "lucide-react";
+import { LogOut, MonitorCog, ScanFace, UserRoundCog } from "lucide-react";
 import { Message, PortalShell } from "../shared/shell";
 import { useStaffSession } from "../shared/staff-session";
 import { DeviceMonitoringPanel } from "./device-monitoring";

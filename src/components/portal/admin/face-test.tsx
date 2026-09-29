@@ -372,8 +372,9 @@ export function FaceTestPanel() {
                 </strong>
                 <small>
                   {growth
-                    ? `${growthStatusLabel(growth.growthStatus)} · Z-score ${growth.heightForAgeZ ?? "—"}`
+                    ? growthStatusLabel(growth.growthStatus)
                     : "Belum tersedia"}
+                  {growth && <> · Z-score {growth.heightForAgeZ ?? "—"}</>}
                 </small>
               </div>
             </div>

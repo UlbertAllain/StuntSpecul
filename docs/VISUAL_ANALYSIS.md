@@ -106,7 +106,6 @@ Model A V2.1 tidak lagi menjadi jalur aktif pemeriksaan. File/runtime lama tetap
 
 Lihat `MODEL_A.md` untuk catatan legacy.
 
-
 ## Admin face test
 
 Selama sensor tinggi/berat masih dikalibrasi, admin dapat memakai menu **Pengujian wajah**.
