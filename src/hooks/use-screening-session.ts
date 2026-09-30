@@ -118,9 +118,10 @@ export function useScreeningSession(
         }
 
         if (session.capture.status === "captured") {
-          void uploadLatestFacePhoto(session.capture.photo, assignment.id).catch(
-            () => null,
-          );
+          void uploadLatestFacePhoto(
+            session.capture.photo,
+            assignment.id,
+          ).catch(() => null);
         }
       }
       dispatch({ type: "complete", report });

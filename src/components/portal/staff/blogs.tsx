@@ -142,8 +142,8 @@ export function BlogPanel() {
           <span className="parent-section-eyebrow">EDUKASI ORANG TUA</span>
           <h2>Kelola activity</h2>
           <p className="portal-note">
-            Tulis activity edukasi lalu publikasikan agar dapat dibaca oleh
-            akun orang tua.
+            Tulis activity edukasi lalu publikasikan agar dapat dibaca oleh akun
+            orang tua.
           </p>
         </div>
         <button

@@ -119,19 +119,16 @@ export function weightForAgeZScore(
     return null;
   }
 
-  const row =
-    (sex === "male" ? BOYS_WFA_LMS : GIRLS_WFA_LMS)[
-      ageMonths - MIN_AGE_MONTHS
-    ];
+  const row = (sex === "male" ? BOYS_WFA_LMS : GIRLS_WFA_LMS)[
+    ageMonths - MIN_AGE_MONTHS
+  ];
   if (!row) return null;
 
   const l = Number(row[0]);
   const m = Number(row[1]);
   const s = Number(row[2]);
   const raw =
-    l === 0
-      ? Math.log(weightKg / m) / s
-      : ((weightKg / m) ** l - 1) / (s * l);
+    l === 0 ? Math.log(weightKg / m) / s : ((weightKg / m) ** l - 1) / (s * l);
 
   let z = raw;
   if (raw > 3) {

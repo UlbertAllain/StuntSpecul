@@ -86,12 +86,7 @@ async function handle(request: Request) {
     }
 
     const { image, type } = await readImage(request);
-    const growth = assessAnthropometry(
-      ageMonths,
-      sex,
-      heightCm,
-      weightKg,
-    );
+    const growth = assessAnthropometry(ageMonths, sex, heightCm, weightKg);
     if (growth.measurementQuality === "recheck") {
       throw new ApiError(
         422,

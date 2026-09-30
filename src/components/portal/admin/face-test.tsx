@@ -144,12 +144,7 @@ export function FaceTestPanel() {
       return;
     }
 
-    const assessment = assessAnthropometry(
-      ageMonths,
-      sex,
-      heightCm,
-      weightKg,
-    );
+    const assessment = assessAnthropometry(ageMonths, sex, heightCm, weightKg);
     if (assessment.measurementQuality === "recheck") {
       setValidationError(
         assessment.measurementReason ||

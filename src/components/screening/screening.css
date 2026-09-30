@@ -2879,7 +2879,6 @@
   line-height: 1.5;
 }
 
-
 /* Portrait station: never crop the captured face preview.
    Keep a stable 4:5 canvas so the complete portrait frame remains visible. */
 @media (orientation: portrait) and (min-width: 700px) {
@@ -2893,7 +2892,6 @@
     background-size: contain !important;
   }
 }
-
 
 @media (max-width: 480px) {
   .growth-result-meta {
@@ -2911,7 +2909,6 @@
     border-top: 1px solid #eee6cd;
   }
 }
-
 
 .measurement-sensor-note.error {
   padding: 10px 12px;

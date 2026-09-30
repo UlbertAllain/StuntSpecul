@@ -40,7 +40,6 @@ export async function uploadProfilePhoto(
   return payload.data;
 }
 
-
 export async function uploadLatestFacePhoto(
   photo: Blob,
   examinationId: string,
@@ -70,9 +69,7 @@ export async function uploadLatestFacePhoto(
   } | null;
 
   if (!response.ok || !payload?.success || !payload.data) {
-    throw new Error(
-      payload?.message || "Foto wajah belum berhasil disimpan.",
-    );
+    throw new Error(payload?.message || "Foto wajah belum berhasil disimpan.");
   }
 
   return payload.data;

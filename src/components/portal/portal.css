@@ -5992,7 +5992,6 @@
   }
 }
 
-
 @media (orientation: portrait) and (min-width: 700px) {
   .face-test-photo {
     height: auto;
@@ -6003,7 +6002,6 @@
     background-size: contain !important;
   }
 }
-
 
 /* Parent multi-child dashboard + latest captured face. */
 .parent-child-switcher {
@@ -6169,7 +6167,6 @@
     max-height: 360px;
   }
 }
-
 
 .ref-device-measurement-alert {
   margin: 14px 18px 0;

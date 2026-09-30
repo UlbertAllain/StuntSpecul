@@ -79,8 +79,8 @@ export function ParentBlog() {
           <span className="parent-section-eyebrow">EDUKASI KELUARGA</span>
           <h2>Activity</h2>
           <p className="portal-note">
-            Aktivitas edukasi dari petugas tentang nutrisi, kebiasaan sehat,
-            dan pencegahan stunting.
+            Aktivitas edukasi dari petugas tentang nutrisi, kebiasaan sehat, dan
+            pencegahan stunting.
           </p>
         </div>
       </div>

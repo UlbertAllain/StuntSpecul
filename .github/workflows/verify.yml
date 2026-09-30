@@ -25,10 +25,6 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
-      - name: Show Prettier diff
-        run: |
-          npx prettier src/app/api/visual-analysis/route.ts src/components/portal/admin/face-test.tsx src/components/portal/parent/blog.tsx src/components/portal/portal.css src/components/portal/staff/blogs.tsx src/components/screening/screening.css src/hooks/use-screening-session.ts src/lib/anthropometry.ts src/lib/cloudinary.ts --write
-          git diff -- src/app/api/visual-analysis/route.ts src/components/portal/admin/face-test.tsx src/components/portal/parent/blog.tsx src/components/portal/portal.css src/components/portal/staff/blogs.tsx src/components/screening/screening.css src/hooks/use-screening-session.ts src/lib/anthropometry.ts src/lib/cloudinary.ts
-          exit 1
+      - run: npm run check
       - run: npm run build
       - run: node tests/deployment-smoke.mjs
