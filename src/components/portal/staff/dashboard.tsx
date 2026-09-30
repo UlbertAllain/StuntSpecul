@@ -68,7 +68,7 @@ export function StaffDashboard() {
     ["children", UsersRound, "Data anak"],
     ["history", History, "Riwayat"],
     ["insights", BarChart3, "Insight"],
-    ["blog", BookOpen, "Blog"],
+    ["blog", BookOpen, "Activity"],
     ["profile", UserRound, "Profil"],
   ] as const;
 

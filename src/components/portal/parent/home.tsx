@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
@@ -12,7 +13,11 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { growthStatusLabel } from "@/lib/growth";
-import type { Examination, ParentAccountView } from "@/lib/portal";
+import type {
+  ChildProfile,
+  Examination,
+  ParentAccountView,
+} from "@/lib/portal";
 import { ageInMonths } from "@/lib/portal";
 import {
   facialAnalysisLabel,
@@ -23,7 +28,12 @@ import {
 
 function MiniGrowthChart({ examinations }: { examinations: Examination[] }) {
   const values = examinations
-    .filter((exam) => exam.status === "completed" && exam.heightCm !== null)
+    .filter(
+      (exam) =>
+        exam.status === "completed" &&
+        exam.measurementQuality !== "recheck" &&
+        exam.heightCm !== null,
+    )
     .slice(0, 6)
     .reverse();
 
@@ -74,21 +84,23 @@ function examDate(exam: Examination) {
 
 export function ParentHome({
   view,
+  child,
+  examinations,
   latest,
   activeExam,
+  onSelectChild,
   onStart,
 }: {
   view: ParentAccountView;
+  child: ChildProfile | null;
+  examinations: Examination[];
   latest: Examination | null;
   activeExam: Examination | null;
+  onSelectChild: (childId: string) => void;
   onStart: () => void;
 }) {
   const [showAllHistory, setShowAllHistory] = useState(false);
-  const child = view.children[0];
-  const history = useMemo(
-    () => view.examinations.filter((exam) => exam.status === "completed"),
-    [view.examinations],
-  );
+  const history = examinations;
   const visibleHistory = showAllHistory ? history : history.slice(0, 3);
 
   return (
@@ -112,7 +124,53 @@ export function ParentHome({
           </span>
         </div>
 
-        <MiniGrowthChart examinations={view.examinations} />
+        {view.children.length > 1 && (
+          <label className="parent-child-switcher">
+            Anak yang ditampilkan
+            <select
+              value={child?.id || ""}
+              onChange={(event) => {
+                setShowAllHistory(false);
+                onSelectChild(event.target.value);
+              }}
+            >
+              {view.children.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {child?.latestFacePhotoUrl && (
+          <div className="parent-latest-face">
+            <div>
+              <span>FOTO PEMERIKSAAN TERAKHIR</span>
+              <small>
+                {child.latestFacePhotoUpdatedAt
+                  ? new Date(child.latestFacePhotoUpdatedAt).toLocaleDateString(
+                      "id-ID",
+                      {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      },
+                    )
+                  : "Foto terbaru"}
+              </small>
+            </div>
+            <Image
+              src={child.latestFacePhotoUrl}
+              alt={`Foto wajah terakhir ${child.name}`}
+              width={720}
+              height={900}
+              unoptimized
+            />
+          </div>
+        )}
+
+        <MiniGrowthChart examinations={examinations} />
 
         <div className="parent-latest-metrics">
           <article>
@@ -169,12 +227,21 @@ export function ParentHome({
           <>
             <div className="parent-home-result-status">
               <span>HASIL PERTUMBUHAN WHO</span>
-              <strong>{growthStatusLabel(latest.growthStatus)}</strong>
+              <strong>
+                {latest.measurementQuality === "recheck"
+                  ? "Pengukuran perlu diulang"
+                  : growthStatusLabel(latest.growthStatus)}
+              </strong>
               <small>
-                TB/U {formatReading(latest.heightForAgeZ)} SD · AI visual{" "}
-                {latest.visualAnalysis
-                  ? visualAnalysisStatusLabel(latest.visualAnalysis.status)
-                  : facialAnalysisLabel(latest.facialStatus)}
+                {latest.measurementQuality === "recheck"
+                  ? latest.measurementReason
+                  : `TB/U ${formatReading(latest.heightForAgeZ)} SD · AI visual ${
+                      latest.visualAnalysis
+                        ? visualAnalysisStatusLabel(
+                            latest.visualAnalysis.status,
+                          )
+                        : facialAnalysisLabel(latest.facialStatus)
+                    }`}
               </small>
             </div>
             <Link
@@ -222,7 +289,11 @@ export function ParentHome({
                     <CalendarDays size={16} />
                     {examDate(exam)}
                   </span>
-                  <strong>{growthStatusLabel(exam.growthStatus)}</strong>
+                  <strong>
+                    {exam.measurementQuality === "recheck"
+                      ? "Pengukuran perlu diulang"
+                      : growthStatusLabel(exam.growthStatus)}
+                  </strong>
                   <div>
                     <span>{formatReading(exam.heightCm)} cm</span>
                     <span>{formatReading(exam.weightKg)} kg</span>

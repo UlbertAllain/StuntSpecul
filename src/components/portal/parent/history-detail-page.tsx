@@ -162,7 +162,9 @@ export function ParentHistoryDetailPage() {
             </p>
           </div>
           <span className="parent-history-page-status">
-            {growthStatusLabel(exam.growthStatus)}
+            {exam.measurementQuality === "recheck"
+              ? "Pengukuran perlu diulang"
+              : growthStatusLabel(exam.growthStatus)}
           </span>
         </div>
 
@@ -197,11 +199,19 @@ export function ParentHistoryDetailPage() {
 
         <section className="parent-history-detail-section parent-history-who">
           <span>HASIL PERTUMBUHAN WHO</span>
-          <strong>{growthStatusLabel(exam.growthStatus)}</strong>
+          <strong>
+            {exam.measurementQuality === "recheck"
+              ? "Pengukuran perlu diulang"
+              : growthStatusLabel(exam.growthStatus)}
+          </strong>
           <dl>
             <div>
               <dt>TB/U Z-score</dt>
               <dd>{formatReading(exam.heightForAgeZ)} SD</dd>
+            </div>
+            <div>
+              <dt>BB/U Z-score</dt>
+              <dd>{formatReading(exam.weightForAgeZ)} SD</dd>
             </div>
             <div>
               <dt>IMT</dt>
@@ -211,7 +221,12 @@ export function ParentHistoryDetailPage() {
               </dd>
             </div>
           </dl>
-          <p>Hasil WHO merupakan skrining pertumbuhan, bukan diagnosis.</p>
+          <p>
+            {exam.measurementQuality === "recheck"
+              ? exam.measurementReason ||
+                "Nilai tinggi atau berat berada di luar rentang valid WHO. Silakan ukur ulang."
+              : "Hasil WHO merupakan skrining pertumbuhan, bukan diagnosis."}
+          </p>
         </section>
 
         <section className="parent-history-detail-section">
@@ -309,8 +324,26 @@ export function ParentHistoryDetailPage() {
               <dd>{formatReading(exam.heightForAgeZ)}</dd>
             </div>
             <div>
+              <dt>BB/U Z-score WHO</dt>
+              <dd>{formatReading(exam.weightForAgeZ)}</dd>
+            </div>
+            <div>
+              <dt>Validitas pengukuran</dt>
+              <dd>
+                {exam.measurementQuality === "recheck"
+                  ? "Perlu diulang"
+                  : exam.measurementQuality === "incomplete"
+                    ? "Belum lengkap"
+                    : "Valid"}
+              </dd>
+            </div>
+            <div>
               <dt>Penilaian pertumbuhan</dt>
-              <dd>{growthStatusLabel(exam.growthStatus)}</dd>
+              <dd>
+                {exam.measurementQuality === "recheck"
+                  ? "Belum dapat disimpulkan"
+                  : growthStatusLabel(exam.growthStatus)}
+              </dd>
             </div>
             <div>
               <dt>Analisis visual pendukung</dt>
@@ -327,10 +360,10 @@ export function ParentHistoryDetailPage() {
           </dl>
 
           <p>
-            Status stunting utama dihitung dari tinggi menurut umur berdasarkan
-            standar WHO untuk anak usia 24–59 bulan. Analisis visual AI
-            ditampilkan terpisah untuk kualitas foto dan visibilitas area wajah,
-            bukan untuk menentukan status stunting.
+            Status stunting dihitung dari tinggi menurut umur (TB/U) WHO untuk
+            anak usia 24–59 bulan. BB/U digunakan sebagai validasi tambahan
+            untuk mendeteksi nilai pengukuran ekstrem atau kemungkinan salah
+            baca sensor. Analisis visual AI tidak menentukan status stunting.
           </p>
 
           <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">

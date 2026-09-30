@@ -46,9 +46,9 @@ Zod digunakan untuk request JSON. Perhatikan email normalization, UUID validatio
 
 ## Image handling
 
-Foto wajah screening dikirim sementara ke endpoint server-side Gemini visual analysis dan tidak disimpan sebagai raw photo pada examination report/Firestore. Gemini credential tidak pernah dikirim ke browser.
+Foto wajah screening dikirim ke endpoint server-side Gemini visual analysis dan tidak disimpan sebagai raw photo pada examination report/Firestore. Sesuai kebutuhan produk, satu foto wajah terbaru per child disimpan di Cloudinary untuk Beranda parent; metadata URL terbaru disimpan pada child dan diperbarui pada pemeriksaan berikutnya. Endpoint upload mewajibkan examination ID yang valid dan same-origin request.
 
-Foto profil menggunakan Cloudinary. Credential signing tetap server-side.
+Foto profil menggunakan Cloudinary. Semua Cloudinary signing tetap server-side. Gemini credential tidak pernah dikirim ke browser.
 
 ## Secrets
 

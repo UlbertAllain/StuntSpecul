@@ -35,6 +35,8 @@ type DeviceState = {
     weightKg: number | null;
     measurementUpdatedAt: number | null;
     measurementSource: "iot" | null;
+    measurementIssue: string | null;
+    measurementIssueAt: number | null;
   } | null;
   checks: {
     application: DeviceCheck;
@@ -249,6 +251,13 @@ export function DeviceMonitoringPanel() {
                   </strong>
                 </span>
               </div>
+
+              {item.examination?.measurementIssue && (
+                <div className="ref-device-measurement-alert">
+                  <strong>Pengukuran perlu diulang</strong>
+                  <span>{item.examination.measurementIssue}</span>
+                </div>
+              )}
 
               <div className="ref-device-grid">
                 <div className="ref-device-session">

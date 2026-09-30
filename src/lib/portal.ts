@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { MeasurementQuality } from "./anthropometry";
 import type { GrowthStatus } from "./growth";
 import type { GrowthRecommendations } from "./growth-recommendations";
 import type { FacialAnalysisStatus, VisualAnalysis } from "./screening";
@@ -22,6 +23,8 @@ export type ChildProfileInput = z.infer<typeof childProfileSchema>;
 export type ChildProfile = ChildProfileInput & {
   id: string;
   createdAt: number;
+  latestFacePhotoUrl: string | null;
+  latestFacePhotoUpdatedAt: number | null;
 };
 export type Staff = {
   id: string;
@@ -44,6 +47,9 @@ export type Examination = {
   weightKg: number | null;
   bmi: number | null;
   heightForAgeZ: number | null;
+  weightForAgeZ: number | null;
+  measurementQuality: MeasurementQuality;
+  measurementReason: string | null;
   captureStatus: "captured" | "skipped" | "failed" | null;
   facialStatus: FacialAnalysisStatus | null;
   facialProbability: number | null;

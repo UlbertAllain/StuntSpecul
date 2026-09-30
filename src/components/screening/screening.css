@@ -1944,7 +1944,7 @@
 
 .growth-result-meta {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
   margin: 14px 0 0;
   border-top: 1px solid #e8dfc0;
@@ -2879,7 +2879,6 @@
   line-height: 1.5;
 }
 
-
 /* Portrait station: never crop the captured face preview.
    Keep a stable 4:5 canvas so the complete portrait frame remains visible. */
 @media (orientation: portrait) and (min-width: 700px) {
@@ -2892,4 +2891,30 @@
     background-repeat: no-repeat;
     background-size: contain !important;
   }
+}
+
+@media (max-width: 480px) {
+  .growth-result-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .growth-result-meta > div,
+  .growth-result-meta > div + div {
+    padding: 9px 0 0;
+    border-left: 0;
+  }
+
+  .growth-result-meta > div + div {
+    margin-top: 7px;
+    border-top: 1px solid #eee6cd;
+  }
+}
+
+.measurement-sensor-note.error {
+  padding: 10px 12px;
+  border: 1px solid #e6bfc4;
+  border-radius: 12px;
+  background: #fff7f7;
+  color: #984f59;
+  font-weight: 800;
 }

@@ -71,6 +71,15 @@ Jika perangkat IoT online, hasil sensor menjadi sumber utama dan backend memprio
 
 Tidak ada generator TB/BB dummy. Tahap tinggi dan berat menunggu nilai sensor IoT yang valid; jika nilai belum diterima, UI tetap berada pada tahap pengukuran dan tidak melanjutkan ke hasil.
 
+Sebelum measurement diterima/finalized, backend menjalankan validation gate WHO:
+
+- TB/U (height-for-age) harus berada dalam flag range WHO -6 sampai +6 SD;
+- BB/U (weight-for-age) harus berada dalam flag range WHO -5 sampai +5 SD;
+- nilai di luar range dianggap kemungkinan measurement/input error dan menghasilkan `measurement_recheck_required`;
+- data tersebut tidak boleh diberi kesimpulan stunting. User diminta mengulang pengukuran.
+
+Stunting tetap ditentukan dari TB/U < -2 SD. BB/U tidak mengubah definisi stunting; BB/U dipakai sebagai indikator tambahan dan validasi plausibility pengukuran.
+
 Setelah TB/U WHO dihitung, backend membuat snapshot rekomendasi edukasi berdasarkan growthStatus dan tren TB/U dibanding examination completed sebelumnya untuk anak yang sama:
 
 - recommendations.nutrition
@@ -96,7 +105,8 @@ Camera flow:
 5. server menghitung konteks WHO dari age/sex/height;
 6. Gemini menilai kualitas foto, visibilitas area wajah, serta ciri visual netral seperti kelopak mata, raut yang tampak, dan bibir;
 7. hasil visual terstruktur dimasukkan ke screening completion;
-8. foto tangkapan ditampilkan sementara pada layar hasil, tetapi tidak dipersist.
+8. foto tangkapan ditampilkan sementara pada layar hasil;
+9. setelah pemeriksaan valid, satu foto wajah terbaru disimpan per profil anak untuk Beranda orang tua. Foto baru menimpa referensi foto terbaru sebelumnya dan tidak menjadi bagian dari riwayat examination.
 
 Gemini menerima usia, jenis kelamin, TB, BB, TB/U z-score, dan status WHO sebagai konteks. Gemini tidak boleh menentukan, menghitung ulang, atau mengubah status stunting. UI dapat menampilkan kesimpulan stunting di dekat hasil visual, tetapi sumber kesimpulan tersebut tetap TB/U WHO.
 
@@ -127,9 +137,16 @@ Tidak ada probability atau prediksi stunting dari wajah pada flow aktif. Hasil s
 
 ## WHO outcome
 
-`src/lib/growth.ts` menghitung Height-for-Age berdasarkan age, sex, dan height.
+`src/lib/growth.ts` menghitung Height-for-Age berdasarkan age, sex, dan height. `src/lib/anthropometry.ts` menambahkan Weight-for-Age dan measurement plausibility gate.
 
-Status pertumbuhan menjadi field utama pada report/examination.
+Aturan utama:
+
+- stunting: TB/U < -2 SD;
+- stunting berat: TB/U < -3 SD;
+- TB/U antara -2 SD dan batas atas bukan stunting;
+- measurement dengan WHO plausibility flag tidak menghasilkan status pertumbuhan dan harus diulang.
+
+Status pertumbuhan menjadi field utama pada report/examination response.
 
 ## Finalization
 
@@ -141,4 +158,4 @@ Cancellation tersedia untuk session yang tidak perlu diteruskan. Backend harus m
 
 ## Data privacy
 
-Raw photo tidak menjadi bagian dari persisted examination report. Foto diproses sementara melalui Gemini dan tidak disimpan di Firestore. Yang dipersist hanya observasi visual terstruktur. Field Model A lama tetap dibaca untuk compatibility riwayat lama.
+Raw photo tidak menjadi bagian dari persisted examination report. Foto diproses melalui Gemini. Sesuai kebutuhan produk, hanya foto wajah terbaru per child yang disimpan di Cloudinary dan URL/metadata terbarunya disimpan pada profil child untuk Beranda orang tua. Foto tidak dimasukkan ke laporan teks atau riwayat examination. Observasi visual terstruktur tetap dipersist pada examination. Field Model A lama tetap dibaca untuk compatibility riwayat lama.

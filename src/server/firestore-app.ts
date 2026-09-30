@@ -15,7 +15,7 @@ import {
   childProfileSchema,
 } from "../lib/portal";
 import { STARTER_BLOGS } from "../lib/blog-seeds";
-import { assessHeightForAge } from "../lib/growth";
+import { assessAnthropometry } from "../lib/anthropometry";
 import type { VisualAnalysis } from "../lib/screening";
 import {
   growthRecommendationsFor,
@@ -81,6 +81,7 @@ type ParentRecord = {
 
 type ChildRecord = ChildProfile & {
   parentId: string | null;
+  latestFacePhotoPublicId?: string | null;
 };
 
 type ExamRecord = {
@@ -99,6 +100,8 @@ type ExamRecord = {
   weightKg: number | null;
   measurementUpdatedAt: number | null;
   measurementSource: "iot" | null;
+  measurementIssue?: string | null;
+  measurementIssueAt?: number | null;
   bmi: number | null;
   captureStatus: "captured" | "skipped" | "failed" | null;
   facialStatus:
@@ -194,12 +197,19 @@ function asChild(doc: FirestoreDoc<ChildRecord>): ChildProfile {
     sex: doc.data.sex,
     guardian: doc.data.guardian,
     createdAt: doc.data.createdAt,
+    latestFacePhotoUrl: doc.data.latestFacePhotoUrl ?? null,
+    latestFacePhotoUpdatedAt: doc.data.latestFacePhotoUpdatedAt ?? null,
   };
 }
 
 function asExam(doc: FirestoreDoc<ExamRecord>): Examination {
   const value = doc.data;
-  const growth = assessHeightForAge(value.ageMonths, value.sex, value.heightCm);
+  const growth = assessAnthropometry(
+    value.ageMonths,
+    value.sex,
+    value.heightCm,
+    value.weightKg,
+  );
   const fallbackRecommendations = growthRecommendationsFor(
     growth.growthStatus,
     { currentHeightForAgeZ: growth.heightForAgeZ },
@@ -236,6 +246,9 @@ function asExam(doc: FirestoreDoc<ExamRecord>): Examination {
     weightKg: value.weightKg,
     bmi: value.bmi,
     heightForAgeZ: growth.heightForAgeZ,
+    weightForAgeZ: growth.weightForAgeZ,
+    measurementQuality: growth.measurementQuality,
+    measurementReason: growth.measurementReason,
     captureStatus: value.captureStatus,
     facialStatus: value.facialStatus,
     facialProbability: value.facialProbability,
@@ -771,6 +784,9 @@ async function registerParentWithGoogle(request: Request, env: Env) {
     sex: input.child.sex,
     guardian: pending.name,
     createdAt: now,
+    latestFacePhotoUrl: null,
+    latestFacePhotoUpdatedAt: null,
+    latestFacePhotoPublicId: null,
     parentId,
   };
 
@@ -934,11 +950,13 @@ async function recommendationsForExam(
   env: Env,
   exam: FirestoreDoc<ExamRecord>,
   heightCm: number | null,
+  weightKg: number | null,
 ) {
-  const current = assessHeightForAge(
+  const current = assessAnthropometry(
     exam.data.ageMonths,
     exam.data.sex,
     heightCm,
+    weightKg,
   );
   const previousCandidates = await store(env).query<ExamRecord>(
     "examinations",
@@ -955,10 +973,11 @@ async function recommendationsForExam(
         item.data.heightCm !== null,
     );
   const previousGrowth = previous
-    ? assessHeightForAge(
+    ? assessAnthropometry(
         previous.data.ageMonths,
         previous.data.sex,
         previous.data.heightCm,
+        previous.data.weightKg,
       )
     : null;
 
@@ -1166,6 +1185,8 @@ async function createActiveExam(
     weightKg: null,
     measurementUpdatedAt: null,
     measurementSource: null,
+    measurementIssue: null,
+    measurementIssueAt: null,
     bmi: null,
     captureStatus: cameraEnabled ? null : "skipped",
     facialStatus: null,
@@ -1630,6 +1651,9 @@ async function registerParent(request: Request, env: Env) {
     sex: input.child.sex,
     guardian: input.name,
     createdAt: now,
+    latestFacePhotoUrl: null,
+    latestFacePhotoUpdatedAt: null,
+    latestFacePhotoPublicId: null,
     parentId,
   };
 
@@ -1689,6 +1713,59 @@ async function parentLogout(request: Request, env: Env) {
   return ok(null, 200, {
     "Set-Cookie": sessionCookie(request, PARENT_COOKIE, "", 0, env),
   });
+}
+
+async function createParentChild(request: Request, env: Env) {
+  const parent = await requireParent(request, env);
+  await rateLimit(env, `parent-child:${parent.sessionHash}`, 10, 3600);
+
+  const input = await body(request, childRegistrationSchema);
+  const months = ageInMonths(input.birthDate);
+  if (months < 0 || months > 59) {
+    throw new ApiError(
+      422,
+      "Profil pertumbuhan ditujukan untuk anak usia 0–59 bulan.",
+    );
+  }
+
+  const existing = await childrenForParent(env, parent.id);
+  if (existing.length >= 10) {
+    throw new ApiError(422, "Maksimal 10 profil anak dalam satu akun.");
+  }
+
+  const duplicate = existing.some(
+    (item) =>
+      item.data.name.toLowerCase() === input.name.toLowerCase() &&
+      item.data.birthDate === input.birthDate,
+  );
+  if (duplicate) {
+    throw new ApiError(
+      409,
+      "Profil anak dengan nama dan tanggal lahir ini sudah ada.",
+    );
+  }
+
+  const id = crypto.randomUUID();
+  const child: ChildRecord = {
+    id,
+    code: `ST-${id.slice(0, 8).toUpperCase()}`,
+    name: input.name,
+    birthDate: input.birthDate,
+    sex: input.sex,
+    guardian: parent.name,
+    createdAt: Date.now(),
+    latestFacePhotoUrl: null,
+    latestFacePhotoUpdatedAt: null,
+    latestFacePhotoPublicId: null,
+    parentId: parent.id,
+  };
+
+  await store(env).set(`children/${id}`, child, {
+    precondition: { exists: false },
+  });
+  childCountCache = null;
+
+  return ok(asChild({ id, data: child, updateTime: "" }), 201);
 }
 
 async function parentView(request: Request, env: Env) {
@@ -1806,6 +1883,116 @@ async function deleteBlog(request: Request, env: Env, blogId: string) {
   await store(env).delete(`blogs/${blogId}`);
   blogCache = null;
   return ok({ deleted: true });
+}
+
+async function uploadLatestFacePhoto(request: Request, env: Env) {
+  const examinationId = request.headers.get("x-examination-id")?.trim() || "";
+  if (!idSchema.safeParse(examinationId).success) {
+    throw new ApiError(422, "Sesi foto tidak valid.");
+  }
+
+  const exam = await getExam(env, examinationId);
+  if (
+    !["running", "completed"].includes(exam.data.status) ||
+    exam.data.captureStatus === "skipped"
+  ) {
+    throw new ApiError(409, "Sesi ini tidak dapat menyimpan foto wajah.");
+  }
+
+  const cloudName = env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = env.CLOUDINARY_API_KEY;
+  const apiSecret = env.CLOUDINARY_API_SECRET;
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new ApiError(
+      503,
+      "Penyimpanan foto wajah belum dikonfigurasi.",
+      "cloudinary_not_configured",
+    );
+  }
+
+  if (!request.headers.get("content-type")?.startsWith("multipart/form-data")) {
+    throw new ApiError(415, "Gunakan file gambar untuk foto wajah.");
+  }
+
+  const form = await request.formData();
+  const file = form.get("file");
+  if (!(file instanceof File) || !file.type.startsWith("image/")) {
+    throw new ApiError(422, "Foto wajah tidak valid.");
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    throw new ApiError(413, "Ukuran foto wajah maksimal 2 MB.");
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const folder = "stuntspecula/latest-face";
+  const publicId = exam.data.childId;
+  const signature = createHash("sha1")
+    .update(
+      `folder=${folder}&overwrite=true&public_id=${publicId}&timestamp=${timestamp}${apiSecret}`,
+    )
+    .digest("hex");
+
+  const upload = new FormData();
+  upload.append("file", file);
+  upload.append("api_key", apiKey);
+  upload.append("timestamp", String(timestamp));
+  upload.append("folder", folder);
+  upload.append("public_id", publicId);
+  upload.append("overwrite", "true");
+  upload.append("signature", signature);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${encodeURIComponent(
+      cloudName,
+    )}/image/upload`,
+    { method: "POST", body: upload },
+  );
+  const payload = (await response.json().catch(() => null)) as {
+    secure_url?: string;
+    public_id?: string;
+    error?: { message?: string };
+  } | null;
+
+  if (!response.ok || !payload?.secure_url || !payload.public_id) {
+    console.error(
+      "Cloudinary latest face upload failed",
+      response.status,
+      payload?.error?.message || "Unknown Cloudinary error",
+    );
+    throw new ApiError(
+      502,
+      "Foto wajah belum berhasil disimpan.",
+      "face_photo_upload_failed",
+    );
+  }
+
+  const child = await store(env).get<ChildRecord>(
+    `children/${exam.data.childId}`,
+  );
+  if (!child) throw new ApiError(404, "Profil anak tidak ditemukan.");
+
+  const updatedAt = Date.now();
+  await store(env).set(
+    `children/${exam.data.childId}`,
+    {
+      latestFacePhotoUrl: payload.secure_url,
+      latestFacePhotoPublicId: payload.public_id,
+      latestFacePhotoUpdatedAt: updatedAt,
+    },
+    {
+      mergeFields: [
+        "latestFacePhotoUrl",
+        "latestFacePhotoPublicId",
+        "latestFacePhotoUpdatedAt",
+      ],
+      precondition: { updateTime: child.updateTime },
+    },
+  );
+
+  return ok({
+    secureUrl: payload.secure_url,
+    publicId: payload.public_id,
+  });
 }
 
 async function uploadParentProfilePhoto(request: Request, env: Env) {
@@ -1967,6 +2154,9 @@ async function createChild(request: Request, env: Env) {
     ...input,
     code: input.code.toUpperCase(),
     createdAt: Date.now(),
+    latestFacePhotoUrl: null,
+    latestFacePhotoUpdatedAt: null,
+    latestFacePhotoPublicId: null,
     parentId: null,
   };
   await store(env).set(`children/${id}`, value, {
@@ -2266,6 +2456,8 @@ async function stationStatus(_request: Request, env: Env) {
           weightKg: exam.data.weightKg,
           measurementUpdatedAt: exam.data.measurementUpdatedAt ?? null,
           measurementSource: exam.data.measurementSource ?? null,
+          measurementIssue: exam.data.measurementIssue ?? null,
+          measurementIssueAt: exam.data.measurementIssueAt ?? null,
         }
       : null,
   });
@@ -2301,11 +2493,30 @@ async function stationComplete(request: Request, env: Env) {
     exam.data.measurementSource === "iot" && exam.data.weightKg !== null
       ? exam.data.weightKg
       : input.weightKg;
+  const anthropometry = assessAnthropometry(
+    exam.data.ageMonths,
+    exam.data.sex,
+    heightCm,
+    weightKg,
+  );
+  if (anthropometry.measurementQuality === "recheck") {
+    throw new ApiError(
+      422,
+      anthropometry.measurementReason || "Data pengukuran perlu diulang.",
+      "measurement_recheck_required",
+    );
+  }
+
   const bmi =
     heightCm !== null && weightKg !== null
       ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
-  const recommendations = await recommendationsForExam(env, exam, heightCm);
+  const recommendations = await recommendationsForExam(
+    env,
+    exam,
+    heightCm,
+    weightKg,
+  );
 
   try {
     await store(env).set(
@@ -2383,6 +2594,8 @@ async function iotSession(request: Request, env: Env) {
           weightKg: exam.data.weightKg,
           measurementUpdatedAt: exam.data.measurementUpdatedAt ?? null,
           measurementSource: exam.data.measurementSource ?? null,
+          measurementIssue: exam.data.measurementIssue ?? null,
+          measurementIssueAt: exam.data.measurementIssueAt ?? null,
         }
       : null,
     serverTime: Date.now(),
@@ -2424,12 +2637,44 @@ async function iotMeasurements(request: Request, env: Env) {
     );
   }
 
+  const candidateHeight =
+    input.heightCm !== undefined ? input.heightCm : exam.data.heightCm;
+  const candidateWeight =
+    input.weightKg !== undefined ? input.weightKg : exam.data.weightKg;
+  const anthropometry = assessAnthropometry(
+    exam.data.ageMonths,
+    exam.data.sex,
+    candidateHeight,
+    candidateWeight,
+  );
+  if (anthropometry.measurementQuality === "recheck") {
+    const issue =
+      anthropometry.measurementReason || "Data sensor perlu diukur ulang.";
+    const issueAt = Date.now();
+
+    await store(env).set(
+      `examinations/${exam.id}`,
+      {
+        measurementIssue: issue,
+        measurementIssueAt: issueAt,
+      },
+      {
+        mergeFields: ["measurementIssue", "measurementIssueAt"],
+        precondition: { updateTime: exam.updateTime },
+      },
+    );
+
+    throw new ApiError(422, issue, "measurement_recheck_required");
+  }
+
   const now = Date.now();
   const patch = {
     ...(input.heightCm !== undefined ? { heightCm: input.heightCm } : {}),
     ...(input.weightKg !== undefined ? { weightKg: input.weightKg } : {}),
     measurementUpdatedAt: now,
     measurementSource: "iot" as const,
+    measurementIssue: null,
+    measurementIssueAt: null,
   };
 
   try {
@@ -2563,11 +2808,30 @@ async function staffComplete(request: Request, env: Env, examId: string) {
     exam.data.measurementSource === "iot" && exam.data.weightKg !== null
       ? exam.data.weightKg
       : input.weightKg;
+  const anthropometry = assessAnthropometry(
+    exam.data.ageMonths,
+    exam.data.sex,
+    heightCm,
+    weightKg,
+  );
+  if (anthropometry.measurementQuality === "recheck") {
+    throw new ApiError(
+      422,
+      anthropometry.measurementReason || "Data pengukuran perlu diulang.",
+      "measurement_recheck_required",
+    );
+  }
+
   const bmi =
     heightCm !== null && weightKg !== null
       ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
-  const recommendations = await recommendationsForExam(env, exam, heightCm);
+  const recommendations = await recommendationsForExam(
+    env,
+    exam,
+    heightCm,
+    weightKg,
+  );
   await store(env).set(
     `examinations/${exam.id}`,
     {
@@ -2714,6 +2978,8 @@ async function deviceMonitoring(request: Request, env: Env) {
               weightKg: exam.data.weightKg,
               measurementUpdatedAt: exam.data.measurementUpdatedAt ?? null,
               measurementSource: exam.data.measurementSource ?? null,
+              measurementIssue: exam.data.measurementIssue ?? null,
+              measurementIssueAt: exam.data.measurementIssueAt ?? null,
             }
           : null,
         checks: {
@@ -2769,7 +3035,12 @@ async function insights(request: Request, env: Env) {
 
   for (const item of exams) {
     const exam = item.data;
-    const result = assessHeightForAge(exam.ageMonths, exam.sex, exam.heightCm);
+    const result = assessAnthropometry(
+      exam.ageMonths,
+      exam.sex,
+      exam.heightCm,
+      exam.weightKg,
+    );
     const isCurrent = exam.createdAt >= currentStart;
 
     if (isCurrent) {
@@ -2905,6 +3176,8 @@ export async function routeFirestore(
       return stationComplete(request, env);
     case "POST /api/station/cancel":
       return stationCancel(request, env);
+    case "POST /api/station/face-photo":
+      return uploadLatestFacePhoto(request, env);
     case "GET /api/iot/session":
       return iotSession(request, env);
     case "POST /api/iot/session/claim":
@@ -2925,6 +3198,8 @@ export async function routeFirestore(
       return parentLogout(request, env);
     case "GET /api/parent-account/me":
       return parentView(request, env);
+    case "POST /api/parent-account/children":
+      return createParentChild(request, env);
     case "PATCH /api/parent-account/profile":
       return updateParentProfile(request, env);
     case "POST /api/uploads/profile-photo":

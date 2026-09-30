@@ -32,12 +32,14 @@ export function ExaminationStage({
   onComplete,
   reading,
   soundEnabled = false,
+  measurementIssue = null,
 }: {
   phase: MeasurementPhase;
   paused: boolean;
   onComplete: () => void;
   reading?: number | null;
   soundEnabled?: boolean;
+  measurementIssue?: string | null;
 }) {
   function finishStage() {
     if (!soundEnabled) {
@@ -69,16 +71,20 @@ export function ExaminationStage({
         <h1>
           {finished
             ? "Terima kasih!"
-            : waitingForSensor
-              ? "Tunggu sebentar…"
-              : item.title}
+            : measurementIssue
+              ? "Yuk, ukur ulang."
+              : waitingForSensor
+                ? "Tunggu sebentar…"
+                : item.title}
         </h1>
         <p>
           {finished
             ? "Kamu sudah melakukannya dengan baik."
-            : waitingForSensor
-              ? "Sensor sedang mengambil hasil. Tetap di posisi, ya."
-              : item.subtitle}
+            : measurementIssue
+              ? "Hasil tadi belum valid. Tetap di posisi dan lakukan pengukuran sekali lagi."
+              : waitingForSensor
+                ? "Sensor sedang mengambil hasil. Tetap di posisi, ya."
+                : item.subtitle}
         </p>
       </div>
       <div className="measurement-scene">
@@ -133,7 +139,12 @@ export function ExaminationStage({
           </>
         )}
       </div>
-      {phase !== "prepare" && waitingForSensor && (
+      {phase !== "prepare" && measurementIssue && (
+        <p className="measurement-sensor-note error" role="alert">
+          {measurementIssue}
+        </p>
+      )}
+      {phase !== "prepare" && waitingForSensor && !measurementIssue && (
         <p className="measurement-sensor-note" role="status">
           Data akan muncul otomatis setelah alat selesai mengukur.
         </p>

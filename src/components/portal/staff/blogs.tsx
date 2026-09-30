@@ -140,9 +140,9 @@ export function BlogPanel() {
       <div className="section-heading">
         <div>
           <span className="parent-section-eyebrow">EDUKASI ORANG TUA</span>
-          <h2>Kelola blog</h2>
+          <h2>Kelola activity</h2>
           <p className="portal-note">
-            Tulis artikel edukasi lalu publikasikan agar dapat dibaca oleh akun
+            Tulis activity edukasi lalu publikasikan agar dapat dibaca oleh akun
             orang tua.
           </p>
         </div>

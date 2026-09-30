@@ -8,6 +8,7 @@ import {
   type VisualAnalysis,
 } from "@/lib/screening";
 import { api, errorMessage } from "@/lib/api-client";
+import { uploadLatestFacePhoto } from "@/lib/cloudinary";
 import type { GrowthRecommendations } from "@/lib/growth-recommendations";
 import type { MirrorAssignment } from "@/lib/portal";
 import { INITIAL_SESSION, sessionReducer } from "@/lib/session";
@@ -114,6 +115,13 @@ export function useScreeningSession(
           if (result.recommendations) {
             setSavedRecommendations(result.recommendations);
           }
+        }
+
+        if (session.capture.status === "captured") {
+          void uploadLatestFacePhoto(
+            session.capture.photo,
+            assignment.id,
+          ).catch(() => null);
         }
       }
       dispatch({ type: "complete", report });

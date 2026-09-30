@@ -199,9 +199,14 @@ export function ParentPortal() {
     api<ParentAccountView>("/parent-account/me", { signal: controller.signal })
       .then((value) => {
         setView(value);
-        const latest = completed(value.examinations)[0];
-        if (latest) setSelectedExamId(latest.id);
-        if (value.children[0]) setSelectedChildId(value.children[0].id);
+        const firstChild = value.children[0];
+        if (firstChild) {
+          setSelectedChildId(firstChild.id);
+          const latest = completed(value.examinations).find(
+            (exam) => exam.childId === firstChild.id,
+          );
+          if (latest) setSelectedExamId(latest.id);
+        }
         prefetchParentBlogs();
       })
       .catch((e) => {
@@ -218,9 +223,16 @@ export function ParentPortal() {
     return () => controller.abort();
   }, [router]);
 
+  const selectedChild =
+    view?.children.find((child) => child.id === selectedChildId) ||
+    view?.children[0] ||
+    null;
   const completedExams = useMemo(
-    () => completed(view?.examinations || []),
-    [view?.examinations],
+    () =>
+      completed(view?.examinations || []).filter(
+        (exam) => !selectedChildId || exam.childId === selectedChildId,
+      ),
+    [selectedChildId, view?.examinations],
   );
   const latest = completedExams[0] || null;
   const selectedExam =
@@ -447,7 +459,7 @@ export function ParentPortal() {
           aria-current={tab === "blog" ? "page" : undefined}
           onClick={() => setTab("blog")}
         >
-          <BookOpen /> Blog
+          <BookOpen /> Activity
         </button>
         <button
           aria-current={tab === "profile" ? "page" : undefined}
@@ -462,16 +474,16 @@ export function ParentPortal() {
         {tab === "home" && (
           <ParentHome
             view={view}
+            child={selectedChild}
+            examinations={completedExams}
             latest={latest}
             activeExam={activeExam}
+            onSelectChild={setSelectedChildId}
             onStart={() => setExamSheetOpen(true)}
           />
         )}
         {tab === "insights" && (
-          <ParentInsights
-            examinations={completedExams}
-            child={view.children[0] || null}
-          />
+          <ParentInsights examinations={completedExams} child={selectedChild} />
         )}
         {tab === "blog" && <ParentBlog />}
         {tab === "profile" && <ParentProfile view={view} onRefresh={refresh} />}
@@ -535,7 +547,7 @@ export function ParentPortal() {
           onClick={() => setTab("blog")}
         >
           <BookOpen />
-          <span>Blog</span>
+          <span>Activity</span>
         </button>
         <button
           aria-current={tab === "profile" ? "page" : undefined}

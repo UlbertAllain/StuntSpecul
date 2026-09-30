@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import {
+  assessAnthropometry,
+  weightForAgeZScore,
+} from "../src/lib/anthropometry.ts";
 import { assessHeightForAge } from "../src/lib/growth.ts";
 import {
   childSchema,
@@ -44,10 +48,13 @@ test("WHO height-for-age engine classifies monthly standing height deterministic
   assert.equal(medianBoy.growthStatus, "within_range");
   assert.equal(medianBoy.stuntingScreening, "not_indicated");
 
-  const monitorBoy = assessHeightForAge(36, "male", 90);
-  assert.equal(monitorBoy.growthStatus, "monitor");
-  assert.equal(monitorBoy.stuntingScreening, "monitor");
-  assert.ok(monitorBoy.heightForAgeZ < -1 && monitorBoy.heightForAgeZ >= -2);
+  const shortButNotStuntedBoy = assessHeightForAge(36, "male", 90);
+  assert.equal(shortButNotStuntedBoy.growthStatus, "within_range");
+  assert.equal(shortButNotStuntedBoy.stuntingScreening, "not_indicated");
+  assert.ok(
+    shortButNotStuntedBoy.heightForAgeZ < -1 &&
+      shortButNotStuntedBoy.heightForAgeZ >= -2,
+  );
 
   const stuntedGirl = assessHeightForAge(36, "female", 86);
   assert.equal(stuntedGirl.growthStatus, "stunted");
@@ -73,6 +80,28 @@ test("WHO engine rejects unavailable, out-of-scope and biologically implausible 
   assert.equal(assessHeightForAge(36, "male", 200).growthStatus, "unavailable");
 });
 
+test("anthropometry flags biologically implausible weight before producing a WHO result", () => {
+  const waz = weightForAgeZScore(48, "male", 1.9);
+  assert.ok(waz !== null && waz < -5);
+
+  const result = assessAnthropometry(48, "male", 106, 1.9);
+  assert.equal(result.measurementQuality, "recheck");
+  assert.equal(result.growthStatus, "unavailable");
+  assert.equal(result.stuntingScreening, null);
+  assert.equal(result.heightForAgeZ, null);
+  assert.match(result.measurementReason || "", /Berat badan/);
+  assert.match(result.measurementReason || "", /ulangi pengukuran/i);
+});
+
+test("anthropometry keeps plausible measurements available for TB/U screening", () => {
+  const result = assessAnthropometry(48, "male", 106, 16.3);
+  assert.equal(result.measurementQuality, "valid");
+  assert.equal(result.growthStatus, "within_range");
+  assert.equal(result.stuntingScreening, "not_indicated");
+  assert.ok(result.heightForAgeZ !== null);
+  assert.ok(result.weightForAgeZ !== null);
+});
+
 test("disconnected sensors remain missing values throughout the report", () => {
   const readings = readMeasurements();
   const report = createScreeningReport(
@@ -84,6 +113,8 @@ test("disconnected sensors remain missing values throughout the report", () => {
   assert.deepEqual(report.readings, { heightCm: null, weightKg: null });
   assert.equal(report.bmi, null);
   assert.equal(report.heightForAgeZ, null);
+  assert.equal(report.weightForAgeZ, null);
+  assert.equal(report.measurementQuality, "incomplete");
   assert.equal(report.growthStatus, "unavailable");
   assert.equal(report.stuntingScreening, null);
   assert.equal(report.facialAnalysis.status, "unavailable");
@@ -100,6 +131,7 @@ test("BMI and WHO screening are calculated only from the measurements they requi
   );
   assert.equal(report.bmi, 16.2);
   assert.equal(report.heightForAgeZ, 0);
+  assert.equal(report.measurementQuality, "valid");
   assert.equal(report.growthStatus, "within_range");
 
   const partial = createScreeningReport(
@@ -110,6 +142,8 @@ test("BMI and WHO screening are calculated only from the measurements they requi
   );
   assert.equal(partial.bmi, null);
   assert.equal(partial.heightForAgeZ, 0);
+  assert.equal(partial.weightForAgeZ, null);
+  assert.equal(partial.measurementQuality, "incomplete");
   assert.equal(partial.growthStatus, "within_range");
 });
 

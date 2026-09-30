@@ -16,6 +16,8 @@ type StationActive = {
   heightCm: number | null;
   weightKg: number | null;
   measurementUpdatedAt: number | null;
+  measurementIssue: string | null;
+  measurementIssueAt: number | null;
 };
 
 type StationState = {
@@ -156,6 +158,7 @@ export function StationDisplay() {
               }
             : null
         }
+        measurementIssue={state?.active?.measurementIssue ?? null}
         awaitingParentFinalize
       />
     );
