@@ -125,7 +125,9 @@ export function weightForAgeZScore(
     ];
   if (!row) return null;
 
-  const [l, m, s] = row;
+  const l = Number(row[0]);
+  const m = Number(row[1]);
+  const s = Number(row[2]);
   const raw =
     l === 0
       ? Math.log(weightKg / m) / s

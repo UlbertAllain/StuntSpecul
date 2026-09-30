@@ -1,9 +1,9 @@
 import { z } from "zod";
 import {
-  assessHeightForAge,
-  type GrowthStatus,
-  type StuntingScreening,
-} from "./growth.ts";
+  assessAnthropometry,
+  type MeasurementQuality,
+} from "./anthropometry.ts";
+import { type GrowthStatus, type StuntingScreening } from "./growth.ts";
 
 export const childSchema = z.object({
   ageMonths: z
