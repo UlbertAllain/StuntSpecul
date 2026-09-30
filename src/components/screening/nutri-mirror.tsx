@@ -76,6 +76,7 @@ export function NutriMirror({
   onComplete,
   onFinish,
   hardwareMeasurements = null,
+  measurementIssue = null,
   waitingLabel = "Petugas menyiapkan pemeriksaan.",
   awaitingParentFinalize = false,
 }: {
@@ -87,6 +88,7 @@ export function NutriMirror({
   ) => Promise<GrowthRecommendations | void>;
   onFinish?: (cancel: boolean) => Promise<void>;
   hardwareMeasurements?: Readings | null;
+  measurementIssue?: string | null;
   waitingLabel?: string;
   awaitingParentFinalize?: boolean;
 }) {
@@ -201,6 +203,7 @@ export function NutriMirror({
                   : null
             }
             soundEnabled={soundEnabled}
+            measurementIssue={measurementIssue}
           />
         );
       case "camera":

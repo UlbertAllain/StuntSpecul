@@ -73,7 +73,10 @@ const METRICS: MetricOption[] = [
 function sameChildExams(examinations: Examination[]) {
   const latest = examinations[0];
   if (!latest) return [];
-  return examinations.filter((exam) => exam.childId === latest.childId);
+  return examinations.filter(
+    (exam) =>
+      exam.childId === latest.childId && exam.measurementQuality !== "recheck",
+  );
 }
 
 function chronological(examinations: Examination[]) {

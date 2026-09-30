@@ -269,6 +269,16 @@ Gunakan tiga lapis pengecekan:
 
 Dengan begitu keberhasilan tidak dinilai dari angka yang muncul di sensor saja; harus ada acknowledgement dari server. Informasi teknis dipusatkan di halaman admin.
 
+## Measurement plausibility
+
+Backend memvalidasi kombinasi usia, jenis kelamin, tinggi, dan berat sebelum menerima hasil sebagai measurement valid.
+
+Jika TB/U atau BB/U melewati WHO plausibility flag, endpoint `POST /api/iot/measurements` mengembalikan HTTP 422 dengan code:
+
+    measurement_recheck_required
+
+Nilai ekstrem tersebut tidak disimpan sebagai tinggi/berat terbaru. Backend hanya menyimpan `measurementIssue` agar halaman `/alat` dan Monitoring Admin dapat menampilkan pesan **pengukuran perlu diulang**. Setelah ESP32 mengirim hasil valid berikutnya, issue dibersihkan otomatis.
+
 ## HTTP status penting
 
 - 200: request berhasil

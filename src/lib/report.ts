@@ -62,8 +62,23 @@ export function reportText(
     `Berat badan: ${formatReading(report.readings.weightKg)} kg`,
     `IMT: ${formatReading(report.bmi)} kg/m²`,
     `TB/U Z-score WHO: ${formatReading(report.heightForAgeZ)}`,
+    `BB/U Z-score WHO: ${formatReading(report.weightForAgeZ)}`,
+    `Validitas pengukuran: ${
+      report.measurementQuality === "recheck"
+        ? "Perlu diulang"
+        : report.measurementQuality === "incomplete"
+          ? "Belum lengkap"
+          : "Valid"
+    }`,
+    report.measurementReason
+      ? `Catatan pengukuran: ${report.measurementReason}`
+      : "",
     "",
-    `Status pertumbuhan: ${growthStatusLabel(report.growthStatus)}`,
+    `Status pertumbuhan: ${
+      report.measurementQuality === "recheck"
+        ? "Belum dapat disimpulkan"
+        : growthStatusLabel(report.growthStatus)
+    }`,
     `Skrining stunting WHO: ${stuntingScreeningLabel(report.stuntingScreening)}`,
     "",
     ...visualLines,
@@ -83,7 +98,7 @@ export function reportText(
               : "relatif stabil"
         } ${Math.abs(recommendations.trendDelta).toFixed(2)} SD.`,
     "",
-    "Hasil ini merupakan skrining, bukan diagnosis. TB/U WHO merupakan hasil utama untuk skrining stunting. Analisis visual AI hanya mendeskripsikan kualitas foto dan bagian wajah yang terlihat.",
+    "Hasil ini merupakan skrining, bukan diagnosis. Stunting ditentukan dari TB/U WHO. BB/U digunakan sebagai validasi tambahan untuk mendeteksi pengukuran ekstrem; analisis visual AI tidak menentukan status stunting.",
     "Foto wajah tidak disertakan dalam laporan.",
     `Referensi: ${WHO_REFERENCE_URL}`,
   ]

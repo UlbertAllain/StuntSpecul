@@ -64,9 +64,12 @@ Index lookup:
 - sex
 - guardian
 - parentId
+- latestFacePhotoUrl
+- latestFacePhotoPublicId
+- latestFacePhotoUpdatedAt
 - createdAt
 
-`parentId` boleh null untuk legacy/staff-created record bila flow tersebut masih digunakan.
+Satu parent dapat memiliki beberapa child. `parentId` boleh null untuk legacy/staff-created record bila flow tersebut masih digunakan. Foto wajah terbaru disimpan per child dan diperbarui setiap pemeriksaan baru yang berhasil menangkap wajah.
 
 ### `examinations/{id}`
 
@@ -116,7 +119,7 @@ Index lookup:
 - completedAt
 - finalizedAt
 
-WHO-derived values dikalkulasi dari data examination saat dibaca/dibentuk menjadi response.
+WHO-derived values dikalkulasi dari data examination saat dibaca/dibentuk menjadi response. Response juga memuat TB/U, BB/U, `measurementQuality`, dan `measurementReason`. Nilai dengan flag WHO biologically implausible tidak diperlakukan sebagai hasil pertumbuhan valid.
 
 `visualAnalysis` adalah hasil observasi Gemini terhadap kualitas foto/visibilitas area wajah. Field ini tidak boleh digunakan untuk menentukan `growthStatus`. Raw photo tidak disimpan pada examination.
 
@@ -203,7 +206,9 @@ Enforcement utama dilakukan application layer:
 - child/examination ID memakai UUID;
 - examination hanya boleh diakses oleh role/owner yang sesuai;
 - active station hanya menunjuk satu examination;
-- child age divalidasi sesuai flow.
+- child age divalidasi sesuai flow;
+- parent hanya dapat menambahkan dan memakai child miliknya sendiri;
+- hasil antropometri ekstrem diflag menggunakan batas plausibility WHO sebelum disimpan sebagai hasil final.
 
 ## Schema changes
 

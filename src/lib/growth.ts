@@ -140,13 +140,6 @@ export function assessHeightForAge(
       stuntingScreening: "indicated",
       measurementValid: true,
     };
-  if (z < -1)
-    return {
-      heightForAgeZ: rounded,
-      growthStatus: "monitor",
-      stuntingScreening: "monitor",
-      measurementValid: true,
-    };
   return {
     heightForAgeZ: rounded,
     growthStatus: "within_range",
@@ -158,9 +151,9 @@ export function assessHeightForAge(
 export function growthStatusLabel(status: GrowthStatus): string {
   switch (status) {
     case "within_range":
-      return "Tinggi menurut umur dalam rentang pemantauan";
+      return "TB/U dalam rentang WHO";
     case "monitor":
-      return "Perlu pemantauan pertumbuhan";
+      return "Belum stunting, perlu pemantauan";
     case "stunted":
       return "Indikasi stunting";
     case "severely_stunted":

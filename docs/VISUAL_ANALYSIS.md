@@ -81,9 +81,11 @@ Raw photo:
 - diteruskan ke Gemini untuk analisis;
 - ditampilkan sementara pada layar hasil melalui object URL browser;
 - tidak disimpan sebagai field examination di Firestore;
-- tidak dimasukkan ke laporan teks.
+- setelah pemeriksaan valid, foto terbaru disimpan di Cloudinary sebagai foto wajah terbaru child untuk Beranda orang tua;
+- URL/metadata foto terbaru disimpan pada profil child dan diperbarui pada capture berikutnya;
+- tidak dimasukkan ke laporan teks atau daftar riwayat foto.
 
-Yang dipersist hanya hasil observasi terstruktur.
+Hasil observasi terstruktur tetap dipersist pada examination.
 
 ## API
 
@@ -125,5 +127,6 @@ Batasan:
 - tidak membuat examination;
 - tidak menyimpan data ke riwayat orang tua;
 - tidak membutuhkan ESP32;
-- foto hanya hidup sementara pada browser selama hasil pengujian ditampilkan;
-- nilai tinggi/berat manual hanya konteks test dan bukan pengukuran sensor.
+- foto hanya hidup sementara pada browser selama hasil pengujian ditampilkan dan tidak memperbarui foto child;
+- nilai tinggi/berat manual hanya konteks test dan bukan pengukuran sensor;
+- nilai manual yang terkena WHO plausibility flag ditolak dan admin diminta mengulang input.

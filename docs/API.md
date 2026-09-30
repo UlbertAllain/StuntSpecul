@@ -40,6 +40,7 @@ Format error:
 - POST /api/parent-account/login — direct parent login.
 - POST /api/parent-account/logout — parent logout.
 - GET /api/parent-account/me — parent dashboard data.
+- POST /api/parent-account/children — tambah profil anak milik parent.
 - PATCH /api/parent-account/profile — update parent profile.
 - POST /api/parent-account/examinations — start examination.
 - POST /api/parent-account/examinations/:id/finalize — finalize owned examination.
@@ -84,6 +85,7 @@ Staff-authenticated:
 - POST /api/station/claim — claim active examination.
 - POST /api/station/complete — save station result.
 - POST /api/station/cancel — cancel station session.
+- POST /api/station/face-photo — simpan/replace foto wajah terbaru child untuk sesi aktif.
 - GET /api/mirror/assignment — assignment compatibility endpoint.
 
 Legacy mirror examination action endpoints masih tersedia untuk compatibility internal tetapi bukan flow utama.
@@ -96,7 +98,7 @@ Semua endpoint berikut menggunakan header:
 
 - GET /api/iot/session — poll active examination dan update device lastSeen.
 - POST /api/iot/session/claim — claim examination menjadi running.
-- POST /api/iot/measurements — kirim tinggi dan/atau berat; response mengembalikan `saved`, `ack=measurement_saved`, field yang diterima, nilai terakhir, dan `measurementUpdatedAt`.
+- POST /api/iot/measurements — kirim tinggi dan/atau berat; response mengembalikan `saved`, `ack=measurement_saved`, field yang diterima, nilai terakhir, dan `measurementUpdatedAt`. Measurement yang terkena WHO plausibility flag ditolak dengan code `measurement_recheck_required`.
 - POST /api/iot/heartbeat — kirim firmware/sensor health.
 - POST /api/iot/session/cancel — cancel active queued/running session.
 
@@ -108,7 +110,7 @@ Active screening:
 
 - POST /api/visual-analysis — menerima image JPEG/PNG/WebP + header konteks age/sex/TB/BB, menghitung konteks WHO server-side, lalu meminta Gemini menghasilkan observasi visual terstruktur.
 
-Response visual tidak mengandung diagnosis atau probabilitas stunting. Detail ada di VISUAL_ANALYSIS.md.
+Response visual tidak mengandung diagnosis atau probabilitas stunting. Sebelum Gemini dipanggil, konteks TB/BB juga melewati plausibility validation; input ekstrem dikembalikan sebagai `measurement_recheck_required`. Detail ada di VISUAL_ANALYSIS.md.
 
 ## Model A legacy
 

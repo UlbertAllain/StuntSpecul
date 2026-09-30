@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { Camera } from "lucide-react";
+import { Camera, Plus, UserRound } from "lucide-react";
 import type { ParentAccountView } from "@/lib/portal";
+import { ageInMonths } from "@/lib/portal";
 import { api, errorMessage } from "@/lib/api-client";
 import { uploadProfilePhoto } from "@/lib/cloudinary";
+import { formatAge } from "@/lib/screening";
 import { Message } from "../shared/shell";
 
 export function ParentProfile({
@@ -16,8 +18,10 @@ export function ParentProfile({
   onRefresh: () => Promise<void>;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [addingChild, setAddingChild] = useState(false);
+  const [showChildForm, setShowChildForm] = useState(false);
   const [profileError, setProfileError] = useState("");
-  const child = view.children[0];
+  const [childNotice, setChildNotice] = useState("");
 
   async function uploadAvatar(file: File | undefined) {
     if (!file || uploading) return;
@@ -37,6 +41,33 @@ export function ParentProfile({
       setProfileError(errorMessage(cause));
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function addChild(form: HTMLFormElement) {
+    if (addingChild) return;
+    const formData = new FormData(form);
+    setAddingChild(true);
+    setProfileError("");
+    setChildNotice("");
+
+    try {
+      await api("/parent-account/children", {
+        method: "POST",
+        body: {
+          name: formData.get("name"),
+          birthDate: formData.get("birthDate"),
+          sex: formData.get("sex"),
+        },
+      });
+      form.reset();
+      setShowChildForm(false);
+      setChildNotice("Profil anak berhasil ditambahkan.");
+      await onRefresh();
+    } catch (cause) {
+      setProfileError(errorMessage(cause));
+    } finally {
+      setAddingChild(false);
     }
   }
 
@@ -71,38 +102,77 @@ export function ParentProfile({
           {uploading ? "Mengunggah foto…" : "Tekan foto untuk mengganti profil"}
         </small>
       </section>
+
       {profileError && <Message error>{profileError}</Message>}
-      <section className="profile-menu-card">
-        <div>
-          <span>Profil anak</span>
-          <strong>{child?.name || "Belum ada profil"}</strong>
+      {childNotice && <Message>{childNotice}</Message>}
+
+      <section className="profile-menu-card parent-children-card">
+        <div className="parent-children-heading">
+          <div>
+            <span>PROFIL ANAK</span>
+            <strong>{view.children.length} anak terdaftar</strong>
+          </div>
+          <button
+            type="button"
+            className="portal-secondary"
+            onClick={() => setShowChildForm((value) => !value)}
+          >
+            <Plus size={16} />
+            Tambah anak
+          </button>
         </div>
-        {child && (
-          <>
-            <div>
-              <span>Tanggal lahir</span>
-              <strong>
-                {new Date(`${child.birthDate}T00:00:00Z`).toLocaleDateString(
-                  "id-ID",
-                )}
-              </strong>
-            </div>
-            <div>
-              <span>Jenis kelamin</span>
-              <strong>
-                {child.sex === "male" ? "Laki-laki" : "Perempuan"}
-              </strong>
-            </div>
-            <div>
-              <span>Kode anak</span>
-              <strong>{child.code}</strong>
-            </div>
-          </>
+
+        {showChildForm && (
+          <form
+            className="profile-form parent-add-child-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void addChild(event.currentTarget);
+            }}
+          >
+            <label>
+              Nama anak
+              <input name="name" required minLength={2} maxLength={80} />
+            </label>
+            <label>
+              Tanggal lahir
+              <input name="birthDate" type="date" required />
+            </label>
+            <label>
+              Jenis kelamin
+              <select name="sex" defaultValue="male" required>
+                <option value="male">Laki-laki</option>
+                <option value="female">Perempuan</option>
+              </select>
+            </label>
+            <button className="portal-primary" disabled={addingChild}>
+              {addingChild ? "Menambahkan…" : "Simpan anak"}
+            </button>
+          </form>
         )}
+
+        <div className="parent-child-profile-list">
+          {view.children.map((child) => (
+            <article key={child.id} className="parent-child-profile-item">
+              <span className="parent-child-profile-avatar">
+                <UserRound size={18} />
+              </span>
+              <div>
+                <strong>{child.name}</strong>
+                <small>
+                  {formatAge(ageInMonths(child.birthDate))} ·{" "}
+                  {child.sex === "male" ? "Laki-laki" : "Perempuan"}
+                </small>
+                <small>Kode {child.code}</small>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
+
       <p className="portal-note profile-note">
-        Foto profil membantu membedakan akun. Data pemeriksaan tidak dapat
-        diubah dari halaman profil.
+        Setiap anak memiliki riwayat pemeriksaan dan foto terakhirnya sendiri.
+        Data pemeriksaan tidak dapat diubah dari halaman profil.
       </p>
     </>
   );

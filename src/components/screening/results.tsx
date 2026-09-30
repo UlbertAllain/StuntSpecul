@@ -127,7 +127,11 @@ export function Results({
       >
         <div className="growth-result-primary">
           <span>Hasil pertumbuhan WHO</span>
-          <strong>{growthStatusLabel(report.growthStatus)}</strong>
+          <strong>
+            {report.measurementQuality === "recheck"
+              ? "Pengukuran perlu diulang"
+              : growthStatusLabel(report.growthStatus)}
+          </strong>
         </div>
         <dl className="growth-result-meta">
           <div>
@@ -135,14 +139,21 @@ export function Results({
             <dd>{stuntingScreeningLabel(report.stuntingScreening)}</dd>
           </div>
           <div>
-            <dt>Z-score</dt>
+            <dt>TB/U Z-score</dt>
             <dd>{formatReading(report.heightForAgeZ)}</dd>
+          </div>
+          <div>
+            <dt>BB/U Z-score</dt>
+            <dd>{formatReading(report.weightForAgeZ)}</dd>
           </div>
         </dl>
         <p>
-          {report.heightForAgeZ === null
-            ? "TB/U belum dapat dihitung karena pembacaan tinggi badan belum tersedia atau tidak valid."
-            : "Hasil ini adalah skrining, bukan diagnosis."}
+          {report.measurementQuality === "recheck"
+            ? report.measurementReason ||
+              "Data tinggi atau berat tidak valid. Silakan ulangi pengukuran."
+            : report.heightForAgeZ === null
+              ? "TB/U belum dapat dihitung karena pembacaan tinggi badan belum tersedia atau tidak valid."
+              : "Hasil ini adalah skrining, bukan diagnosis."}
         </p>
       </div>
 
@@ -159,7 +170,7 @@ export function Results({
             aria-label="Foto wajah yang baru diambil"
             style={{ backgroundImage: `url("${photoPreviewUrl}")` }}
           >
-            <span>Foto sesi ini — tidak disimpan</span>
+            <span>Foto pemeriksaan ini</span>
           </div>
         )}
 
@@ -293,8 +304,26 @@ export function Results({
                 <dd>{formatReading(report.heightForAgeZ)}</dd>
               </div>
               <div>
+                <dt>BB/U Z-score WHO</dt>
+                <dd>{formatReading(report.weightForAgeZ)}</dd>
+              </div>
+              <div>
+                <dt>Validitas pengukuran</dt>
+                <dd>
+                  {report.measurementQuality === "recheck"
+                    ? "Perlu diulang"
+                    : report.measurementQuality === "incomplete"
+                      ? "Belum lengkap"
+                      : "Valid"}
+                </dd>
+              </div>
+              <div>
                 <dt>Penilaian pertumbuhan</dt>
-                <dd>{growthStatusLabel(report.growthStatus)}</dd>
+                <dd>
+                  {report.measurementQuality === "recheck"
+                    ? "Belum dapat disimpulkan"
+                    : growthStatusLabel(report.growthStatus)}
+                </dd>
               </div>
               <div>
                 <dt>Analisis visual pendukung</dt>

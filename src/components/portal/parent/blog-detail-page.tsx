@@ -39,7 +39,7 @@ export function ParentBlogDetailPage() {
   return (
     <PortalShell
       tone="parent"
-      heading="Blog pertumbuhan"
+      heading="Activity"
       subtitle="Informasi edukasi untuk mendampingi tumbuh kembang anak."
       actions={
         <button
@@ -101,7 +101,7 @@ export function ParentBlogDetailPage() {
 
           <Link className="parent-history-page-back bottom" href="/ortu">
             <ArrowLeft size={18} />
-            Kembali ke Blog
+            Kembali ke Activity
           </Link>
         </article>
       )}

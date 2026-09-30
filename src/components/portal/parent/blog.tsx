@@ -77,10 +77,10 @@ export function ParentBlog() {
       <div className="section-heading compact-section-heading">
         <div>
           <span className="parent-section-eyebrow">EDUKASI KELUARGA</span>
-          <h2>Blog pertumbuhan</h2>
+          <h2>Activity</h2>
           <p className="portal-note">
-            Bacaan singkat dari petugas tentang nutrisi, kebiasaan sehat, dan
-            pencegahan stunting.
+            Aktivitas edukasi dari petugas tentang nutrisi, kebiasaan sehat,
+            dan pencegahan stunting.
           </p>
         </div>
       </div>

@@ -9,11 +9,8 @@ import {
   TestTubeDiagonal,
 } from "lucide-react";
 import { useCamera } from "@/hooks/use-camera";
-import {
-  assessHeightForAge,
-  growthStatusLabel,
-  stuntingScreeningLabel,
-} from "@/lib/growth";
+import { assessAnthropometry } from "@/lib/anthropometry";
+import { growthStatusLabel, stuntingScreeningLabel } from "@/lib/growth";
 import {
   visualAnalysisStatusLabel,
   visualFacePositionLabel,
@@ -98,9 +95,15 @@ export function FaceTestPanel() {
   const [context, setContext] = useState<VisualAnalysisContext | null>(null);
   const [capture, setCapture] = useState<Capture | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState("");
 
   const growth = context
-    ? assessHeightForAge(context.ageMonths, context.sex, context.heightCm)
+    ? assessAnthropometry(
+        context.ageMonths,
+        context.sex,
+        context.heightCm,
+        context.weightKg,
+      )
     : null;
 
   useEffect(
@@ -141,6 +144,23 @@ export function FaceTestPanel() {
       return;
     }
 
+    const assessment = assessAnthropometry(
+      ageMonths,
+      sex,
+      heightCm,
+      weightKg,
+    );
+    if (assessment.measurementQuality === "recheck") {
+      setValidationError(
+        assessment.measurementReason ||
+          "Data tinggi atau berat perlu diukur ulang.",
+      );
+      setCapture(null);
+      setContext(null);
+      return;
+    }
+
+    setValidationError("");
     setCapture(null);
     setContext({ ageMonths, sex, heightCm, weightKg });
   }
@@ -185,6 +205,7 @@ export function FaceTestPanel() {
         Mode ini khusus kalibrasi dan pengembangan. Tinggi serta berat diisi
         manual hanya sebagai konteks pengujian.
       </Message>
+      {validationError && <Message error>{validationError}</Message>}
 
       <div className="face-test-grid">
         <section className="ref-card">
@@ -357,7 +378,11 @@ export function FaceTestPanel() {
                 <strong>{whoStatus}</strong>
                 <small>
                   {growthSummary}
-                  {growth && <> · Z-score {growth.heightForAgeZ ?? "—"}</>}
+                  {growth && <> · TB/U {growth.heightForAgeZ ?? "—"} SD</>}
+                  {growth?.weightForAgeZ !== null &&
+                    growth?.weightForAgeZ !== undefined && (
+                      <> · BB/U {growth.weightForAgeZ} SD</>
+                    )}
                 </small>
               </div>
             </div>

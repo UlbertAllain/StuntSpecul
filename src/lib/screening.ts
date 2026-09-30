@@ -115,6 +115,9 @@ export type ScreeningReport = {
   completedAt: string;
   bmi: number | null;
   heightForAgeZ: number | null;
+  weightForAgeZ: number | null;
+  measurementQuality: MeasurementQuality;
+  measurementReason: string | null;
   captureStatus: Capture["status"];
   growthStatus: GrowthStatus;
   stuntingScreening: StuntingScreening;
@@ -148,10 +151,11 @@ export function createScreeningReport(
     throw new Error("Data pengukuran tidak valid.");
   }
 
-  const growth = assessHeightForAge(
+  const growth = assessAnthropometry(
     validatedChild.ageMonths,
     validatedChild.sex,
     heightCm,
+    weightKg,
   );
 
   return {
@@ -160,6 +164,9 @@ export function createScreeningReport(
     completedAt,
     bmi,
     heightForAgeZ: growth.heightForAgeZ,
+    weightForAgeZ: growth.weightForAgeZ,
+    measurementQuality: growth.measurementQuality,
+    measurementReason: growth.measurementReason,
     captureStatus: capture.status,
     growthStatus: growth.growthStatus,
     stuntingScreening: growth.stuntingScreening,

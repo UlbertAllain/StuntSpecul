@@ -1,4 +1,4 @@
-import { assessHeightForAge } from "@/lib/growth";
+import { assessAnthropometry } from "@/lib/anthropometry";
 import { analyzeVisualWithGemini } from "@/server/gemini-vision";
 import { ApiError, failure, ok, sameOrigin } from "@/server/http";
 import { runtimeEnvironment } from "@/server/runtime";
@@ -86,7 +86,20 @@ async function handle(request: Request) {
     }
 
     const { image, type } = await readImage(request);
-    const growth = assessHeightForAge(ageMonths, sex, heightCm);
+    const growth = assessAnthropometry(
+      ageMonths,
+      sex,
+      heightCm,
+      weightKg,
+    );
+    if (growth.measurementQuality === "recheck") {
+      throw new ApiError(
+        422,
+        growth.measurementReason || "Data pengukuran perlu diulang.",
+        "measurement_recheck_required",
+      );
+    }
+
     const visualAnalysis = await analyzeVisualWithGemini(env, image, type, {
       ageMonths,
       sex,
