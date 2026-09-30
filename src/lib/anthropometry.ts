@@ -3,7 +3,7 @@ import {
   type GrowthStatus,
   type Sex,
   type StuntingScreening,
-} from "./growth";
+} from "./growth.ts";
 
 export type MeasurementQuality = "valid" | "incomplete" | "recheck";
 
