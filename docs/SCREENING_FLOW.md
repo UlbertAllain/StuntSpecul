@@ -74,7 +74,7 @@ Tidak ada generator TB/BB dummy. Tahap tinggi dan berat menunggu nilai sensor Io
 Sebelum measurement diterima/finalized, backend menjalankan validation gate WHO:
 
 - TB/U (height-for-age) harus berada dalam flag range WHO -6 sampai +6 SD;
-- BB/U (weight-for-age) harus berada dalam flag range WHO -6 sampai +5 SD;
+- BB/U (weight-for-age) harus berada dalam flag range WHO -5 sampai +5 SD;
 - nilai di luar range dianggap kemungkinan measurement/input error dan menghasilkan `measurement_recheck_required`;
 - data tersebut tidak boleh diberi kesimpulan stunting. User diminta mengulang pengukuran.
 
