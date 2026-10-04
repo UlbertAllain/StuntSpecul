@@ -4,17 +4,12 @@ import type {
   VisualLighting,
   VisualVisibility,
 } from "../lib/screening";
-import type { GrowthStatus } from "../lib/growth";
 import type { Env } from "./env";
 import { ApiError } from "./http";
 
 export type VisualAnalysisContext = {
   ageMonths: number;
   sex: "male" | "female";
-  heightCm: number;
-  weightKg: number;
-  heightForAgeZ: number | null;
-  growthStatus: GrowthStatus;
 };
 
 const VISIBILITY = new Set<VisualVisibility>([
@@ -177,7 +172,7 @@ export async function analyzeVisualWithGemini(
     "ATURAN WAJIB:",
     "- Jangan menentukan, memprediksi, atau mengubah status stunting dari wajah.",
     "- Jangan memberi probabilitas stunting.",
-    "- Status pertumbuhan WHO di bawah adalah hasil deterministik dari tinggi menurut umur dan hanya diberikan sebagai konteks.",
+    "- Analisis ini dilakukan sebelum pengukuran tinggi/berat; jangan meminta atau menebak hasil antropometri.",
     "- Jangan menebak penyakit, kekurangan gizi, etnis, emosi, kecerdasan, atau kondisi medis dari wajah.",
     "- Tugas Anda hanya menilai apakah wajah dan area wajah terlihat serta kualitas foto.",
     "- observations harus deskripsi visual netral yang benar-benar tampak pada foto, maksimal 4 item.",
@@ -186,13 +181,9 @@ export async function analyzeVisualWithGemini(
     "- Jika tidak ada wajah atau ada lebih dari satu wajah, status harus rejected.",
     "- Balas JSON saja, tanpa markdown.",
     "",
-    "KONTEKS PEMERIKSAAN:",
+    "KONTEKS ANAK:",
     "usiaBulan: " + context.ageMonths,
     "jenisKelamin: " + context.sex,
-    "tinggiCm: " + context.heightCm,
-    "beratKg: " + context.weightKg,
-    "tbuZScoreWHO: " + (context.heightForAgeZ ?? "unavailable"),
-    "statusWHO: " + context.growthStatus,
     "",
     "FORMAT JSON:",
     '{"status":"ok|rejected","faceDetected":true,"singleFace":true,"eyes":"visible|partial|not_visible|unclear","nose":"visible|partial|not_visible|unclear","mouth":"visible|partial|not_visible|unclear","facePosition":"frontal|slightly_turned|partial|unclear","lighting":"good|low|bright|uneven|unclear","observations":[],"reason":null}',

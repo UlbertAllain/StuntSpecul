@@ -15,10 +15,10 @@ export type Step =
 
 export const STEP_PROGRESS: Record<Step, number> = {
   welcome: 0,
-  prepare: 0,
-  height: 0,
-  weight: 1,
-  camera: 2,
+  camera: 0,
+  prepare: 1,
+  height: 1,
+  weight: 2,
   analysis: 3,
   result: 3,
 };
@@ -65,7 +65,7 @@ export type SessionAction =
 const NEXT_MEASUREMENT_STEP: Record<MeasurementPhase, Step> = {
   prepare: "height",
   height: "weight",
-  weight: "camera",
+  weight: "analysis",
 };
 
 export function sessionReducer(state: Session, action: SessionAction): Session {
@@ -76,7 +76,7 @@ export function sessionReducer(state: Session, action: SessionAction): Session {
       if (!child.success) return state;
       return {
         ...INITIAL_SESSION,
-        step: "prepare",
+        step: action.cameraEnabled ? "camera" : "prepare",
         child: child.data,
         cameraEnabled: action.cameraEnabled,
       };
@@ -100,7 +100,7 @@ export function sessionReducer(state: Session, action: SessionAction): Session {
       if (state.step !== "camera") return state;
       return {
         ...state,
-        step: "analysis",
+        step: "prepare",
         capture: action.capture,
         paused: false,
       };

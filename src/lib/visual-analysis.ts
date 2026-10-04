@@ -5,8 +5,6 @@ import type { VisualAnalysis } from "./screening";
 export type VisualAnalysisContext = {
   ageMonths: number;
   sex: "male" | "female";
-  heightCm: number;
-  weightKg: number;
 };
 
 export class VisualAnalysisRequestError extends Error {
@@ -58,8 +56,6 @@ async function requestVisualAnalysis(
         "Content-Type": photo.type || "image/jpeg",
         "X-Age-Months": String(context.ageMonths),
         "X-Sex": context.sex,
-        "X-Height-Cm": String(context.heightCm),
-        "X-Weight-Kg": String(context.weightKg),
       },
       body: photo,
       cache: "no-store",

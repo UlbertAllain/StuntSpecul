@@ -119,6 +119,24 @@ Validation:
 
 Data IoT yang sudah tersimpan diprioritaskan backend ketika web alat menyelesaikan pemeriksaan. Tidak ada lagi generator TB/BB dummy pada flow aktif.
 
+### Realtime sampling dan nilai final
+
+Endpoint backend menyimpan **nilai valid terakhir yang dikirim ESP32**. Backend tidak merata-ratakan rangkaian POST. Jadi jika firmware mengirim 100.0 cm, lalu 102.0 cm, lalu 101.4 cm pada sesi yang sama, nilai terakhir yang berhasil disimpan adalah 101.4 cm.
+
+Untuk production, jangan kirim setiap pembacaan mentah sensor ke Firestore. Lakukan stabilisasi di ESP32 lalu kirim satu nilai final per tahap:
+
+1. ambil sample sensor kontinu selama sekitar 5 detik;
+2. abaikan fase awal ketika anak baru mengambil posisi;
+3. cari window yang stabil dan buang outlier/lonjakan pembacaan;
+4. untuk tinggi, gunakan median atau trimmed mean dari sample stabil, bukan pembacaan pertama/terakhir;
+5. untuk berat, gunakan rata-rata/median dari sample yang sudah stabil;
+6. bila sebaran sample masih terlalu besar, lanjutkan sampling dan tampilkan instruksi agar anak tetap diam;
+7. setelah stabil, bulatkan nilai final (misalnya 0,1 cm / 0,1 kg) lalu POST satu kali ke `/api/iot/measurements`.
+
+Threshold stabilitas harus dikalibrasi terhadap sensor dan mekanik alat nyata. Nilai awal yang layak diuji saat kalibrasi adalah window 1,5–2 detik dengan perubahan tinggi sekitar <=1 cm dan berat sekitar <=0,2 kg, lalu disesuaikan dari data pengujian.
+
+Dengan desain ini, hasil bukan angka detik pertama atau detik terakhir, dan bukan average mentah seluruh periode yang masih mengandung gerakan anak.
+
 Response sukses measurement:
 
     {
@@ -186,21 +204,21 @@ Gunakan hanya ketika firmware benar-benar perlu membatalkan sesi. Normal complet
     ↓
     POST /api/iot/session/claim
     ↓
-    ukur tinggi
+    web /alat mengambil wajah terlebih dahulu
+    ↓
+    Gemini menganalisis kualitas/visibilitas wajah sebagai pendukung
+    ↓
+    stabilisasi sample tinggi di ESP32
     ↓
     POST /api/iot/measurements
     { heightCm }
     ↓
-    ukur berat
+    stabilisasi sample berat di ESP32
     ↓
     POST /api/iot/measurements
     { weightKg }
     ↓
     tetap kirim heartbeat/session polling
-    ↓
-    web /alat menangani kamera
-    ↓
-    Gemini menganalisis kualitas/visibilitas wajah sebagai pendukung
     ↓
     backend menggabungkan hasil sensor + observasi visual
     ↓

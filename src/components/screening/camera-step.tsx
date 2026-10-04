@@ -11,8 +11,6 @@ type CameraStepProps = {
   paused: boolean;
   ageMonths: number;
   sex: "male" | "female";
-  heightCm: number;
-  weightKg: number;
   soundEnabled?: boolean;
   onComplete: (capture: Capture) => void;
 };
@@ -48,14 +46,12 @@ export function CameraStep({
   paused,
   ageMonths,
   sex,
-  heightCm,
-  weightKg,
   soundEnabled = false,
   onComplete,
 }: CameraStepProps) {
   const { videoRef, status, attempt, capture, error, retry } = useCamera(
     onComplete,
-    { ageMonths, sex, heightCm, weightKg },
+    { ageMonths, sex },
   );
 
   return (

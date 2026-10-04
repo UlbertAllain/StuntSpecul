@@ -1,4 +1,3 @@
-import { assessAnthropometry } from "@/lib/anthropometry";
 import { analyzeVisualWithGemini } from "@/server/gemini-vision";
 import { ApiError, failure, ok, sameOrigin } from "@/server/http";
 import { runtimeEnvironment } from "@/server/runtime";
@@ -61,8 +60,6 @@ async function handle(request: Request) {
     sameOrigin(request, env);
 
     const ageMonths = numberHeader(request, "x-age-months");
-    const heightCm = numberHeader(request, "x-height-cm");
-    const weightKg = numberHeader(request, "x-weight-kg");
     const sex = request.headers.get("x-sex");
 
     if (
@@ -70,47 +67,22 @@ async function handle(request: Request) {
       !Number.isInteger(ageMonths) ||
       ageMonths < 24 ||
       ageMonths > 59 ||
-      heightCm === null ||
-      heightCm < 30 ||
-      heightCm > 200 ||
-      weightKg === null ||
-      weightKg < 1 ||
-      weightKg > 100 ||
       (sex !== "male" && sex !== "female")
     ) {
       throw new ApiError(
         422,
-        "Konteks pemeriksaan belum lengkap untuk analisis visual.",
+        "Konteks anak belum lengkap untuk analisis visual.",
         "visual_context_invalid",
       );
     }
 
     const { image, type } = await readImage(request);
-    const growth = assessAnthropometry(ageMonths, sex, heightCm, weightKg);
-    if (growth.measurementQuality === "recheck") {
-      throw new ApiError(
-        422,
-        growth.measurementReason || "Data pengukuran perlu diulang.",
-        "measurement_recheck_required",
-      );
-    }
-
     const visualAnalysis = await analyzeVisualWithGemini(env, image, type, {
       ageMonths,
       sex,
-      heightCm,
-      weightKg,
-      heightForAgeZ: growth.heightForAgeZ,
-      growthStatus: growth.growthStatus,
     });
 
-    return ok({
-      visualAnalysis,
-      context: {
-        heightForAgeZ: growth.heightForAgeZ,
-        growthStatus: growth.growthStatus,
-      },
-    });
+    return ok({ visualAnalysis });
   } catch (error) {
     return failure(error);
   }
