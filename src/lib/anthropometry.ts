@@ -157,7 +157,7 @@ export function assessAnthropometry(
     heightCm !== null && height.measurementValid === false;
   const weightNeedsRecheck =
     weightKg !== null &&
-    (weightForAgeZ === null || weightForAgeZ < -5 || weightForAgeZ > 5);
+    (weightForAgeZ === null || weightForAgeZ < -6 || weightForAgeZ > 5);
 
   if (heightNeedsRecheck || weightNeedsRecheck) {
     const reasons = [

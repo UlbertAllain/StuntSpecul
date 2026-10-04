@@ -4546,6 +4546,7 @@
 .parent-insight-latest,
 .parent-insight-chart-card,
 .parent-insight-trend-card,
+.parent-insight-risk-card,
 .parent-insight-who-card {
   border: 1px solid #dce7ef;
   border-radius: 16px;
@@ -4729,7 +4730,7 @@
 
 .parent-insight-bottom-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -4752,6 +4753,7 @@
 }
 
 .parent-insight-trend-card small,
+.parent-insight-risk-card > small,
 .parent-insight-who-card > small {
   color: #728493;
   font-size: 9px;
@@ -4760,6 +4762,7 @@
 }
 
 .parent-insight-trend-card strong,
+.parent-insight-risk-card > strong,
 .parent-insight-who-card > strong {
   display: block;
   margin-top: 4px;
@@ -4770,6 +4773,7 @@
 }
 
 .parent-insight-trend-card p,
+.parent-insight-risk-card > p,
 .parent-insight-who-card > p {
   margin-top: 5px;
   color: #728493;
@@ -4777,14 +4781,28 @@
   line-height: 1.5;
 }
 
+.parent-insight-risk-card,
 .parent-insight-who-card {
   padding: 15px;
 }
 
+.parent-insight-risk-card.risk-high,
+.parent-insight-risk-card.risk-current_stunting {
+  border-color: #e9c9c9;
+  background: #fff8f8;
+}
+
+.parent-insight-risk-card.risk-watch {
+  border-color: #eadfb9;
+  background: #fffaf0;
+}
+
+.parent-insight-risk-card dl,
 .parent-insight-who-card dl {
   margin: 10px 0 0;
 }
 
+.parent-insight-risk-card dl > div,
 .parent-insight-who-card dl > div {
   display: flex;
   align-items: center;
@@ -4794,11 +4812,13 @@
   border-top: 1px solid #e5ebf0;
 }
 
+.parent-insight-risk-card dt,
 .parent-insight-who-card dt {
   color: #728493;
   font-size: 10px;
 }
 
+.parent-insight-risk-card dd,
 .parent-insight-who-card dd {
   margin: 0;
   color: #18334d;
@@ -6191,4 +6211,106 @@
   color: #7b5d62;
   font-size: 10px;
   line-height: 1.45;
+}
+
+
+/* Parent risk forecast and localized Indonesian nutrition plan. */
+.parent-history-risk {
+  border-color: #d8e5ee;
+  background: #f8fbfd;
+}
+
+.parent-history-risk-label {
+  display: block;
+  margin-top: 12px;
+  color: #18334d;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.parent-local-nutrition-plan {
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid #dce9d9;
+}
+
+.parent-local-nutrition-plan > strong,
+.parent-local-nutrition-plan > span {
+  display: block;
+}
+
+.parent-local-nutrition-plan > strong {
+  color: #294f3b;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.parent-local-nutrition-plan > span {
+  margin-top: 4px;
+  color: #718277;
+  font-size: 10px;
+}
+
+.parent-local-food-groups {
+  margin-top: 11px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.parent-local-food-groups > div {
+  padding: 10px;
+  border-radius: 11px;
+  background: #f2f8ef;
+}
+
+.parent-local-food-groups b,
+.parent-local-food-groups span {
+  display: block;
+}
+
+.parent-local-food-groups b {
+  color: #315741;
+  font-size: 10px;
+}
+
+.parent-local-food-groups span {
+  margin-top: 3px;
+  color: #667b6d;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.parent-local-nutrition-plan h4 {
+  margin: 15px 0 6px;
+  color: #294f3b;
+  font-size: 12px;
+}
+
+.parent-local-nutrition-plan dl {
+  margin: 0;
+}
+
+.parent-local-nutrition-sources {
+  margin-top: 10px;
+  display: grid;
+  gap: 5px;
+}
+
+.parent-local-nutrition-sources a {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #3f7eab;
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .parent-local-food-groups {
+    grid-template-columns: 1fr;
+  }
 }

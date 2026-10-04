@@ -212,7 +212,11 @@ function asExam(doc: FirestoreDoc<ExamRecord>): Examination {
   );
   const fallbackRecommendations = growthRecommendationsFor(
     growth.growthStatus,
-    { currentHeightForAgeZ: growth.heightForAgeZ },
+    {
+      ageMonths: value.ageMonths,
+      currentHeightForAgeZ: growth.heightForAgeZ,
+      currentAt: value.completedAt ?? value.createdAt,
+    },
   );
   const recommendations: GrowthRecommendations = value.recommendations
     ? {
@@ -951,6 +955,7 @@ async function recommendationsForExam(
   exam: FirestoreDoc<ExamRecord>,
   heightCm: number | null,
   weightKg: number | null,
+  completedAt: number,
 ) {
   const current = assessAnthropometry(
     exam.data.ageMonths,
@@ -964,26 +969,55 @@ async function recommendationsForExam(
       where: { field: "childId", op: "EQUAL", value: exam.data.childId },
     },
   );
-  const previous = previousCandidates
-    .sort(byCreatedDesc)
-    .find(
+  const validPrevious = previousCandidates
+    .filter(
       (item) =>
         item.id !== exam.id &&
         item.data.status === "completed" &&
         item.data.heightCm !== null,
+    )
+    .map((item) => ({
+      item,
+      growth: assessAnthropometry(
+        item.data.ageMonths,
+        item.data.sex,
+        item.data.heightCm,
+        item.data.weightKg,
+      ),
+    }))
+    .filter(
+      (entry) =>
+        entry.growth.measurementQuality !== "recheck" &&
+        entry.growth.heightForAgeZ !== null,
+    )
+    .sort(
+      (a, b) =>
+        (b.item.data.completedAt ?? b.item.data.createdAt) -
+        (a.item.data.completedAt ?? a.item.data.createdAt),
     );
-  const previousGrowth = previous
-    ? assessAnthropometry(
-        previous.data.ageMonths,
-        previous.data.sex,
-        previous.data.heightCm,
-        previous.data.weightKg,
-      )
-    : null;
+
+  const previous = validPrevious[0] ?? null;
+  const riskHistory = validPrevious
+    .slice(0, 4)
+    .reverse()
+    .map((entry) => ({
+      at: entry.item.data.completedAt ?? entry.item.data.createdAt,
+      heightForAgeZ: entry.growth.heightForAgeZ!,
+    }));
+
+  if (current.heightForAgeZ !== null) {
+    riskHistory.push({
+      at: completedAt,
+      heightForAgeZ: current.heightForAgeZ,
+    });
+  }
 
   return growthRecommendationsFor(current.growthStatus, {
+    ageMonths: exam.data.ageMonths,
     currentHeightForAgeZ: current.heightForAgeZ,
-    previousHeightForAgeZ: previousGrowth?.heightForAgeZ ?? null,
+    previousHeightForAgeZ: previous?.growth.heightForAgeZ ?? null,
+    currentAt: completedAt,
+    riskHistory,
   });
 }
 
@@ -2511,11 +2545,13 @@ async function stationComplete(request: Request, env: Env) {
     heightCm !== null && weightKg !== null
       ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
+  const completedAt = Date.now();
   const recommendations = await recommendationsForExam(
     env,
     exam,
     heightCm,
     weightKg,
+    completedAt,
   );
 
   try {
@@ -2533,7 +2569,7 @@ async function stationComplete(request: Request, env: Env) {
         facialModelVersion: input.facialModelVersion ?? null,
         visualAnalysis: input.visualAnalysis ?? null,
         recommendations,
-        completedAt: Date.now(),
+        completedAt,
       },
       {
         mergeFields: [
@@ -2826,11 +2862,13 @@ async function staffComplete(request: Request, env: Env, examId: string) {
     heightCm !== null && weightKg !== null
       ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
+  const completedAt = Date.now();
   const recommendations = await recommendationsForExam(
     env,
     exam,
     heightCm,
     weightKg,
+    completedAt,
   );
   await store(env).set(
     `examinations/${exam.id}`,
@@ -2846,7 +2884,7 @@ async function staffComplete(request: Request, env: Env, examId: string) {
       facialModelVersion: input.facialModelVersion ?? null,
       visualAnalysis: input.visualAnalysis ?? null,
       recommendations,
-      completedAt: Date.now(),
+      completedAt,
     },
     {
       mergeFields: [

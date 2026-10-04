@@ -25,7 +25,9 @@ export function reportText(
   const recommendations =
     savedRecommendations ??
     growthRecommendationsFor(report.growthStatus, {
+      ageMonths: report.child.ageMonths,
       currentHeightForAgeZ: report.heightForAgeZ,
+      currentAt: Date.parse(report.completedAt),
     });
   const facial = report.facialAnalysis;
   const visual = report.visualAnalysis;
@@ -83,8 +85,33 @@ export function reportText(
     "",
     ...visualLines,
     "",
-    "REKOMENDASI NUTRISI",
-    ...recommendations.nutrition.map((item, index) => `${index + 1}. ${item}`),
+    "PREDIKSI RISIKO STUNTING BERBASIS TREN",
+    "Status: " + recommendations.risk.label,
+    recommendations.risk.zChangePer30Days === null
+      ? "Perubahan TB/U per 30 hari: —"
+      : "Perubahan TB/U per 30 hari: " +
+        recommendations.risk.zChangePer30Days.toFixed(2) +
+        " SD",
+    recommendations.risk.projectedHeightForAgeZ === null
+      ? "Proyeksi TB/U 90 hari: —"
+      : "Proyeksi TB/U 90 hari: " +
+        recommendations.risk.projectedHeightForAgeZ.toFixed(2) +
+        " SD",
+    ...recommendations.risk.reasons.map((item) => "- " + item),
+    recommendations.risk.disclaimer,
+    "",
+    "REKOMENDASI NUTRISI LOKAL",
+    ...recommendations.nutrition.map(
+      (item, index) => String(index + 1) + ". " + item,
+    ),
+    "",
+    "CONTOH MENU — " + recommendations.localizedNutrition.ageBand,
+    ...recommendations.localizedNutrition.sampleDay.map(
+      (meal) => meal.slot + ": " + meal.menu,
+    ),
+    ...recommendations.localizedNutrition.cautions.map(
+      (item) => "Catatan: " + item,
+    ),
     "",
     "PENANGANAN / LANGKAH SELANJUTNYA",
     ...recommendations.nextSteps.map((item, index) => `${index + 1}. ${item}`),

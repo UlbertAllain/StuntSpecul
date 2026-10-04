@@ -477,6 +477,39 @@ export function ParentGrowthInsights({
           </div>
         </article>
 
+        <article
+          className={
+            "parent-insight-risk-card risk-" +
+            latest.recommendations.risk.level
+          }
+        >
+          <small>PREDIKSI RISIKO — TREN 90 HARI</small>
+          <strong>{latest.recommendations.risk.label}</strong>
+          <p>{latest.recommendations.risk.reasons[0]}</p>
+          {latest.recommendations.risk.projectedHeightForAgeZ !== null && (
+            <dl>
+              <div>
+                <dt>Proyeksi TB/U</dt>
+                <dd>
+                  {latest.recommendations.risk.projectedHeightForAgeZ.toFixed(
+                    2,
+                  )}{" "}
+                  SD
+                </dd>
+              </div>
+              <div>
+                <dt>Perubahan / 30 hari</dt>
+                <dd>
+                  {latest.recommendations.risk.zChangePer30Days?.toFixed(2) ??
+                    "—"}{" "}
+                  SD
+                </dd>
+              </div>
+            </dl>
+          )}
+          <p>Proyeksi tren untuk skrining awal, bukan diagnosis.</p>
+        </article>
+
         <article className="parent-insight-who-card">
           <small>STATUS WHO TERBARU</small>
           <strong>{growthStatusLabel(latest.growthStatus)}</strong>

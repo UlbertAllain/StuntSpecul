@@ -18,6 +18,9 @@ test("growth recommendations include nutrition and next steps for WHO statuses",
     assert.equal(result.basedOn, status);
     assert.ok(result.nutrition.length > 0);
     assert.ok(result.nextSteps.length > 0);
+    assert.ok(result.localizedNutrition.foodGroups.length > 0);
+    assert.ok(result.localizedNutrition.sampleDay.length >= 3);
+    assert.ok(result.localizedNutrition.sources.length >= 2);
   }
 });
 
@@ -53,4 +56,25 @@ test("recommendations become contextual when previous TB/U exists", () => {
 
   assert.notDeepEqual(declining.nextSteps, improving.nextSteps);
   assert.notDeepEqual(declining.nutrition, improving.nutrition);
+});
+
+
+test("localized nutrition plan adapts age band and keeps Indonesian food options", () => {
+  const result = growthRecommendationsFor("within_range", {
+    ageMonths: 48,
+    currentHeightForAgeZ: -0.8,
+  });
+
+  assert.equal(result.localizedNutrition.ageBand, "36-59 bulan");
+  assert.ok(
+    result.localizedNutrition.foodGroups.some(
+      (group) =>
+        group.label === "Protein hewani" && group.examples.includes("ikan lele"),
+    ),
+  );
+  assert.ok(
+    result.localizedNutrition.sampleDay.some((meal) =>
+      meal.menu.includes("tempe"),
+    ),
+  );
 });

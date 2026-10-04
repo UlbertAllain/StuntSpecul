@@ -74,7 +74,7 @@ Tidak ada generator TB/BB dummy. Tahap tinggi dan berat menunggu nilai sensor Io
 Sebelum measurement diterima/finalized, backend menjalankan validation gate WHO:
 
 - TB/U (height-for-age) harus berada dalam flag range WHO -6 sampai +6 SD;
-- BB/U (weight-for-age) harus berada dalam flag range WHO -5 sampai +5 SD;
+- BB/U (weight-for-age) harus berada dalam flag range WHO -6 sampai +5 SD;
 - nilai di luar range dianggap kemungkinan measurement/input error dan menghasilkan `measurement_recheck_required`;
 - data tersebut tidak boleh diberi kesimpulan stunting. User diminta mengulang pengukuran.
 
@@ -91,6 +91,34 @@ Setelah TB/U WHO dihitung, backend membuat snapshot rekomendasi edukasi berdasar
 - recommendations.previousHeightForAgeZ
 
 Snapshot disimpan bersama examination supaya riwayat lama tidak berubah ketika aturan rekomendasi versi berikutnya diperbarui. Jika belum ada pemeriksaan sebelumnya, rekomendasi memakai status WHO saat ini tanpa perbandingan tren. Examination legacy yang belum memiliki snapshot tetap mendapatkan fallback rekomendasi saat dibaca.
+
+### Prediksi risiko stunting berbasis tren
+
+Setelah pemeriksaan valid selesai, backend membangun seri TB/U dari maksimal empat pemeriksaan valid sebelumnya ditambah pemeriksaan saat ini. `src/lib/stunting-risk.ts` menjalankan regresi linear sederhana terhadap TB/U berdasarkan waktu dan membuat simulasi tren 90 hari.
+
+Output:
+
+- `insufficient_data`: belum ada minimal dua pengukuran dengan rentang sekurangnya 28 hari;
+- `low`: tren tidak memproyeksikan TB/U melewati -2 SD dalam 90 hari;
+- `watch`: TB/U menurun lebih dari 0,1 SD per 30 hari tetapi proyeksi 90 hari belum melewati -2 SD;
+- `high`: proyeksi tren 90 hari melewati -2 SD;
+- `current_stunting`: TB/U saat ini sudah < -2 SD, sehingga status WHO saat ini lebih relevan daripada forecast.
+
+Engine ini tidak menghasilkan probabilitas klinis dan tidak diklaim sebagai model ML tervalidasi. Nilainya adalah early-warning berbasis tren untuk membantu pemantauan; diagnosis dan keputusan klinis tetap dilakukan tenaga kesehatan.
+
+### Localized Nutrition Recommendation Engine
+
+`src/lib/growth-recommendations.ts` menghasilkan rekomendasi edukasi pangan lokal Indonesia untuk usia 24-59 bulan. Engine menyesuaikan fokus berdasarkan status TB/U dan tren, lalu menyediakan:
+
+- contoh sumber protein hewani lokal (telur, lele, kembung, ayam, daging);
+- lauk nabati seperti tempe/tahu;
+- pilihan makanan pokok, sayur, dan buah yang umum dijumpai;
+- contoh susunan menu satu hari tanpa menetapkan porsi medis individual;
+- catatan alergi/toleransi dan anjuran konsultasi pada masalah pertumbuhan.
+
+Dasar edukasi:
+- Kemenkes RI — Isi Piringku Balita 2-5 Tahun: https://ayosehat.kemkes.go.id/1000-hari-pertama-kehidupan/category/balita
+- Kemenkes RI — PMT Berbahan Pangan Lokal bagi Balita: https://ayosehat.kemkes.go.id/pemberian-makanan-tambahan-pada-balita
 
 Detail firmware ada di IOT_INTEGRATION.md.
 
