@@ -168,7 +168,9 @@ export function Results({
           <dl>
             <div>
               <dt>Proyeksi 90 hari</dt>
-              <dd>{recommendations.risk.projectedHeightForAgeZ.toFixed(2)} SD</dd>
+              <dd>
+                {recommendations.risk.projectedHeightForAgeZ.toFixed(2)} SD
+              </dd>
             </div>
             <div>
               <dt>Perubahan / 30 hari</dt>

@@ -131,11 +131,16 @@ export function stuntingRiskFor(
     context.growthStatus === "severely_stunted" ||
     current < -2
   ) {
-    return result(context, "current_stunting", "Stunting terindikasi saat ini", {
-      reasons: [
-        "TB/U saat ini sudah berada di bawah -2 SD, sehingga yang ditampilkan adalah status WHO saat ini, bukan prediksi risiko baru.",
-      ],
-    });
+    return result(
+      context,
+      "current_stunting",
+      "Stunting terindikasi saat ini",
+      {
+        reasons: [
+          "TB/U saat ini sudah berada di bawah -2 SD, sehingga yang ditampilkan adalah status WHO saat ini, bukan prediksi risiko baru.",
+        ],
+      },
+    );
   }
 
   const points = uniqueChronologicalPoints(

@@ -438,7 +438,9 @@ export function ParentHistoryDetailPage() {
 
           <div className="parent-local-nutrition-plan">
             <strong>{recommendations.localizedNutrition.title}</strong>
-            <span>Usia sasaran {recommendations.localizedNutrition.ageBand}</span>
+            <span>
+              Usia sasaran {recommendations.localizedNutrition.ageBand}
+            </span>
 
             <div className="parent-local-food-groups">
               {recommendations.localizedNutrition.foodGroups.map((group) => (

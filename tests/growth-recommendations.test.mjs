@@ -58,7 +58,6 @@ test("recommendations become contextual when previous TB/U exists", () => {
   assert.notDeepEqual(declining.nutrition, improving.nutrition);
 });
 
-
 test("localized nutrition plan adapts age band and keeps Indonesian food options", () => {
   const result = growthRecommendationsFor("within_range", {
     ageMonths: 48,
@@ -69,7 +68,8 @@ test("localized nutrition plan adapts age band and keeps Indonesian food options
   assert.ok(
     result.localizedNutrition.foodGroups.some(
       (group) =>
-        group.label === "Protein hewani" && group.examples.includes("ikan lele"),
+        group.label === "Protein hewani" &&
+        group.examples.includes("ikan lele"),
     ),
   );
   assert.ok(

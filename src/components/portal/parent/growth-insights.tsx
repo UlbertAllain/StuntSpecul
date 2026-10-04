@@ -479,8 +479,7 @@ export function ParentGrowthInsights({
 
         <article
           className={
-            "parent-insight-risk-card risk-" +
-            latest.recommendations.risk.level
+            "parent-insight-risk-card risk-" + latest.recommendations.risk.level
           }
         >
           <small>PREDIKSI RISIKO — TREN 90 HARI</small>
