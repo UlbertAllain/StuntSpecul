@@ -2918,3 +2918,175 @@
   color: #984f59;
   font-weight: 800;
 }
+
+/* Longitudinal risk projection + localized nutrition. */
+.stunting-risk-card {
+  margin: 0 0 24px;
+  padding: 17px 18px;
+  border: 1px solid #d8e5ee;
+  border-radius: 18px;
+  background: #f8fbfd;
+}
+
+.stunting-risk-card > span,
+.stunting-risk-card > strong,
+.stunting-risk-card > small {
+  display: block;
+}
+
+.stunting-risk-card > span {
+  color: #56748a;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+}
+
+.stunting-risk-card > strong {
+  margin-top: 6px;
+  color: #18334d;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.stunting-risk-card > p {
+  margin-top: 7px;
+  color: #5f7688;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.stunting-risk-card > small {
+  margin-top: 10px;
+  color: #7c8c98;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.stunting-risk-card dl {
+  margin: 12px 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.stunting-risk-card dl > div {
+  padding: 9px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.stunting-risk-card dt {
+  color: #738694;
+  font-size: 9px;
+}
+
+.stunting-risk-card dd {
+  margin: 4px 0 0;
+  color: #18334d;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.stunting-risk-card.risk-high,
+.stunting-risk-card.risk-current_stunting {
+  border-color: #e9c9c9;
+  background: #fff8f8;
+}
+
+.stunting-risk-card.risk-watch {
+  border-color: #eadfb9;
+  background: #fffaf0;
+}
+
+.result-local-foods {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid #dce8d7;
+}
+
+.result-local-foods > strong,
+.result-local-foods > p,
+.result-local-foods > small {
+  display: block;
+}
+
+.result-local-foods > strong {
+  color: #274f3a;
+  font-size: 13px;
+}
+
+.result-local-foods > p,
+.result-local-foods > small {
+  margin-top: 5px;
+  color: #647a6b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.result-local-food-groups {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.result-local-food-groups > span {
+  padding: 9px;
+  border-radius: 10px;
+  background: #f2f8ef;
+  color: #587061;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.result-local-food-groups b {
+  display: block;
+  margin-bottom: 3px;
+  color: #294f3b;
+}
+
+.result-local-foods h3 {
+  margin: 13px 0 7px;
+  color: #274f3a;
+  font-size: 12px;
+}
+
+.result-local-foods dl {
+  margin: 0;
+}
+
+.result-local-foods dl > div {
+  padding: 7px 0;
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 9px;
+  border-top: 1px solid #e4ece0;
+}
+
+.result-local-foods dt,
+.result-local-foods dd {
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.result-local-foods dt {
+  color: #53705d;
+  font-weight: 850;
+}
+
+.result-local-foods dd {
+  margin: 0;
+  color: #607668;
+}
+
+@media (max-width: 520px) {
+  .stunting-risk-card dl,
+  .result-local-food-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .result-local-foods dl > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

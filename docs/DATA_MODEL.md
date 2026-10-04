@@ -113,7 +113,28 @@ Satu parent dapat memiliki beberapa child. `parentId` boleh null untuk legacy/st
   - currentHeightForAgeZ
   - previousHeightForAgeZ
   - trendDelta
+  - risk
+    - version
+    - level
+    - label
+    - pointsUsed
+    - spanDays
+    - zChangePer30Days
+    - projectionHorizonDays
+    - projectedHeightForAgeZ
+    - reasons[]
+    - disclaimer
   - nutrition[]
+  - localizedNutrition
+    - version
+    - locale
+    - ageBand
+    - title
+    - focus[]
+    - foodGroups[]
+    - sampleDay[]
+    - cautions[]
+    - sources[]
   - nextSteps[]
 - createdAt
 - completedAt

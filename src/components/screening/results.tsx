@@ -52,7 +52,9 @@ export function Results({
   const recommendations =
     savedRecommendations ??
     growthRecommendationsFor(report.growthStatus, {
+      ageMonths: report.child.ageMonths,
       currentHeightForAgeZ: report.heightForAgeZ,
+      currentAt: Date.parse(report.completedAt),
     });
   const facial = report.facialAnalysis;
   const visual = report.visualAnalysis;
@@ -157,6 +159,37 @@ export function Results({
         </p>
       </div>
 
+      <section
+        className={"stunting-risk-card risk-" + recommendations.risk.level}
+      >
+        <span>PREDIKSI RISIKO STUNTING BERBASIS TREN</span>
+        <strong>{recommendations.risk.label}</strong>
+        {recommendations.risk.projectedHeightForAgeZ !== null && (
+          <dl>
+            <div>
+              <dt>Proyeksi 90 hari</dt>
+              <dd>
+                {recommendations.risk.projectedHeightForAgeZ.toFixed(2)} SD
+              </dd>
+            </div>
+            <div>
+              <dt>Perubahan / 30 hari</dt>
+              <dd>
+                {recommendations.risk.zChangePer30Days?.toFixed(2) ?? "—"} SD
+              </dd>
+            </div>
+            <div>
+              <dt>Data tren</dt>
+              <dd>{recommendations.risk.pointsUsed} pemeriksaan</dd>
+            </div>
+          </dl>
+        )}
+        {recommendations.risk.reasons.map((reason) => (
+          <p key={reason}>{reason}</p>
+        ))}
+        <small>{recommendations.risk.disclaimer}</small>
+      </section>
+
       <div className="facial-results">
         <h2>
           <ScanFace size={22} />
@@ -250,13 +283,39 @@ export function Results({
         <section className="result-recommendation-card nutrition">
           <h2>
             <Utensils size={20} />
-            Rekomendasi nutrisi
+            Rekomendasi nutrisi lokal
           </h2>
           <ul>
             {recommendations.nutrition.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
+
+          <div className="result-local-foods">
+            <strong>{recommendations.localizedNutrition.title}</strong>
+            <p>
+              Usia sasaran: {recommendations.localizedNutrition.ageBand}. Pilih
+              bahan yang tersedia dan terjangkau di sekitar keluarga.
+            </p>
+            <div className="result-local-food-groups">
+              {recommendations.localizedNutrition.foodGroups.map((group) => (
+                <span key={group.label}>
+                  <b>{group.label}</b>
+                  {group.examples.join(", ")}
+                </span>
+              ))}
+            </div>
+            <h3>Contoh menu sehari</h3>
+            <dl>
+              {recommendations.localizedNutrition.sampleDay.map((meal) => (
+                <div key={meal.slot}>
+                  <dt>{meal.slot}</dt>
+                  <dd>{meal.menu}</dd>
+                </div>
+              ))}
+            </dl>
+            <small>{recommendations.localizedNutrition.cautions[0]}</small>
+          </div>
         </section>
 
         <section className="result-recommendation-card care">

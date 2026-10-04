@@ -387,10 +387,47 @@ export function ParentHistoryDetailPage() {
           </div>
         )}
 
+        <section className="parent-history-clinical-section parent-history-risk">
+          <div className="parent-history-clinical-title">
+            <Info size={20} />
+            <h3>Prediksi risiko stunting berbasis tren</h3>
+          </div>
+          <strong className="parent-history-risk-label">
+            {recommendations.risk.label}
+          </strong>
+          <dl>
+            <div>
+              <dt>Data tren yang dipakai</dt>
+              <dd>{recommendations.risk.pointsUsed} pemeriksaan</dd>
+            </div>
+            <div>
+              <dt>Perubahan TB/U per 30 hari</dt>
+              <dd>
+                {recommendations.risk.zChangePer30Days === null
+                  ? "Belum tersedia"
+                  : recommendations.risk.zChangePer30Days.toFixed(2) + " SD"}
+              </dd>
+            </div>
+            <div>
+              <dt>Proyeksi TB/U 90 hari</dt>
+              <dd>
+                {recommendations.risk.projectedHeightForAgeZ === null
+                  ? "Belum tersedia"
+                  : recommendations.risk.projectedHeightForAgeZ.toFixed(2) +
+                    " SD"}
+              </dd>
+            </div>
+          </dl>
+          {recommendations.risk.reasons.map((reason) => (
+            <p key={reason}>{reason}</p>
+          ))}
+          <p>{recommendations.risk.disclaimer}</p>
+        </section>
+
         <section className="parent-history-clinical-section parent-history-nutrition">
           <div className="parent-history-clinical-title">
             <Utensils size={20} />
-            <h3>Rekomendasi nutrisi</h3>
+            <h3>Localized Nutrition Recommendation Engine</h3>
           </div>
 
           <ul className="parent-history-follow-up">
@@ -398,6 +435,52 @@ export function ParentHistoryDetailPage() {
               <li key={item}>{item}</li>
             ))}
           </ul>
+
+          <div className="parent-local-nutrition-plan">
+            <strong>{recommendations.localizedNutrition.title}</strong>
+            <span>
+              Usia sasaran {recommendations.localizedNutrition.ageBand}
+            </span>
+
+            <div className="parent-local-food-groups">
+              {recommendations.localizedNutrition.foodGroups.map((group) => (
+                <div key={group.label}>
+                  <b>{group.label}</b>
+                  <span>{group.examples.join(", ")}</span>
+                </div>
+              ))}
+            </div>
+
+            <h4>Contoh menu sehari</h4>
+            <dl>
+              {recommendations.localizedNutrition.sampleDay.map((meal) => (
+                <div key={meal.slot}>
+                  <dt>{meal.slot}</dt>
+                  <dd>{meal.menu}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <ul className="parent-history-follow-up">
+              {recommendations.localizedNutrition.cautions.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+
+            <div className="parent-local-nutrition-sources">
+              {recommendations.localizedNutrition.sources.map((source) => (
+                <a
+                  key={source.url}
+                  href={source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {source.label}
+                  <ExternalLink size={13} />
+                </a>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section className="parent-history-clinical-section">

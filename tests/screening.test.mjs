@@ -82,7 +82,7 @@ test("WHO engine rejects unavailable, out-of-scope and biologically implausible 
 
 test("anthropometry flags biologically implausible weight before producing a WHO result", () => {
   const waz = weightForAgeZScore(48, "male", 1.9);
-  assert.ok(waz !== null && waz < -5);
+  assert.ok(waz !== null && waz < -6);
 
   const result = assessAnthropometry(48, "male", 106, 1.9);
   assert.equal(result.measurementQuality, "recheck");
