@@ -43,9 +43,9 @@ import { ProcessingStage } from "./processing-stage";
 import { Results } from "./results";
 
 const STAGES = [
+  { label: "Wajah", icon: ScanFace },
   { label: "Tinggi", icon: Ruler },
   { label: "Berat", icon: Scale },
-  { label: "Wajah", icon: ScanFace },
 ];
 
 function ProgressDock({ step, active }: { step: Step; active: boolean }) {
@@ -221,8 +221,6 @@ export function NutriMirror({
               paused={isPaused}
               ageMonths={session.child?.ageMonths ?? 0}
               sex={session.child?.sex ?? "male"}
-              heightCm={effectiveReadings.heightCm ?? 0}
-              weightKg={effectiveReadings.weightKg ?? 0}
               soundEnabled={soundEnabled}
               onComplete={(capture) => dispatch({ type: "capture", capture })}
             />

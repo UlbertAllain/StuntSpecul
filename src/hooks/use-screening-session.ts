@@ -47,7 +47,7 @@ export function useScreeningSession(
     assignment
       ? {
           ...INITIAL_SESSION,
-          step: "prepare",
+          step: assignment.cameraEnabled ? "camera" : "prepare",
           child: {
             ageMonths: assignment.ageMonths,
             sex: assignment.sex,

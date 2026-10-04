@@ -29,28 +29,45 @@ function start(cameraEnabled = true) {
 
 function measured(cameraEnabled = true) {
   let session = start(cameraEnabled);
+  if (cameraEnabled) {
+    session = sessionReducer(session, { type: "capture", capture });
+  }
   for (const from of ["prepare", "height", "weight"]) {
     session = sessionReducer(session, { type: "advance", from });
   }
   return session;
 }
 
-test("only the current measurement stage may advance the session", () => {
+test("camera runs before height and weight when enabled", () => {
   const initial = start();
-  assert.equal(initial.step, "prepare");
-  assert.equal(
-    sessionReducer(initial, { type: "advance", from: "weight" }),
-    initial,
-  );
-  let session = initial;
+  assert.equal(initial.step, "camera");
+
+  let session = sessionReducer(initial, { type: "capture", capture });
+  assert.equal(session.step, "prepare");
+  assert.equal(session.capture.photo, capture.photo);
+
   for (const [from, next] of [
     ["prepare", "height"],
     ["height", "weight"],
-    ["weight", "camera"],
+    ["weight", "analysis"],
   ]) {
     session = sessionReducer(session, { type: "advance", from });
     assert.equal(session.step, next);
   }
+});
+
+test("only the current measurement stage may advance the session", () => {
+  const camera = start();
+  assert.equal(
+    sessionReducer(camera, { type: "advance", from: "weight" }),
+    camera,
+  );
+
+  const initial = sessionReducer(camera, { type: "capture", capture });
+  assert.equal(
+    sessionReducer(initial, { type: "advance", from: "weight" }),
+    initial,
+  );
 });
 
 test("disabling the camera skips capture without fabricating a face result", () => {
@@ -60,7 +77,7 @@ test("disabling the camera skips capture without fabricating a face result", () 
 });
 
 test("completion releases the photo and reset removes all session data", () => {
-  let session = sessionReducer(measured(), { type: "capture", capture });
+  let session = measured();
   assert.equal(session.capture.photo, capture.photo);
   const report = createScreeningReport(child, readMeasurements(), capture);
   session = sessionReducer(session, { type: "complete", report });
@@ -83,7 +100,7 @@ test("late capture or completion callbacks cannot revive an ended session", () =
 });
 
 test("opening and canceling the exit dialog preserve an existing pause", () => {
-  let session = sessionReducer(start(), { type: "toggle-pause" });
+  let session = sessionReducer(start(false), { type: "toggle-pause" });
   session = sessionReducer(session, { type: "set-exit", open: true });
   session = sessionReducer(session, { type: "set-exit", open: false });
   assert.equal(session.paused, true);

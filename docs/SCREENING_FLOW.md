@@ -24,10 +24,10 @@ auto claim
 status = running
         │
         ▼
-prepare
+camera
+→ prepare
 → height
 → weight
-→ camera
 → analysis
 → result
         │
@@ -48,20 +48,15 @@ Source: `src/lib/session.ts`.
 
 ```text
 welcome
+→ camera
 → prepare
 → height
 → weight
-→ camera
 → analysis
 → result
 ```
 
-Jika camera disabled:
-
-```text
-weight
-→ analysis
-```
+Jika camera disabled, sesi langsung dimulai dari `prepare` dan setelah `weight` masuk ke `analysis` tanpa capture wajah.
 
 ## Measurements
 
@@ -131,13 +126,13 @@ Camera flow:
 2. capture frame;
 3. resize/compress;
 4. kirim ke `POST /api/visual-analysis`;
-5. server menghitung konteks WHO dari age/sex/height;
-6. Gemini menilai kualitas foto, visibilitas area wajah, serta ciri visual netral seperti kelopak mata, raut yang tampak, dan bibir;
-7. hasil visual terstruktur dimasukkan ke screening completion;
+5. Gemini menilai kualitas foto, visibilitas area wajah, serta ciri visual netral seperti kelopak mata, raut yang tampak, dan bibir;
+6. setelah capture selesai, sesi lanjut ke persiapan pengukuran tinggi dan berat;
+7. hasil visual terstruktur digabung dengan hasil antropometri saat screening diselesaikan;
 8. foto tangkapan ditampilkan sementara pada layar hasil;
 9. setelah pemeriksaan valid, satu foto wajah terbaru disimpan per profil anak untuk Beranda orang tua. Foto baru menimpa referensi foto terbaru sebelumnya dan tidak menjadi bagian dari riwayat examination.
 
-Gemini menerima usia, jenis kelamin, TB, BB, TB/U z-score, dan status WHO sebagai konteks. Gemini tidak boleh menentukan, menghitung ulang, atau mengubah status stunting. UI dapat menampilkan kesimpulan stunting di dekat hasil visual, tetapi sumber kesimpulan tersebut tetap TB/U WHO.
+Gemini hanya menerima konteks usia dan jenis kelamin untuk membantu membaca foto. Tinggi, berat, TB/U z-score, dan status WHO belum tersedia saat webcam dijalankan dan tidak dibutuhkan untuk observasi visual netral. Gemini tidak boleh menentukan, menghitung ulang, atau mengubah status stunting. UI dapat menampilkan kesimpulan stunting di dekat hasil visual, tetapi sumber kesimpulan tersebut tetap TB/U WHO.
 
 Kegagalan Gemini tidak boleh menggagalkan WHO screening.
 
