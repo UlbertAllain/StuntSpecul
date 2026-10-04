@@ -21,12 +21,17 @@ import {
 import type { VisualAnalysisContext } from "@/lib/visual-analysis";
 import { Message } from "../shared/shell";
 
+type FaceTestContext = VisualAnalysisContext & {
+  heightCm: number;
+  weightKg: number;
+};
+
 function FaceTestCamera({
   context,
   onCapture,
   onCancel,
 }: {
-  context: VisualAnalysisContext;
+  context: FaceTestContext;
   onCapture: (capture: Capture) => void;
   onCancel: () => void;
 }) {
@@ -92,7 +97,7 @@ function FaceTestCamera({
 }
 
 export function FaceTestPanel() {
-  const [context, setContext] = useState<VisualAnalysisContext | null>(null);
+  const [context, setContext] = useState<FaceTestContext | null>(null);
   const [capture, setCapture] = useState<Capture | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [validationError, setValidationError] = useState("");
