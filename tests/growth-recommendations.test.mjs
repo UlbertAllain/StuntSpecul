@@ -79,7 +79,6 @@ test("localized nutrition plan adapts age band and keeps Indonesian food options
   );
 });
 
-
 test("localized nutrition adapts recommendations for infant age bands", () => {
   const infant = growthRecommendationsFor("within_range", {
     ageMonths: 4,

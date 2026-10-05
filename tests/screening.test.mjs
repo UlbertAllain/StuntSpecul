@@ -72,7 +72,6 @@ test("WHO height-for-age engine classifies monthly standing height deterministic
   assert.ok(severeGirl.heightForAgeZ < -3);
 });
 
-
 test("WHO infant length-for-age uses PB/U for children under 24 months", () => {
   const newbornBoy = assessLengthForAge(0, "male", 49.8842);
   assert.equal(newbornBoy.heightForAgeZ, 0);
@@ -93,10 +92,7 @@ test("WHO infant length-for-age uses PB/U for children under 24 months", () => {
 
   assert.equal(linearGrowthIndicator(12), "PB/U");
   assert.equal(linearGrowthIndicator(24), "TB/U");
-  assert.match(
-    growthStatusLabelForAge("within_range", 12),
-    /PB\/U ≥ -2 SD/,
-  );
+  assert.match(growthStatusLabelForAge("within_range", 12), /PB\/U ≥ -2 SD/);
 });
 
 test("infant anthropometry calculates PB/U and BB/U from WHO age-sex references", () => {

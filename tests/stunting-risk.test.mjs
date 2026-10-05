@@ -74,7 +74,6 @@ test("risk engine keeps stable or improving longitudinal data low risk", () => {
   assert.ok(result.projectedHeightForAgeZ > -2);
 });
 
-
 test("risk copy uses PB/U for infant longitudinal screening", () => {
   const result = stuntingRiskFor({
     growthStatus: "within_range",
