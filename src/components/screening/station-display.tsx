@@ -40,8 +40,8 @@ type StationState = {
   active: StationActive | null;
 };
 
-const IDLE_POLL_MS = 1_000;
-const ACTIVE_POLL_MS = 700;
+const IDLE_POLL_MS = 5_000;
+const ACTIVE_POLL_MS = 1_500;
 
 export function StationDisplay() {
   const [state, setState] = useState<StationState | null>(null);
