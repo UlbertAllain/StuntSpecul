@@ -148,6 +148,8 @@ type DeviceRecord = {
   heightSensor?: "ok" | "error" | "unknown";
   weightSensor?: "ok" | "error" | "unknown";
   claimedExamId?: string | null;
+  resetToken?: string | null;
+  resetRequestedAt?: number | null;
   createdAt: number;
 };
 
@@ -1181,6 +1183,8 @@ async function stationDeviceState(env: Env) {
     heightSensor: device?.data.heightSensor ?? "unknown",
     weightSensor: device?.data.weightSensor ?? "unknown",
     claimedExamId: device?.data.claimedExamId ?? null,
+    resetToken: device?.data.resetToken ?? null,
+    resetRequestedAt: device?.data.resetRequestedAt ?? null,
   };
 }
 
@@ -1208,6 +1212,122 @@ async function clearIotDeviceExamIfMatches(env: Env, examId: string) {
       },
     )
     .catch(() => {});
+}
+
+async function resetDeviceSession(request: Request, env: Env) {
+  await requireStaff(request, env);
+  await rateLimit(env, `device-reset:${await requestKey(request)}`, 12, 60);
+
+  const db = store(env);
+  const [{ exam }, device] = await Promise.all([
+    activeStation(env),
+    db.get<DeviceRecord>(`devices/${STATION_ID}`),
+  ]);
+
+  if (exam?.data.status === "completed") {
+    throw new ApiError(
+      409,
+      "Pemeriksaan sudah selesai. Finalisasi sesi sebelum me-refresh alat.",
+      "device_reset_completed_exam",
+    );
+  }
+
+  const now = Date.now();
+  const resetToken = crypto.randomUUID();
+
+  if (exam && ["queued", "running"].includes(exam.data.status)) {
+    await db.set(
+      `examinations/${exam.id}`,
+      {
+        heightCm: null,
+        weightKg: null,
+        measurementUpdatedAt: null,
+        measurementSource: null,
+        measurementIssue: null,
+        measurementIssueAt: null,
+        bmi: null,
+        captureStatus: exam.data.cameraEnabled ? null : "skipped",
+        facialStatus: null,
+        facialProbability: null,
+        facialReason: null,
+        facialModelVersion: null,
+        visualAnalysis: null,
+        recommendations: null,
+        completedAt: null,
+      },
+      {
+        mergeFields: [
+          "heightCm",
+          "weightKg",
+          "measurementUpdatedAt",
+          "measurementSource",
+          "measurementIssue",
+          "measurementIssueAt",
+          "bmi",
+          "captureStatus",
+          "facialStatus",
+          "facialProbability",
+          "facialReason",
+          "facialModelVersion",
+          "visualAnalysis",
+          "recommendations",
+          "completedAt",
+        ],
+        precondition: { updateTime: exam.updateTime },
+      },
+    );
+  }
+
+  if (device) {
+    await db.set(
+      `devices/${STATION_ID}`,
+      {
+        claimedExamId: null,
+        resetToken,
+        resetRequestedAt: now,
+        heightSensor: "unknown",
+        weightSensor: "unknown",
+      },
+      {
+        mergeFields: [
+          "claimedExamId",
+          "resetToken",
+          "resetRequestedAt",
+          "heightSensor",
+          "weightSensor",
+        ],
+        precondition: { updateTime: device.updateTime },
+      },
+    );
+  } else {
+    await db.set(
+      `devices/${STATION_ID}`,
+      {
+        name: STATION_NAME,
+        active: true,
+        lastSeen: null,
+        firmwareVersion: null,
+        heightSensor: "unknown",
+        weightSensor: "unknown",
+        claimedExamId: null,
+        resetToken,
+        resetRequestedAt: now,
+        createdAt: now,
+      },
+      { precondition: { exists: false } },
+    );
+  }
+
+  return ok({
+    reset: true,
+    resetToken,
+    resetRequestedAt: now,
+    examinationId: exam?.id ?? null,
+    sessionRestarted: !!exam,
+    message: exam
+      ? "Sesi alat direset. Pengukuran sementara dihapus dan pemeriksaan dimulai ulang."
+      : "State perangkat direset. Alat siap melakukan handshake ulang.",
+  });
 }
 
 async function createActiveExam(
@@ -2606,9 +2726,14 @@ async function claimActiveExam(env: Env) {
 }
 
 async function stationStatus(_request: Request, env: Env) {
-  const { exam } = await activeStation(env);
+  const [{ exam }, device] = await Promise.all([
+    activeStation(env),
+    stationDeviceState(env),
+  ]);
 
   return ok({
+    resetToken: device.resetToken,
+    resetRequestedAt: device.resetRequestedAt,
     active: exam
       ? {
           examinationId: exam.id,
@@ -2766,6 +2891,8 @@ async function iotSession(request: Request, env: Env) {
       : null,
     claimedExamId: device.claimedExamId,
     needsClaim: !!exam && device.claimedExamId !== exam.id,
+    resetToken: device.resetToken,
+    resetRequestedAt: device.resetRequestedAt,
     serverTime: Date.now(),
   });
 }
@@ -2775,6 +2902,7 @@ async function iotClaim(request: Request, env: Env) {
   await touchIotDevice(env);
   const exam = await claimActiveExam(env);
   await bindIotDeviceExam(env, exam.id);
+  const device = await stationDeviceState(env);
 
   return ok({
     examinationId: exam.id,
@@ -2783,6 +2911,7 @@ async function iotClaim(request: Request, env: Env) {
     sex: exam.data.sex,
     cameraEnabled: exam.data.cameraEnabled,
     resetMeasurements: true,
+    resetToken: device.resetToken,
   });
 }
 
@@ -3145,6 +3274,7 @@ async function deviceMonitoring(request: Request, env: Env) {
         online: device.online,
         lastSeen: device.lastSeen,
         firmwareVersion: device.firmwareVersion,
+        resetRequestedAt: device.resetRequestedAt,
         status: !device.online
           ? "offline"
           : exam?.data.status === "running"
@@ -3333,6 +3463,8 @@ export async function routeFirestore(
       return monitoringOverview(request, env);
     case "GET /api/device-monitoring":
       return deviceMonitoring(request, env);
+    case "POST /api/device/reset-session":
+      return resetDeviceSession(request, env);
     case "GET /api/insights":
       return insights(request, env);
     case "GET /api/blogs":

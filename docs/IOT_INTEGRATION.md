@@ -41,6 +41,8 @@ Contoh response tanpa sesi:
       "data": {
         "active": null,
         "claimedExamId": null,
+        "resetToken": null,
+        "resetRequestedAt": null,
         "serverTime": 1789999999999
       }
     }
@@ -60,6 +62,8 @@ Contoh response dengan sesi:
           "weightKg": null
         },
         "claimedExamId": null,
+        "resetToken": null,
+        "resetRequestedAt": null,
         "serverTime": 1789999999999
       }
     }
@@ -84,7 +88,8 @@ Response:
         "ageMonths": 39,
         "sex": "male",
         "cameraEnabled": true,
-        "resetMeasurements": true
+        "resetMeasurements": true,
+        "resetToken": null
       }
     }
 
@@ -299,6 +304,35 @@ Gunakan tiga lapis pengecekan:
 
 Dengan begitu keberhasilan tidak dinilai dari angka yang muncul di sensor saja; harus ada acknowledgement dari server. Informasi teknis dipusatkan di halaman admin.
 
+## Refresh alat dari dashboard
+
+Petugas maupun admin memiliki tombol **Refresh alat**. Tombol ini ditujukan sebagai recovery ketika halaman alat atau ESP32 terlihat stuck sehingga perangkat tidak perlu dicabut-colok.
+
+Endpoint dashboard:
+
+    POST /api/device/reset-session
+
+Backend akan:
+
+1. menghapus measurement tinggi/berat sementara pada examination yang masih queued/running;
+2. membersihkan measurement issue dan hasil sementara sesi;
+3. melepas `claimedExamId`;
+4. menerbitkan `resetToken` baru dan `resetRequestedAt`;
+5. mengubah status sensor menjadi `unknown` sampai heartbeat/measurement baru diterima;
+6. membuat halaman `/alat` me-remount flow aktif dari awal.
+
+Firmware wajib menyimpan `resetToken` terakhir dari `GET /api/iot/session`. Jika token berubah, firmware harus melakukan reset state lokal:
+
+    clear heightSamples
+    clear weightSamples
+    clear stable flags
+    clear temporary height/weight
+    clear local claimed session
+    claim examination aktif lagi
+    mulai sampling dari nol
+
+Dengan pola ini, tombol dashboard menggantikan efek power-cycle untuk state aplikasi dan buffer firmware. Tombol tidak menghapus browser cache umum dan tidak menghapus riwayat pemeriksaan yang sudah selesai.
+
 ## Session isolation dan stuck recovery
 
 Setiap measurement sekarang diikat ke `examinationId`. Backend juga menyimpan `claimedExamId` perangkat setelah `POST /api/iot/session/claim`.
@@ -314,11 +348,12 @@ Jika firmware terlambat mengirim measurement untuk ABC saat XYZ sudah aktif, bac
 
 Firmware harus:
 
-1. hentikan pengiriman measurement sesi lama;
-2. GET `/api/iot/session`;
-3. jika ID berubah, kosongkan seluruh sample/buffer/flag stabilisasi;
-4. POST `/api/iot/session/claim`;
-5. mulai sampling baru dari nol untuk ID baru.
+1. cek perubahan `resetToken`; jika berubah, reset seluruh buffer/state lokal;
+2. hentikan pengiriman measurement sesi lama;
+3. GET `/api/iot/session`;
+4. jika examinationId berubah, kosongkan seluruh sample/buffer/flag stabilisasi;
+5. POST `/api/iot/session/claim`;
+6. mulai sampling baru dari nol untuk ID baru.
 
 Anak boleh sudah berdiri di alat sebelum parent menekan **Mulai pemeriksaan**. Pembacaan sensor sebelum ada sesi aktif hanya boleh dianggap raw reading lokal dan **tidak boleh dikirim sebagai hasil pemeriksaan**.
 
