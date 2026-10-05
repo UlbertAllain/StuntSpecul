@@ -159,7 +159,7 @@ export function stuntingRiskFor(
       "insufficient_data",
       "Prediksi belum tersedia — butuh ≥2 pemeriksaan",
       {
-      pointsUsed: points.length,
+        pointsUsed: points.length,
         reasons: [
           "Minimal dua pemeriksaan TB/U diperlukan untuk membuat proyeksi tren.",
         ],
@@ -215,9 +215,9 @@ export function stuntingRiskFor(
       "high",
       "Tren 90 hari diproyeksikan melewati -2 SD",
       {
-      ...common,
-      reasons: [
-        "Jika pola TB/U terakhir berlanjut secara linear, proyeksi 90 hari melewati batas -2 SD.",
+        ...common,
+        reasons: [
+          "Jika pola TB/U terakhir berlanjut secara linear, proyeksi 90 hari melewati batas -2 SD.",
           "Kecepatan perubahan tren sekitar " +
             zChangePer30Days.toFixed(2) +
             " SD per 30 hari.",
@@ -232,9 +232,9 @@ export function stuntingRiskFor(
       "watch",
       "TB/U menurun, tetapi belum diproyeksikan stunting",
       {
-      ...common,
-      reasons: [
-        "TB/U menunjukkan tren menurun, tetapi proyeksi 90 hari belum melewati batas -2 SD.",
+        ...common,
+        reasons: [
+          "TB/U menunjukkan tren menurun, tetapi proyeksi 90 hari belum melewati batas -2 SD.",
           "Kecepatan perubahan tren sekitar " +
             zChangePer30Days.toFixed(2) +
             " SD per 30 hari.",
@@ -243,15 +243,10 @@ export function stuntingRiskFor(
     );
   }
 
-  return result(
-    context,
-    "low",
-    "Tren 90 hari tidak mengarah ke stunting",
-    {
+  return result(context, "low", "Tren 90 hari tidak mengarah ke stunting", {
     ...common,
-      reasons: [
-        "Tren TB/U tidak memproyeksikan lintasan ke bawah -2 SD dalam 90 hari bila pola yang sama berlanjut.",
-      ],
-    },
-  );
+    reasons: [
+      "Tren TB/U tidak memproyeksikan lintasan ke bawah -2 SD dalam 90 hari bila pola yang sama berlanjut.",
+    ],
+  });
 }

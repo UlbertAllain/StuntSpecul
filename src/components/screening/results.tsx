@@ -410,11 +410,7 @@ export function Results({
               membaca foto dan tidak menentukan status stunting.
             </p>
             <div className="clinical-reference-list">
-              <a
-                href={KEMENKES_REFERENCE_URL}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href={KEMENKES_REFERENCE_URL} target="_blank" rel="noreferrer">
                 Kemenkes RI — Permenkes No. 2 Tahun 2020 ↗
               </a>
               <a href={KIA_REFERENCE_URL} target="_blank" rel="noreferrer">

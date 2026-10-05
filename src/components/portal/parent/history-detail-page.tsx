@@ -364,20 +364,16 @@ export function ParentHistoryDetailPage() {
           </dl>
 
           <p>
-            Status stunting dihitung dari TB/U berdasarkan Standar
-            Antropometri Anak Kemenkes RI dan WHO Child Growth Standards. BB/U
-            adalah indikator tambahan dan membantu mendeteksi hasil pengukuran
-            yang perlu diverifikasi. Buku KIA Edisi 2024 digunakan sebagai
-            referensi pendamping pemantauan pertumbuhan keluarga. Analisis
-            visual AI tidak menentukan status stunting.
+            Status stunting dihitung dari TB/U berdasarkan Standar Antropometri
+            Anak Kemenkes RI dan WHO Child Growth Standards. BB/U adalah
+            indikator tambahan dan membantu mendeteksi hasil pengukuran yang
+            perlu diverifikasi. Buku KIA Edisi 2024 digunakan sebagai referensi
+            pendamping pemantauan pertumbuhan keluarga. Analisis visual AI tidak
+            menentukan status stunting.
           </p>
 
           <div className="parent-history-reference-list">
-            <a
-              href={KEMENKES_REFERENCE_URL}
-              target="_blank"
-              rel="noreferrer"
-            >
+            <a href={KEMENKES_REFERENCE_URL} target="_blank" rel="noreferrer">
               Kemenkes RI — Permenkes No. 2 Tahun 2020
               <ExternalLink size={14} />
             </a>
@@ -518,8 +514,8 @@ export function ParentHistoryDetailPage() {
 
         <p className="parent-history-recommendation-source">
           Rekomendasi ini merupakan edukasi berdasarkan status TB/U, tren
-          pertumbuhan, serta panduan gizi Kemenkes. Bukan diagnosis, resep,
-          atau pengganti konsultasi tenaga kesehatan.
+          pertumbuhan, serta panduan gizi Kemenkes. Bukan diagnosis, resep, atau
+          pengganti konsultasi tenaga kesehatan.
         </p>
 
         <p className="parent-history-disclaimer">
