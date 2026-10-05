@@ -77,6 +77,7 @@ Staff-authenticated:
 - POST /api/examinations/:id/finalize — finalize examination.
 - DELETE /api/examinations/:id — cancel examination.
 - GET /api/monitoring — staff monitoring.
+- POST /api/device/reset-session — petugas/admin me-reset state alat tanpa cabut-colok. Jika ada sesi queued/running, measurement sementara dibersihkan, claim IoT dilepas, dan resetToken baru diterbitkan agar firmware serta /alat memulai ulang state pemeriksaan.
 - GET /api/device-monitoring — admin device monitoring.
 - GET /api/insights — aggregate insight.
 
