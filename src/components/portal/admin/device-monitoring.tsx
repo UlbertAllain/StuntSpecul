@@ -39,6 +39,8 @@ type DeviceState = {
     measurementSource: "iot" | null;
     measurementIssue: string | null;
     measurementIssueAt: number | null;
+    measurementReviewStatus: "none" | "verified_extreme";
+    measurementReviewNote: string | null;
   } | null;
   checks: {
     application: DeviceCheck;
@@ -49,6 +51,31 @@ type DeviceState = {
 };
 
 type DeviceMonitoringResponse = {
+  debug: {
+    serverActiveExamId: string | null;
+    stationActiveExamId: string | null;
+    deviceClaimedExamId: string | null;
+    deviceCurrentExamId: string | null;
+    deviceLocalSessionState:
+      | "idle"
+      | "queued"
+      | "measuring"
+      | "error"
+      | "unknown";
+    wifiConnected: boolean | null;
+    expectedResetToken: string | null;
+    appliedResetToken: string | null;
+    resetRequestedAt: number | null;
+    resetReason: string | null;
+    resetPending: boolean;
+    stateMismatch: boolean;
+    stuckSessions: Array<{
+      id: string;
+      childName: string;
+      status: "queued" | "running";
+      createdAt: number;
+    }>;
+  };
   devices: DeviceState[];
   generatedAt: number;
 };
@@ -110,6 +137,9 @@ export function DeviceMonitoringPanel() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [forceStopping, setForceStopping] = useState(false);
+  const [cleaningStuck, setCleaningStuck] = useState(false);
+  const [confirmingExtreme, setConfirmingExtreme] = useState(false);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -169,6 +199,87 @@ export function DeviceMonitoringPanel() {
     }
   }
 
+  async function forceStop() {
+    if (forceStopping) return;
+    if (
+      !window.confirm(
+        "Paksa hentikan sesi akan membatalkan sesi aktif di server dan mengirim reset token baru ke alat. Riwayat audit tetap disimpan. Lanjutkan?",
+      )
+    )
+      return;
+
+    setForceStopping(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await api<{ message: string }>("/device/force-stop", {
+        method: "POST",
+        body: {},
+      });
+      setNotice(result.message);
+      setRefreshKey((value) => value + 1);
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setForceStopping(false);
+    }
+  }
+
+  async function cleanupStuckSessions() {
+    if (cleaningStuck) return;
+    if (
+      !window.confirm(
+        "Sesi queued/running yang tidak lagi terhubung ke station akan ditandai batal. Data tidak dihapus. Lanjutkan?",
+      )
+    )
+      return;
+
+    setCleaningStuck(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await api<{ message: string }>(
+        "/device/cleanup-stuck-sessions",
+        {
+          method: "POST",
+          body: {},
+        },
+      );
+      setNotice(result.message);
+      setRefreshKey((value) => value + 1);
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setCleaningStuck(false);
+    }
+  }
+
+  async function confirmExtreme(examinationId: string) {
+    if (confirmingExtreme) return;
+    if (
+      !window.confirm(
+        "Gunakan hanya setelah pengukuran diulang dan petugas sudah memastikan posisi anak serta alat benar. Nilai mentah akan disimpan sebagai ekstrem terverifikasi tanpa memaksakan status pertumbuhan otomatis. Lanjutkan?",
+      )
+    )
+      return;
+
+    setConfirmingExtreme(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await api<{ message: string }>("/device/confirm-extreme", {
+        method: "POST",
+        body: { examinationId },
+      });
+      setNotice(result.message);
+      setRefreshKey((value) => value + 1);
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setConfirmingExtreme(false);
+    }
+  }
+
   const online = data?.devices.filter((item) => item.online).length ?? 0;
   const active =
     data?.devices.filter((item) => item.status === "in_use").length ?? 0;
@@ -200,6 +311,115 @@ export function DeviceMonitoringPanel() {
 
       {data && (
         <>
+          <section
+            className={`ref-device-debug ${data.debug.stateMismatch ? "has-warning" : ""}`}
+          >
+            <div className="ref-device-debug-head">
+              <div>
+                <span>DIAGNOSTIK SINKRONISASI</span>
+                <strong>
+                  {data.debug.stateMismatch
+                    ? "State server dan alat perlu dicek"
+                    : "State server dan alat konsisten"}
+                </strong>
+                <p>
+                  Panel ini membedakan sesi yang tercatat di server dengan sesi
+                  lokal yang dilaporkan firmware alat.
+                </p>
+              </div>
+              <div className="ref-device-debug-actions">
+                <button
+                  className="portal-secondary"
+                  disabled={resetting}
+                  onClick={() =>
+                    void resetDevice(!!data.debug.serverActiveExamId)
+                  }
+                >
+                  {resetting ? "Mereset…" : "Reset buffer / sinkron ulang"}
+                </button>
+                <button
+                  className="portal-secondary"
+                  disabled={forceStopping}
+                  onClick={() => void forceStop()}
+                >
+                  {forceStopping ? "Menghentikan…" : "Paksa hentikan sesi"}
+                </button>
+                {data.debug.stuckSessions.length > 0 && (
+                  <button
+                    className="portal-secondary"
+                    disabled={cleaningStuck}
+                    onClick={() => void cleanupStuckSessions()}
+                  >
+                    {cleaningStuck
+                      ? "Membersihkan…"
+                      : `Bersihkan ${data.debug.stuckSessions.length} sesi nyangkut`}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="ref-device-debug-grid">
+              <span>
+                Sesi aktif server
+                <strong>{data.debug.serverActiveExamId || "Tidak ada"}</strong>
+              </span>
+              <span>
+                Claim perangkat
+                <strong>{data.debug.deviceClaimedExamId || "Tidak ada"}</strong>
+              </span>
+              <span>
+                Sesi lokal alat
+                <strong>
+                  {data.debug.deviceCurrentExamId || "Tidak dilaporkan"}
+                </strong>
+              </span>
+              <span>
+                State lokal alat
+                <strong>{data.debug.deviceLocalSessionState}</strong>
+              </span>
+              <span>
+                WiFi terakhir dilaporkan
+                <strong>
+                  {data.debug.wifiConnected === null
+                    ? "Belum dilaporkan"
+                    : data.debug.wifiConnected
+                      ? "Tersambung"
+                      : "Terputus"}
+                </strong>
+              </span>
+              <span>
+                ACK reset
+                <strong>
+                  {data.debug.resetPending
+                    ? "Menunggu alat"
+                    : data.debug.expectedResetToken
+                      ? "Sudah diterapkan"
+                      : "Belum ada reset"}
+                </strong>
+              </span>
+            </div>
+
+            {data.debug.resetPending && (
+              <p className="ref-device-debug-warning">
+                Server sudah mengirim reset token baru, tetapi firmware belum
+                mengonfirmasi token tersebut. Pada firmware lama field ACK
+                mungkin belum dilaporkan.
+              </p>
+            )}
+
+            {data.debug.stuckSessions.length > 0 && (
+              <div className="ref-stuck-session-list">
+                <strong>Sesi tersembunyi / nyangkut</strong>
+                {data.debug.stuckSessions.map((session) => (
+                  <span key={session.id}>
+                    {session.childName} · {session.status} ·{" "}
+                    {new Date(session.createdAt).toLocaleString("id-ID")}
+                  </span>
+                ))}
+              </div>
+            )}
+          </section>
+
           <div className="ref-stat-grid ref-stat-grid-three">
             <article>
               <span className="ref-stat-icon blue">
@@ -308,8 +528,31 @@ export function DeviceMonitoringPanel() {
 
               {item.examination?.measurementIssue && (
                 <div className="ref-device-measurement-alert">
-                  <strong>Pengukuran perlu diulang</strong>
-                  <span>{item.examination.measurementIssue}</span>
+                  <strong>
+                    {item.examination.measurementReviewStatus ===
+                    "verified_extreme"
+                      ? "Nilai ekstrem sudah diverifikasi"
+                      : "Pengukuran perlu diulang"}
+                  </strong>
+                  <span>
+                    {item.examination.measurementReviewNote ||
+                      item.examination.measurementIssue}
+                  </span>
+                  {item.examination.measurementReviewStatus !==
+                    "verified_extreme" && (
+                    <button
+                      type="button"
+                      className="portal-secondary"
+                      disabled={confirmingExtreme}
+                      onClick={() =>
+                        void confirmExtreme(data.debug.serverActiveExamId || "")
+                      }
+                    >
+                      {confirmingExtreme
+                        ? "Mengonfirmasi…"
+                        : "Konfirmasi nilai ekstrem"}
+                    </button>
+                  )}
                 </div>
               )}
 

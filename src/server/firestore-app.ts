@@ -27,6 +27,7 @@ import {
   FirestoreError,
   type FirestoreDoc,
   type FirestoreRest,
+  type FirestoreWrite,
 } from "./firestore";
 import { ApiError, body, cookie, ok, sessionCookie } from "./http";
 import { requireIotApiKey } from "./iot-auth";
@@ -53,7 +54,7 @@ const STATION_ID = "single-station";
 const STATION_NAME = "StuntSpecula Station 01";
 const SYSTEM_SCREENING_STAFF_ID = "guest-screening-system";
 const DAY = 24 * 60 * 60 * 1000;
-const ONLINE_WINDOW_MS = 15_000;
+const ONLINE_WINDOW_MS = 8_000;
 const GOOGLE_OAUTH_STATE_COOKIE = "ss_google_oauth";
 const GOOGLE_OAUTH_INTENT_COOKIE = "ss_google_oauth_intent";
 const GOOGLE_REGISTER_COOKIE = "ss_google_register";
@@ -95,15 +96,36 @@ type ExamRecord = {
   sex: "male" | "female";
   deviceId: string;
   deviceName: string;
-  measurementMode?: "device" | "manual_infant";
+  measurementMode?: "device" | "manual_infant" | "manual";
   status: "queued" | "running" | "completed" | "cancelled";
   cameraEnabled: boolean;
+  stationStep?:
+    | "camera"
+    | "prepare"
+    | "height"
+    | "weight"
+    | "analysis"
+    | "result"
+    | null;
+  stationAttention?: "camera_retry_required" | null;
+  stationAttentionMessage?: string | null;
+  stationControlId?: string | null;
+  stationControlAction?: "retry_camera" | "skip_camera" | null;
+  stationControlIssuedAt?: number | null;
+  stationControlAckId?: string | null;
   heightCm: number | null;
   weightKg: number | null;
   measurementUpdatedAt: number | null;
   measurementSource: "iot" | "manual" | null;
   measurementIssue?: string | null;
   measurementIssueAt?: number | null;
+  measurementReviewStatus?: "none" | "verified_extreme";
+  measurementReviewNote?: string | null;
+  measurementReviewedAt?: number | null;
+  measurementReviewedBy?: string | null;
+  cancelledAt?: number | null;
+  cancelReason?: string | null;
+  cancelledBy?: string | null;
   bmi: number | null;
   captureStatus: "captured" | "skipped" | "failed" | null;
   facialStatus:
@@ -150,6 +172,12 @@ type DeviceRecord = {
   claimedExamId?: string | null;
   resetToken?: string | null;
   resetRequestedAt?: number | null;
+  resetReason?: string | null;
+  resetExamId?: string | null;
+  appliedResetToken?: string | null;
+  currentExaminationId?: string | null;
+  localSessionState?: "idle" | "queued" | "measuring" | "error" | "unknown";
+  wifiConnected?: boolean | null;
   createdAt: number;
 };
 
@@ -198,6 +226,7 @@ function asChild(doc: FirestoreDoc<ChildRecord>): ChildProfile {
     id: doc.id,
     code: doc.data.code,
     name: doc.data.name,
+    nik: doc.data.nik ?? null,
     birthDate: doc.data.birthDate,
     sex: doc.data.sex,
     guardian: doc.data.guardian,
@@ -209,12 +238,26 @@ function asChild(doc: FirestoreDoc<ChildRecord>): ChildProfile {
 
 function asExam(doc: FirestoreDoc<ExamRecord>): Examination {
   const value = doc.data;
-  const growth = assessAnthropometry(
+  const rawGrowth = assessAnthropometry(
     value.ageMonths,
     value.sex,
     value.heightCm,
     value.weightKg,
   );
+  const verifiedExtreme = value.measurementReviewStatus === "verified_extreme";
+  const growth = verifiedExtreme
+    ? {
+        ...rawGrowth,
+        measurementQuality: "verified_extreme" as const,
+        measurementReason:
+          value.measurementReviewNote ||
+          "Nilai ekstrem sudah dikonfirmasi setelah pengukuran ulang. Hasil otomatis tidak digunakan untuk menentukan status pertumbuhan.",
+        heightForAgeZ: null,
+        weightForAgeZ: null,
+        growthStatus: "unavailable" as const,
+        stuntingScreening: null,
+      }
+    : rawGrowth;
   const fallbackRecommendations = growthRecommendationsFor(
     growth.growthStatus,
     {
@@ -252,6 +295,13 @@ function asExam(doc: FirestoreDoc<ExamRecord>): Examination {
     deviceName: value.deviceName,
     measurementMode: value.measurementMode ?? "device",
     status: value.status,
+    cameraEnabled: value.cameraEnabled,
+    stationStep: value.stationStep ?? null,
+    stationAttention: value.stationAttention ?? null,
+    stationAttentionMessage: value.stationAttentionMessage ?? null,
+    stationControlId: value.stationControlId ?? null,
+    stationControlAction: value.stationControlAction ?? null,
+    stationControlAckId: value.stationControlAckId ?? null,
     heightCm: value.heightCm,
     weightKg: value.weightKg,
     bmi: value.bmi,
@@ -790,6 +840,7 @@ async function registerParentWithGoogle(request: Request, env: Env) {
     id: childId,
     code: `ST-${childId.slice(0, 8).toUpperCase()}`,
     name: input.child.name,
+    nik: input.child.nik,
     birthDate: input.child.birthDate,
     sex: input.child.sex,
     guardian: pending.name,
@@ -817,10 +868,15 @@ async function registerParentWithGoogle(request: Request, env: Env) {
         data: child,
         precondition: { exists: false },
       },
+      {
+        path: `childNiks/${input.child.nik}`,
+        data: { childId, createdAt: now },
+        precondition: { exists: false },
+      },
     ]);
   } catch (error) {
     if (preconditionConflict(error)) {
-      throw new ApiError(409, "Email atau profil sudah terdaftar.");
+      throw new ApiError(409, "Email, NIK, atau profil sudah terdaftar.");
     }
     throw error;
   }
@@ -1127,6 +1183,10 @@ type DeviceHeartbeat = {
   firmwareVersion?: string;
   heightSensor?: "ok" | "error" | "unknown";
   weightSensor?: "ok" | "error" | "unknown";
+  appliedResetToken?: string | null;
+  currentExaminationId?: string | null;
+  localSessionState?: "idle" | "queued" | "measuring" | "error" | "unknown";
+  wifiConnected?: boolean;
 };
 
 async function touchIotDevice(env: Env, heartbeat: DeviceHeartbeat = {}) {
@@ -1149,6 +1209,18 @@ async function touchIotDevice(env: Env, heartbeat: DeviceHeartbeat = {}) {
   if (heartbeat.weightSensor !== undefined) {
     patch.weightSensor = heartbeat.weightSensor;
   }
+  if (heartbeat.appliedResetToken !== undefined) {
+    patch.appliedResetToken = heartbeat.appliedResetToken;
+  }
+  if (heartbeat.currentExaminationId !== undefined) {
+    patch.currentExaminationId = heartbeat.currentExaminationId;
+  }
+  if (heartbeat.localSessionState !== undefined) {
+    patch.localSessionState = heartbeat.localSessionState;
+  }
+  if (heartbeat.wifiConnected !== undefined) {
+    patch.wifiConnected = heartbeat.wifiConnected;
+  }
 
   if (current) {
     await db.set(path, patch, {
@@ -1162,6 +1234,15 @@ async function touchIotDevice(env: Env, heartbeat: DeviceHeartbeat = {}) {
     firmwareVersion: patch.firmwareVersion ?? null,
     heightSensor: patch.heightSensor ?? "unknown",
     weightSensor: patch.weightSensor ?? "unknown",
+    claimedExamId: null,
+    resetToken: null,
+    resetRequestedAt: null,
+    resetReason: null,
+    resetExamId: null,
+    appliedResetToken: patch.appliedResetToken ?? null,
+    currentExaminationId: patch.currentExaminationId ?? null,
+    localSessionState: patch.localSessionState ?? "unknown",
+    wifiConnected: patch.wifiConnected ?? null,
     createdAt: now,
   });
 }
@@ -1185,6 +1266,12 @@ async function stationDeviceState(env: Env) {
     claimedExamId: device?.data.claimedExamId ?? null,
     resetToken: device?.data.resetToken ?? null,
     resetRequestedAt: device?.data.resetRequestedAt ?? null,
+    resetReason: device?.data.resetReason ?? null,
+    resetExamId: device?.data.resetExamId ?? null,
+    appliedResetToken: device?.data.appliedResetToken ?? null,
+    currentExaminationId: device?.data.currentExaminationId ?? null,
+    localSessionState: device?.data.localSessionState ?? "unknown",
+    wifiConnected: device?.data.wifiConnected ?? null,
   };
 }
 
@@ -1214,15 +1301,69 @@ async function clearIotDeviceExamIfMatches(env: Env, examId: string) {
     .catch(() => {});
 }
 
+async function requestIotDeviceReset(
+  env: Env,
+  reason: string,
+  examinationId: string | null,
+  resetSensors = true,
+) {
+  const db = store(env);
+  const device = await db.get<DeviceRecord>(`devices/${STATION_ID}`);
+  const now = Date.now();
+  const resetToken = crypto.randomUUID();
+  const patch = {
+    claimedExamId: null,
+    resetToken,
+    resetRequestedAt: now,
+    resetReason: reason,
+    resetExamId: examinationId,
+    ...(resetSensors
+      ? {
+          heightSensor: "unknown" as const,
+          weightSensor: "unknown" as const,
+        }
+      : {}),
+  };
+
+  if (device) {
+    await db.set(`devices/${STATION_ID}`, patch, {
+      mergeFields: Object.keys(patch),
+      precondition: { updateTime: device.updateTime },
+    });
+  } else {
+    await db.set(
+      `devices/${STATION_ID}`,
+      {
+        name: STATION_NAME,
+        active: true,
+        lastSeen: null,
+        firmwareVersion: null,
+        heightSensor: "unknown",
+        weightSensor: "unknown",
+        claimedExamId: null,
+        resetToken,
+        resetRequestedAt: now,
+        resetReason: reason,
+        resetExamId: examinationId,
+        appliedResetToken: null,
+        currentExaminationId: null,
+        localSessionState: "unknown",
+        wifiConnected: null,
+        createdAt: now,
+      },
+      { precondition: { exists: false } },
+    );
+  }
+
+  return { resetToken, resetRequestedAt: now };
+}
+
 async function resetDeviceSession(request: Request, env: Env) {
   await requireStaff(request, env);
   await rateLimit(env, `device-reset:${await requestKey(request)}`, 12, 60);
 
   const db = store(env);
-  const [{ exam }, device] = await Promise.all([
-    activeStation(env),
-    db.get<DeviceRecord>(`devices/${STATION_ID}`),
-  ]);
+  const { exam } = await activeStation(env);
 
   if (exam?.data.status === "completed") {
     throw new ApiError(
@@ -1231,9 +1372,6 @@ async function resetDeviceSession(request: Request, env: Env) {
       "device_reset_completed_exam",
     );
   }
-
-  const now = Date.now();
-  const resetToken = crypto.randomUUID();
 
   if (exam && ["queued", "running"].includes(exam.data.status)) {
     await db.set(
@@ -1245,6 +1383,10 @@ async function resetDeviceSession(request: Request, env: Env) {
         measurementSource: null,
         measurementIssue: null,
         measurementIssueAt: null,
+        measurementReviewStatus: "none",
+        measurementReviewNote: null,
+        measurementReviewedAt: null,
+        measurementReviewedBy: null,
         bmi: null,
         captureStatus: exam.data.cameraEnabled ? null : "skipped",
         facialStatus: null,
@@ -1263,6 +1405,10 @@ async function resetDeviceSession(request: Request, env: Env) {
           "measurementSource",
           "measurementIssue",
           "measurementIssueAt",
+          "measurementReviewStatus",
+          "measurementReviewNote",
+          "measurementReviewedAt",
+          "measurementReviewedBy",
           "bmi",
           "captureStatus",
           "facialStatus",
@@ -1271,6 +1417,9 @@ async function resetDeviceSession(request: Request, env: Env) {
           "facialModelVersion",
           "visualAnalysis",
           "recommendations",
+          "stationStep",
+          "stationAttention",
+          "stationAttentionMessage",
           "completedAt",
         ],
         precondition: { updateTime: exam.updateTime },
@@ -1278,50 +1427,16 @@ async function resetDeviceSession(request: Request, env: Env) {
     );
   }
 
-  if (device) {
-    await db.set(
-      `devices/${STATION_ID}`,
-      {
-        claimedExamId: null,
-        resetToken,
-        resetRequestedAt: now,
-        heightSensor: "unknown",
-        weightSensor: "unknown",
-      },
-      {
-        mergeFields: [
-          "claimedExamId",
-          "resetToken",
-          "resetRequestedAt",
-          "heightSensor",
-          "weightSensor",
-        ],
-        precondition: { updateTime: device.updateTime },
-      },
-    );
-  } else {
-    await db.set(
-      `devices/${STATION_ID}`,
-      {
-        name: STATION_NAME,
-        active: true,
-        lastSeen: null,
-        firmwareVersion: null,
-        heightSensor: "unknown",
-        weightSensor: "unknown",
-        claimedExamId: null,
-        resetToken,
-        resetRequestedAt: now,
-        createdAt: now,
-      },
-      { precondition: { exists: false } },
-    );
-  }
+  const reset = await requestIotDeviceReset(
+    env,
+    exam ? "session_restart" : "manual_refresh",
+    exam?.id ?? null,
+  );
 
   return ok({
     reset: true,
-    resetToken,
-    resetRequestedAt: now,
+    resetToken: reset.resetToken,
+    resetRequestedAt: reset.resetRequestedAt,
     examinationId: exam?.id ?? null,
     sessionRestarted: !!exam,
     message: exam
@@ -1369,12 +1484,26 @@ async function createActiveExam(
     measurementMode: "device",
     status: "queued",
     cameraEnabled,
+    stationStep: cameraEnabled ? "camera" : "prepare",
+    stationAttention: null,
+    stationAttentionMessage: null,
+    stationControlId: null,
+    stationControlAction: null,
+    stationControlIssuedAt: null,
+    stationControlAckId: null,
     heightCm: null,
     weightKg: null,
     measurementUpdatedAt: null,
     measurementSource: null,
     measurementIssue: null,
     measurementIssueAt: null,
+    measurementReviewStatus: "none",
+    measurementReviewNote: null,
+    measurementReviewedAt: null,
+    measurementReviewedBy: null,
+    cancelledAt: null,
+    cancelReason: null,
+    cancelledBy: null,
     bmi: null,
     captureStatus: cameraEnabled ? null : "skipped",
     facialStatus: null,
@@ -1456,21 +1585,48 @@ async function finalizeExam(env: Env, exam: FirestoreDoc<ExamRecord>) {
   return { id: exam.id, finalized: true };
 }
 
-async function cancelExam(env: Env, exam: FirestoreDoc<ExamRecord>) {
+async function cancelExam(
+  env: Env,
+  exam: FirestoreDoc<ExamRecord>,
+  reason = "user_cancelled",
+  cancelledBy = "system",
+) {
   if (!["queued", "running"].includes(exam.data.status)) {
     throw new ApiError(409, "Sesi ini sudah selesai.");
   }
   const now = Date.now();
   await store(env).set(
     `examinations/${exam.id}`,
-    { status: "cancelled", finalizedAt: now },
     {
-      mergeFields: ["status", "finalizedAt"],
+      status: "cancelled",
+      finalizedAt: now,
+      cancelledAt: now,
+      cancelReason: reason,
+      cancelledBy,
+    },
+    {
+      mergeFields: [
+        "status",
+        "finalizedAt",
+        "cancelledAt",
+        "cancelReason",
+        "cancelledBy",
+      ],
       precondition: { updateTime: exam.updateTime },
     },
   );
   await clearStationIfMatches(env, exam.id);
-  return { id: exam.id, cancelled: true };
+  const reset = await requestIotDeviceReset(
+    env,
+    "session_cancelled",
+    exam.id,
+  ).catch(() => null);
+  return {
+    id: exam.id,
+    cancelled: true,
+    deviceResetPending: !!reset,
+    resetToken: reset?.resetToken ?? null,
+  };
 }
 
 const completionSchema = z
@@ -1536,6 +1692,12 @@ const iotHeartbeatSchema = z
     firmwareVersion: z.string().trim().min(1).max(40).optional(),
     heightSensor: z.enum(["ok", "error", "unknown"]).optional(),
     weightSensor: z.enum(["ok", "error", "unknown"]).optional(),
+    appliedResetToken: z.string().uuid().nullable().optional(),
+    currentExaminationId: idSchema.nullable().optional(),
+    localSessionState: z
+      .enum(["idle", "queued", "measuring", "error", "unknown"])
+      .optional(),
+    wifiConnected: z.boolean().optional(),
   })
   .strict();
 
@@ -1792,6 +1954,7 @@ async function setStaffActive(request: Request, env: Env, id: string) {
 
 const childRegistrationSchema = z.object({
   name: nameSchema,
+  nik: z.string().regex(/^\d{16}$/, "NIK anak harus terdiri dari 16 digit."),
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   sex: z.enum(["male", "female"]),
 });
@@ -1837,6 +2000,7 @@ async function registerParent(request: Request, env: Env) {
     id: childId,
     code: `ST-${childId.slice(0, 8).toUpperCase()}`,
     name: input.child.name,
+    nik: input.child.nik,
     birthDate: input.child.birthDate,
     sex: input.child.sex,
     guardian: input.name,
@@ -1864,10 +2028,15 @@ async function registerParent(request: Request, env: Env) {
         data: child,
         precondition: { exists: false },
       },
+      {
+        path: `childNiks/${input.child.nik}`,
+        data: { childId, createdAt: now },
+        precondition: { exists: false },
+      },
     ]);
   } catch (error) {
     if (preconditionConflict(error)) {
-      throw new ApiError(409, "Email atau profil sudah terdaftar.");
+      throw new ApiError(409, "Email, NIK, atau profil sudah terdaftar.");
     }
     throw error;
   }
@@ -1940,6 +2109,7 @@ async function createParentChild(request: Request, env: Env) {
     id,
     code: `ST-${id.slice(0, 8).toUpperCase()}`,
     name: input.name,
+    nik: input.nik,
     birthDate: input.birthDate,
     sex: input.sex,
     guardian: parent.name,
@@ -1950,12 +2120,106 @@ async function createParentChild(request: Request, env: Env) {
     parentId: parent.id,
   };
 
-  await store(env).set(`children/${id}`, child, {
-    precondition: { exists: false },
-  });
+  try {
+    await store(env).commit([
+      {
+        path: `children/${id}`,
+        data: child,
+        precondition: { exists: false },
+      },
+      {
+        path: `childNiks/${input.nik}`,
+        data: { childId: id, createdAt: child.createdAt },
+        precondition: { exists: false },
+      },
+    ]);
+  } catch (error) {
+    if (preconditionConflict(error)) {
+      throw new ApiError(409, "NIK anak sudah terdaftar.");
+    }
+    throw error;
+  }
   childCountCache = null;
 
   return ok(asChild({ id, data: child, updateTime: "" }), 201);
+}
+
+async function updateParentChild(request: Request, env: Env, childId: string) {
+  const parent = await requireParent(request, env);
+  await rateLimit(env, `parent-child-update:${parent.sessionHash}`, 20, 3600);
+
+  const input = await body(request, childRegistrationSchema.strict());
+  const months = ageInMonths(input.birthDate);
+  if (months < 0 || months > 59) {
+    throw new ApiError(
+      422,
+      "Profil pertumbuhan ditujukan untuk anak usia 0–59 bulan.",
+    );
+  }
+
+  const current = await store(env).get<ChildRecord>(`children/${childId}`);
+  if (!current || current.data.parentId !== parent.id) {
+    throw new ApiError(404, "Profil anak tidak ditemukan.");
+  }
+
+  const siblings = await childrenForParent(env, parent.id);
+  const duplicate = siblings.some(
+    (item) =>
+      item.id !== childId &&
+      item.data.name.toLowerCase() === input.name.toLowerCase() &&
+      item.data.birthDate === input.birthDate,
+  );
+  if (duplicate) {
+    throw new ApiError(
+      409,
+      "Profil anak dengan nama dan tanggal lahir ini sudah ada.",
+    );
+  }
+
+  const writes: FirestoreWrite[] = [
+    {
+      path: `children/${childId}`,
+      data: {
+        name: input.name,
+        nik: input.nik,
+        birthDate: input.birthDate,
+        sex: input.sex,
+      },
+      mergeFields: ["name", "nik", "birthDate", "sex"],
+      precondition: { updateTime: current.updateTime },
+    },
+  ];
+  const previousNik = current.data.nik ?? null;
+  if (previousNik !== input.nik) {
+    writes.push({
+      path: `childNiks/${input.nik}`,
+      data: { childId, updatedAt: Date.now() },
+      precondition: { exists: false },
+    });
+    if (previousNik) {
+      writes.push({
+        path: `childNiks/${previousNik}`,
+        delete: true,
+      });
+    }
+  }
+
+  try {
+    await store(env).commit(writes);
+  } catch (error) {
+    if (preconditionConflict(error)) {
+      throw new ApiError(409, "NIK anak sudah terdaftar.");
+    }
+    throw error;
+  }
+
+  return ok(
+    asChild({
+      id: childId,
+      data: { ...current.data, ...input },
+      updateTime: current.updateTime,
+    }),
+  );
 }
 
 async function parentView(request: Request, env: Env) {
@@ -2342,6 +2606,7 @@ async function createChild(request: Request, env: Env) {
   const value: ChildRecord = {
     id,
     ...input,
+    nik: input.nik ?? null,
     code: input.code.toUpperCase(),
     createdAt: Date.now(),
     latestFacePhotoUrl: null,
@@ -2349,9 +2614,28 @@ async function createChild(request: Request, env: Env) {
     latestFacePhotoPublicId: null,
     parentId: null,
   };
-  await store(env).set(`children/${id}`, value, {
-    precondition: { exists: false },
-  });
+  const writes: FirestoreWrite[] = [
+    {
+      path: `children/${id}`,
+      data: value,
+      precondition: { exists: false },
+    },
+  ];
+  if (value.nik) {
+    writes.push({
+      path: `childNiks/${value.nik}`,
+      data: { childId: id, createdAt: value.createdAt },
+      precondition: { exists: false },
+    });
+  }
+  try {
+    await store(env).commit(writes);
+  } catch (error) {
+    if (preconditionConflict(error)) {
+      throw new ApiError(409, "Kode atau NIK anak sudah digunakan.");
+    }
+    throw error;
+  }
   childCountCache = null;
   return ok({ id }, 201);
 }
@@ -2439,27 +2723,29 @@ async function parentStartExam(request: Request, env: Env) {
   );
 }
 
-async function parentManualInfantExam(request: Request, env: Env) {
-  const parent = await requireParent(request, env);
-  await rateLimit(env, `parent-manual-infant:${parent.sessionHash}`, 30, 3600);
-  const input = await body(
-    request,
-    z
-      .object({
-        childId: idSchema,
-        lengthCm: z.number().finite().min(30).max(120),
-        weightKg: z.number().finite().min(0.5).max(30),
-      })
-      .strict(),
-  );
-
-  const child = await store(env).get<ChildRecord>(`children/${input.childId}`);
-  if (!child || child.data.parentId !== parent.id) {
+async function saveParentManualExamination(
+  env: Env,
+  parentId: string,
+  childId: string,
+  linearCm: number,
+  weightKg: number,
+  legacyInfantOnly: boolean,
+  confirmExtreme = false,
+) {
+  const child = await store(env).get<ChildRecord>(`children/${childId}`);
+  if (!child || child.data.parentId !== parentId) {
     throw new ApiError(404, "Profil anak tidak ditemukan.");
   }
 
   const ageMonths = ageInMonths(child.data.birthDate);
-  if (ageMonths < 0 || ageMonths > 23) {
+  if (ageMonths < 0 || ageMonths > 59) {
+    throw new ApiError(
+      422,
+      "Pemeriksaan manual ditujukan untuk anak usia 0–59 bulan.",
+      "manual_age_out_of_range",
+    );
+  }
+  if (legacyInfantOnly && ageMonths > 23) {
     throw new ApiError(
       422,
       "Input manual panjang badan ditujukan untuk bayi usia 0–23 bulan.",
@@ -2470,39 +2756,64 @@ async function parentManualInfantExam(request: Request, env: Env) {
   const anthropometry = assessAnthropometry(
     ageMonths,
     child.data.sex,
-    input.lengthCm,
-    input.weightKg,
+    linearCm,
+    weightKg,
   );
-  if (anthropometry.measurementQuality === "recheck") {
+  const verifiedExtreme =
+    anthropometry.measurementQuality === "recheck" && confirmExtreme;
+  if (anthropometry.measurementQuality === "recheck" && !verifiedExtreme) {
     throw new ApiError(
       422,
-      anthropometry.measurementReason || "Data pengukuran perlu diulang.",
+      anthropometry.measurementReason ||
+        "Data pengukuran perlu diulang. Jika hasil kedua tetap sama, konfirmasi sebagai nilai ekstrem.",
       "measurement_recheck_required",
     );
   }
 
   const id = crypto.randomUUID();
   const now = Date.now();
+  const isInfant = ageMonths <= 23;
+  const bmi = isInfant
+    ? null
+    : Number((weightKg / (linearCm / 100) ** 2).toFixed(1));
+
   const exam: ExamRecord = {
     childId: child.id,
     childName: child.data.name,
     childCode: child.data.code,
-    parentId: parent.id,
+    parentId,
     staffId: SYSTEM_SCREENING_STAFF_ID,
     ageMonths,
     sex: child.data.sex,
-    deviceId: "manual-infant",
-    deviceName: "Input manual bayi",
-    measurementMode: "manual_infant",
+    deviceId: legacyInfantOnly ? "manual-infant" : "manual-entry",
+    deviceName: legacyInfantOnly
+      ? "Input manual bayi"
+      : isInfant
+        ? "Input manual PB + BB"
+        : "Input manual TB + BB",
+    measurementMode: legacyInfantOnly ? "manual_infant" : "manual",
     status: "completed",
     cameraEnabled: false,
-    heightCm: input.lengthCm,
-    weightKg: input.weightKg,
+    heightCm: linearCm,
+    weightKg,
     measurementUpdatedAt: now,
     measurementSource: "manual",
-    measurementIssue: null,
-    measurementIssueAt: null,
-    bmi: null,
+    measurementIssue: verifiedExtreme
+      ? anthropometry.measurementReason ||
+        "Nilai ekstrem dikonfirmasi setelah pengukuran ulang."
+      : null,
+    measurementIssueAt: verifiedExtreme ? now : null,
+    measurementReviewStatus: verifiedExtreme ? "verified_extreme" : "none",
+    measurementReviewNote: verifiedExtreme
+      ? anthropometry.measurementReason ||
+        "Nilai ekstrem dikonfirmasi setelah pengukuran ulang."
+      : null,
+    measurementReviewedAt: verifiedExtreme ? now : null,
+    measurementReviewedBy: verifiedExtreme ? parentId : null,
+    cancelledAt: null,
+    cancelReason: null,
+    cancelledBy: null,
+    bmi,
     captureStatus: "skipped",
     facialStatus: "unavailable",
     facialProbability: null,
@@ -2515,20 +2826,79 @@ async function parentManualInfantExam(request: Request, env: Env) {
     finalizedAt: now,
   };
 
-  const recommendations = await recommendationsForExam(
-    env,
-    { id, data: exam, updateTime: "" },
-    input.lengthCm,
-    input.weightKg,
-    now,
-  );
-  exam.recommendations = recommendations;
+  exam.recommendations = verifiedExtreme
+    ? null
+    : await recommendationsForExam(
+        env,
+        { id, data: exam, updateTime: "" },
+        linearCm,
+        weightKg,
+        now,
+      );
 
   await store(env).set(`examinations/${id}`, exam, {
     precondition: { exists: false },
   });
 
-  return ok(asExam(await getExam(env, id)), 201);
+  return asExam(await getExam(env, id));
+}
+
+async function parentManualExam(request: Request, env: Env) {
+  const parent = await requireParent(request, env);
+  await rateLimit(env, `parent-manual:${parent.sessionHash}`, 30, 3600);
+
+  const input = await body(
+    request,
+    z
+      .object({
+        childId: idSchema,
+        linearCm: z.number().finite().min(30).max(130),
+        weightKg: z.number().finite().min(0.5).max(40),
+        confirmExtreme: z.boolean().optional().default(false),
+      })
+      .strict(),
+  );
+
+  return ok(
+    await saveParentManualExamination(
+      env,
+      parent.id,
+      input.childId,
+      input.linearCm,
+      input.weightKg,
+      false,
+      input.confirmExtreme,
+    ),
+    201,
+  );
+}
+
+async function parentManualInfantExam(request: Request, env: Env) {
+  const parent = await requireParent(request, env);
+  await rateLimit(env, `parent-manual-infant:${parent.sessionHash}`, 30, 3600);
+
+  const input = await body(
+    request,
+    z
+      .object({
+        childId: idSchema,
+        lengthCm: z.number().finite().min(30).max(120),
+        weightKg: z.number().finite().min(0.5).max(30),
+      })
+      .strict(),
+  );
+
+  return ok(
+    await saveParentManualExamination(
+      env,
+      parent.id,
+      input.childId,
+      input.lengthCm,
+      input.weightKg,
+      true,
+    ),
+    201,
+  );
 }
 
 async function finalizeParentExam(request: Request, env: Env, examId: string) {
@@ -2746,8 +3116,146 @@ async function stationStatus(_request: Request, env: Env) {
           measurementSource: exam.data.measurementSource ?? null,
           measurementIssue: exam.data.measurementIssue ?? null,
           measurementIssueAt: exam.data.measurementIssueAt ?? null,
+          stationStep: exam.data.stationStep ?? null,
+          stationAttention: exam.data.stationAttention ?? null,
+          stationAttentionMessage: exam.data.stationAttentionMessage ?? null,
+          stationControlId: exam.data.stationControlId ?? null,
+          stationControlAction: exam.data.stationControlAction ?? null,
+          stationControlAckId: exam.data.stationControlAckId ?? null,
         }
       : null,
+  });
+}
+
+const stationStateSchema = z
+  .object({
+    step: z.enum([
+      "camera",
+      "prepare",
+      "height",
+      "weight",
+      "analysis",
+      "result",
+    ]),
+    attention: z.enum(["camera_retry_required"]).nullable().optional(),
+    message: z.string().trim().max(240).nullable().optional(),
+  })
+  .strict();
+
+const stationControlAckSchema = z
+  .object({
+    controlId: z.string().uuid(),
+  })
+  .strict();
+
+const parentStationControlSchema = z
+  .object({
+    action: z.enum(["retry_camera", "skip_camera"]),
+  })
+  .strict();
+
+async function stationStateUpdate(request: Request, env: Env) {
+  const input = await body(request, stationStateSchema);
+  const { exam } = await activeStation(env);
+  if (!exam || exam.data.status !== "running") {
+    return ok({ updated: false });
+  }
+
+  await store(env).set(
+    `examinations/${exam.id}`,
+    {
+      stationStep: input.step,
+      stationAttention: input.attention ?? null,
+      stationAttentionMessage: input.message ?? null,
+    },
+    {
+      mergeFields: [
+        "stationStep",
+        "stationAttention",
+        "stationAttentionMessage",
+      ],
+    },
+  );
+
+  return ok({ updated: true });
+}
+
+async function stationControlAck(request: Request, env: Env) {
+  const input = await body(request, stationControlAckSchema);
+  const { exam } = await activeStation(env);
+  if (!exam || exam.data.status !== "running") {
+    return ok({ acknowledged: false });
+  }
+  if (exam.data.stationControlId !== input.controlId) {
+    return ok({ acknowledged: false });
+  }
+
+  await store(env).set(
+    `examinations/${exam.id}`,
+    {
+      stationControlAckId: input.controlId,
+      stationAttention: null,
+      stationAttentionMessage: null,
+    },
+    {
+      mergeFields: [
+        "stationControlAckId",
+        "stationAttention",
+        "stationAttentionMessage",
+      ],
+    },
+  );
+
+  return ok({ acknowledged: true });
+}
+
+async function parentStationControl(
+  request: Request,
+  env: Env,
+  examId: string,
+) {
+  const parent = await requireParent(request, env);
+  const input = await body(request, parentStationControlSchema);
+  const exam = await getExam(env, examId);
+
+  if (exam.data.parentId !== parent.id) {
+    throw new ApiError(404, "Pemeriksaan tidak ditemukan.");
+  }
+  if (exam.data.status !== "running") {
+    throw new ApiError(409, "Pemeriksaan tidak sedang berjalan.");
+  }
+  if (!exam.data.cameraEnabled || exam.data.stationStep !== "camera") {
+    throw new ApiError(409, "Kontrol kamera tidak tersedia pada tahap ini.");
+  }
+  if (
+    input.action === "retry_camera" &&
+    exam.data.stationAttention !== "camera_retry_required"
+  ) {
+    throw new ApiError(409, "Kamera belum meminta pengambilan ulang.");
+  }
+
+  const controlId = crypto.randomUUID();
+  await store(env).set(
+    `examinations/${exam.id}`,
+    {
+      stationControlId: controlId,
+      stationControlAction: input.action,
+      stationControlIssuedAt: Date.now(),
+    },
+    {
+      mergeFields: [
+        "stationControlId",
+        "stationControlAction",
+        "stationControlIssuedAt",
+      ],
+      precondition: { updateTime: exam.updateTime },
+    },
+  );
+
+  return ok({
+    controlId,
+    action: input.action,
+    queued: true,
   });
 }
 
@@ -2787,7 +3295,9 @@ async function stationComplete(request: Request, env: Env) {
     heightCm,
     weightKg,
   );
-  if (anthropometry.measurementQuality === "recheck") {
+  const verifiedExtreme =
+    exam.data.measurementReviewStatus === "verified_extreme";
+  if (anthropometry.measurementQuality === "recheck" && !verifiedExtreme) {
     throw new ApiError(
       422,
       anthropometry.measurementReason || "Data pengukuran perlu diulang.",
@@ -2800,13 +3310,9 @@ async function stationComplete(request: Request, env: Env) {
       ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
   const completedAt = Date.now();
-  const recommendations = await recommendationsForExam(
-    env,
-    exam,
-    heightCm,
-    weightKg,
-    completedAt,
-  );
+  const recommendations = verifiedExtreme
+    ? null
+    : await recommendationsForExam(env, exam, heightCm, weightKg, completedAt);
 
   try {
     await store(env).set(
@@ -2823,6 +3329,9 @@ async function stationComplete(request: Request, env: Env) {
         facialModelVersion: input.facialModelVersion ?? null,
         visualAnalysis: input.visualAnalysis ?? null,
         recommendations,
+        stationStep: "result",
+        stationAttention: null,
+        stationAttentionMessage: null,
         completedAt,
       },
       {
@@ -2893,6 +3402,9 @@ async function iotSession(request: Request, env: Env) {
     needsClaim: !!exam && device.claimedExamId !== exam.id,
     resetToken: device.resetToken,
     resetRequestedAt: device.resetRequestedAt,
+    resetReason: device.resetReason,
+    mustReset:
+      !!device.resetToken && device.appliedResetToken !== device.resetToken,
     serverTime: Date.now(),
   });
 }
@@ -2960,18 +3472,47 @@ async function iotMeasurements(request: Request, env: Env) {
     const issue =
       anthropometry.measurementReason || "Data sensor perlu diukur ulang.";
     const issueAt = Date.now();
+    const alreadyVerified =
+      exam.data.measurementReviewStatus === "verified_extreme";
+    const issuePatch = {
+      ...(input.heightCm !== undefined ? { heightCm: input.heightCm } : {}),
+      ...(input.weightKg !== undefined ? { weightKg: input.weightKg } : {}),
+      measurementUpdatedAt: issueAt,
+      measurementSource: "iot" as const,
+      measurementIssue: issue,
+      measurementIssueAt: issueAt,
+      ...(alreadyVerified
+        ? {}
+        : {
+            measurementReviewStatus: "none" as const,
+            measurementReviewNote: null,
+            measurementReviewedAt: null,
+            measurementReviewedBy: null,
+          }),
+    };
 
-    await store(env).set(
-      `examinations/${exam.id}`,
-      {
-        measurementIssue: issue,
-        measurementIssueAt: issueAt,
-      },
-      {
-        mergeFields: ["measurementIssue", "measurementIssueAt"],
-        precondition: { updateTime: exam.updateTime },
-      },
-    );
+    await store(env).set(`examinations/${exam.id}`, issuePatch, {
+      mergeFields: Object.keys(issuePatch),
+      precondition: { updateTime: exam.updateTime },
+    });
+
+    if (alreadyVerified) {
+      return ok({
+        saved: true,
+        ack: "verified_extreme_measurement_saved",
+        examinationId: exam.id,
+        accepted: {
+          heightCm: input.heightCm !== undefined,
+          weightKg: input.weightKg !== undefined,
+        },
+        heightCm: candidateHeight,
+        weightKg: candidateWeight,
+        source: "iot",
+        measurementUpdatedAt: issueAt,
+        verifiedExtreme: true,
+        serverTime: issueAt,
+      });
+    }
 
     throw new ApiError(422, issue, "measurement_recheck_required");
   }
@@ -2984,6 +3525,10 @@ async function iotMeasurements(request: Request, env: Env) {
     measurementSource: "iot" as const,
     measurementIssue: null,
     measurementIssueAt: null,
+    measurementReviewStatus: "none" as const,
+    measurementReviewNote: null,
+    measurementReviewedAt: null,
+    measurementReviewedBy: null,
   };
 
   try {
@@ -3030,6 +3575,10 @@ async function iotHeartbeat(request: Request, env: Env) {
     heightSensor: device.heightSensor,
     weightSensor: device.weightSensor,
     firmwareVersion: device.firmwareVersion,
+    expectedResetToken: device.resetToken,
+    appliedResetToken: device.appliedResetToken,
+    currentExaminationId: device.currentExaminationId,
+    localSessionState: device.localSessionState,
     serverTime: Date.now(),
   });
 }
@@ -3124,7 +3673,9 @@ async function staffComplete(request: Request, env: Env, examId: string) {
     heightCm,
     weightKg,
   );
-  if (anthropometry.measurementQuality === "recheck") {
+  const verifiedExtreme =
+    exam.data.measurementReviewStatus === "verified_extreme";
+  if (anthropometry.measurementQuality === "recheck" && !verifiedExtreme) {
     throw new ApiError(
       422,
       anthropometry.measurementReason || "Data pengukuran perlu diulang.",
@@ -3137,13 +3688,9 @@ async function staffComplete(request: Request, env: Env, examId: string) {
       ? Number((weightKg / (heightCm / 100) ** 2).toFixed(1))
       : null;
   const completedAt = Date.now();
-  const recommendations = await recommendationsForExam(
-    env,
-    exam,
-    heightCm,
-    weightKg,
-    completedAt,
-  );
+  const recommendations = verifiedExtreme
+    ? null
+    : await recommendationsForExam(env, exam, heightCm, weightKg, completedAt);
   await store(env).set(
     `examinations/${exam.id}`,
     {
@@ -3189,6 +3736,142 @@ async function staffMirrorCancel(request: Request, env: Env, examId: string) {
     await cancelExam(env, exam);
   }
   return ok();
+}
+
+async function forceStopDeviceSession(request: Request, env: Env) {
+  const actor = await requireStaff(request, env, true);
+  await rateLimit(env, `device-force-stop:${actor.id}`, 8, 60);
+  const { exam } = await activeStation(env);
+
+  if (exam && ["queued", "running"].includes(exam.data.status)) {
+    const result = await cancelExam(env, exam, "admin_force_stop", actor.id);
+    return ok({
+      stopped: true,
+      examinationId: exam.id,
+      ...result,
+      message:
+        "Sesi dihentikan di server. Menunggu alat menerapkan reset token terbaru.",
+    });
+  }
+
+  const reset = await requestIotDeviceReset(
+    env,
+    "admin_force_stop_no_active_session",
+    null,
+  );
+  return ok({
+    stopped: false,
+    examinationId: null,
+    deviceResetPending: true,
+    ...reset,
+    message:
+      "Tidak ada sesi aktif di server. Perintah reset tetap dikirim untuk membersihkan state lokal alat.",
+  });
+}
+
+async function confirmExtremeMeasurement(request: Request, env: Env) {
+  const actor = await requireStaff(request, env, true);
+  const input = await body(
+    request,
+    z.object({ examinationId: idSchema }).strict(),
+  );
+  const exam = await getExam(env, input.examinationId);
+  if (!["queued", "running"].includes(exam.data.status)) {
+    throw new ApiError(409, "Sesi ini tidak lagi aktif.");
+  }
+
+  const assessment = assessAnthropometry(
+    exam.data.ageMonths,
+    exam.data.sex,
+    exam.data.heightCm,
+    exam.data.weightKg,
+  );
+  if (assessment.measurementQuality !== "recheck") {
+    throw new ApiError(
+      409,
+      "Nilai saat ini tidak memerlukan konfirmasi ekstrem.",
+    );
+  }
+
+  const now = Date.now();
+  await store(env).set(
+    `examinations/${exam.id}`,
+    {
+      measurementReviewStatus: "verified_extreme",
+      measurementReviewNote:
+        assessment.measurementReason ||
+        "Nilai ekstrem dikonfirmasi setelah pengukuran ulang.",
+      measurementReviewedAt: now,
+      measurementReviewedBy: actor.id,
+    },
+    {
+      mergeFields: [
+        "measurementReviewStatus",
+        "measurementReviewNote",
+        "measurementReviewedAt",
+        "measurementReviewedBy",
+      ],
+      precondition: { updateTime: exam.updateTime },
+    },
+  );
+
+  return ok({
+    confirmed: true,
+    examinationId: exam.id,
+    message:
+      "Nilai ekstrem ditandai terverifikasi. Nilai mentah tetap disimpan, tetapi sistem tidak memaksakan status pertumbuhan otomatis dari nilai tersebut.",
+  });
+}
+
+async function cleanupStuckDeviceSessions(request: Request, env: Env) {
+  const actor = await requireStaff(request, env, true);
+  await rateLimit(env, `device-cleanup-stuck:${actor.id}`, 5, 60);
+  const db = store(env);
+  const [{ exam: activeExam }, recent] = await Promise.all([
+    activeStation(env),
+    db.query<ExamRecord>("examinations", {
+      orderBy: [{ field: "createdAt", direction: "DESCENDING" }],
+      limit: 100,
+    }),
+  ]);
+  const stuck = recent.filter(
+    (item) =>
+      ["queued", "running"].includes(item.data.status) &&
+      item.id !== activeExam?.id,
+  );
+  const now = Date.now();
+
+  if (stuck.length) {
+    await db.commit(
+      stuck.map(
+        (item): FirestoreWrite => ({
+          path: `examinations/${item.id}`,
+          data: {
+            status: "cancelled",
+            finalizedAt: now,
+            cancelledAt: now,
+            cancelReason: "admin_stuck_session_cleanup",
+            cancelledBy: actor.id,
+          },
+          mergeFields: [
+            "status",
+            "finalizedAt",
+            "cancelledAt",
+            "cancelReason",
+            "cancelledBy",
+          ],
+          precondition: { updateTime: item.updateTime },
+        }),
+      ),
+    );
+  }
+
+  return ok({
+    cleaned: stuck.length,
+    message: stuck.length
+      ? `${stuck.length} sesi tersembunyi/nyangkut ditandai batal tanpa menghapus riwayat audit.`
+      : "Tidak ada sesi tersembunyi yang perlu dibersihkan.",
+  });
 }
 
 async function monitoringOverview(request: Request, env: Env) {
@@ -3261,12 +3944,58 @@ async function monitoringOverview(request: Request, env: Env) {
 
 async function deviceMonitoring(request: Request, env: Env) {
   await requireStaff(request, env, true);
-  const [{ exam }, device] = await Promise.all([
+  const db = store(env);
+  const [{ exam, station }, device, recent] = await Promise.all([
     activeStation(env),
     stationDeviceState(env),
+    db.query<ExamRecord>("examinations", {
+      orderBy: [{ field: "createdAt", direction: "DESCENDING" }],
+      limit: 50,
+    }),
   ]);
+  const stuckSessions = recent
+    .filter(
+      (item) =>
+        ["queued", "running"].includes(item.data.status) &&
+        item.id !== exam?.id,
+    )
+    .map((item) => ({
+      id: item.id,
+      childName: item.data.childName,
+      status: item.data.status,
+      createdAt: item.data.createdAt,
+    }));
+  const resetPending =
+    !!device.resetToken && device.appliedResetToken !== device.resetToken;
+  const deviceSessionKnown =
+    device.currentExaminationId !== null ||
+    device.localSessionState !== "unknown";
+  const stateMismatch =
+    resetPending ||
+    (deviceSessionKnown &&
+      (!exam
+        ? !!device.currentExaminationId ||
+          device.localSessionState === "measuring" ||
+          device.localSessionState === "queued"
+        : !!device.currentExaminationId &&
+          device.currentExaminationId !== exam.id));
 
   return ok({
+    debug: {
+      serverActiveExamId: exam?.id ?? null,
+      stationActiveExamId: station?.data.activeExamId ?? null,
+      deviceClaimedExamId: device.claimedExamId,
+      deviceCurrentExamId: device.currentExaminationId,
+      deviceLocalSessionState: device.localSessionState,
+      wifiConnected: device.wifiConnected,
+      expectedResetToken: device.resetToken,
+      appliedResetToken: device.appliedResetToken,
+      resetRequestedAt: device.resetRequestedAt,
+      resetReason: device.resetReason,
+      resetPending,
+      stateMismatch,
+      stuckSessions,
+    },
     devices: [
       {
         id: STATION_ID,
@@ -3293,6 +4022,9 @@ async function deviceMonitoring(request: Request, env: Env) {
               measurementSource: exam.data.measurementSource ?? null,
               measurementIssue: exam.data.measurementIssue ?? null,
               measurementIssueAt: exam.data.measurementIssueAt ?? null,
+              measurementReviewStatus:
+                exam.data.measurementReviewStatus ?? "none",
+              measurementReviewNote: exam.data.measurementReviewNote ?? null,
             }
           : null,
         checks: {
@@ -3465,6 +4197,12 @@ export async function routeFirestore(
       return deviceMonitoring(request, env);
     case "POST /api/device/reset-session":
       return resetDeviceSession(request, env);
+    case "POST /api/device/force-stop":
+      return forceStopDeviceSession(request, env);
+    case "POST /api/device/confirm-extreme":
+      return confirmExtremeMeasurement(request, env);
+    case "POST /api/device/cleanup-stuck-sessions":
+      return cleanupStuckDeviceSessions(request, env);
     case "GET /api/insights":
       return insights(request, env);
     case "GET /api/blogs":
@@ -3487,6 +4225,10 @@ export async function routeFirestore(
       return stationStatus(request, env);
     case "POST /api/station/claim":
       return stationClaim(request, env);
+    case "POST /api/station/state":
+      return stationStateUpdate(request, env);
+    case "POST /api/station/control-ack":
+      return stationControlAck(request, env);
     case "POST /api/station/complete":
       return stationComplete(request, env);
     case "POST /api/station/cancel":
@@ -3525,8 +4267,19 @@ export async function routeFirestore(
       return parentChat(request, env);
     case "POST /api/parent-account/examinations":
       return parentStartExam(request, env);
+    case "POST /api/parent-account/examinations/manual":
+      return parentManualExam(request, env);
     case "POST /api/parent-account/examinations/manual-infant":
       return parentManualInfantExam(request, env);
+  }
+
+  const parentChild = path.match(/^\/api\/parent-account\/children\/([^/]+)$/);
+  if (parentChild && method === "PATCH") {
+    const parsed = idSchema.safeParse(parentChild[1]);
+    if (!parsed.success) {
+      throw new ApiError(404, "Halaman tidak ditemukan.");
+    }
+    return updateParentChild(request, env, parsed.data);
   }
 
   const blogPost = path.match(/^\/api\/(staff\/)?blogs\/([^/]+)$/);
@@ -3545,14 +4298,18 @@ export async function routeFirestore(
   }
 
   const parentExam = path.match(
-    /^\/api\/parent-account\/examinations\/([^/]+)\/(finalize|cancel)$/,
+    /^\/api\/parent-account\/examinations\/([^/]+)\/(finalize|cancel|control)$/,
   );
   if (parentExam && method === "POST") {
     const parsed = idSchema.safeParse(parentExam[1]);
     if (!parsed.success) throw new ApiError(404, "Halaman tidak ditemukan.");
-    return parentExam[2] === "finalize"
-      ? finalizeParentExam(request, env, parsed.data)
-      : cancelParentExam(request, env, parsed.data);
+    if (parentExam[2] === "finalize") {
+      return finalizeParentExam(request, env, parsed.data);
+    }
+    if (parentExam[2] === "control") {
+      return parentStationControl(request, env, parsed.data);
+    }
+    return cancelParentExam(request, env, parsed.data);
   }
 
   const dynamic = path.match(

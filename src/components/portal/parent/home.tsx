@@ -8,11 +8,16 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  ExternalLink,
   History,
   Play,
   TrendingUp,
 } from "lucide-react";
-import { growthStatusLabelForAge } from "@/lib/growth";
+import { growthStatusLabelForAge, linearGrowthIndicator } from "@/lib/growth";
+import {
+  KIA_2024_REFERENCE_URL,
+  WHO_LENGTH_HEIGHT_REFERENCE_URL,
+} from "@/lib/growth-references";
 import type {
   ChildProfile,
   Examination,
@@ -112,7 +117,11 @@ export function ParentHome({
   const childAgeMonths = child ? ageInMonths(child.birthDate) : null;
   const isInfant = childAgeMonths !== null && childAgeMonths <= 23;
   const linearIndicator = isInfant ? "PB/U" : "TB/U";
-  const linearMeasurementLabel = isInfant ? "Panjang" : "Tinggi";
+  const latestLinearIndicator = latest
+    ? linearGrowthIndicator(latest.ageMonths)
+    : linearIndicator;
+  const linearMeasurementLabel =
+    latestLinearIndicator === "PB/U" ? "Panjang" : "Tinggi";
 
   return (
     <div className="parent-home-dashboard">
@@ -195,7 +204,7 @@ export function ParentHome({
             <small>kg</small>
           </article>
           <article>
-            <span>{linearIndicator}</span>
+            <span>{latestLinearIndicator}</span>
             <strong className="metric-status">
               {latest
                 ? growthStatusLabelForAge(latest.growthStatus, latest.ageMonths)
@@ -239,7 +248,7 @@ export function ParentHome({
         {latest ? (
           <>
             <div className="parent-home-result-status">
-              <span>STATUS STUNTING BERDASARKAN TB/U</span>
+              <span>STATUS STUNTING BERDASARKAN {latestLinearIndicator}</span>
               <strong>
                 {latest.measurementQuality === "recheck"
                   ? "Pengukuran perlu diulang"
@@ -251,7 +260,9 @@ export function ParentHome({
               <small>
                 {latest.measurementQuality === "recheck"
                   ? latest.measurementReason
-                  : `TB/U ${formatReading(latest.heightForAgeZ)} SD · AI visual ${
+                  : `${latestLinearIndicator} ${formatReading(
+                      latest.heightForAgeZ,
+                    )} SD · AI visual ${
                       latest.visualAnalysis
                         ? visualAnalysisStatusLabel(
                             latest.visualAnalysis.status,
@@ -260,6 +271,34 @@ export function ParentHome({
                     }`}
               </small>
             </div>
+
+            <div className="parent-result-sources">
+              <span>SUMBER HASIL</span>
+              <div className="parent-result-source-links">
+                <a
+                  href={WHO_LENGTH_HEIGHT_REFERENCE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  WHO Child Growth Standards
+                  <ExternalLink size={13} />
+                </a>
+                <a
+                  href={KIA_2024_REFERENCE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Buku KIA 2024
+                  <ExternalLink size={13} />
+                </a>
+              </div>
+              <small>
+                Z-score dihitung menggunakan standar pertumbuhan WHO. Buku KIA
+                Kemenkes RI digunakan sebagai referensi pendamping pemantauan
+                pertumbuhan anak.
+              </small>
+            </div>
+
             <Link
               className="parent-home-result-link"
               href={`/ortu/riwayat/${encodeURIComponent(latest.id)}`}

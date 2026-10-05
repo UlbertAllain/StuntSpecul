@@ -6,7 +6,11 @@ import {
   type StuntingScreening,
 } from "./growth.ts";
 
-export type MeasurementQuality = "valid" | "incomplete" | "recheck";
+export type MeasurementQuality =
+  | "valid"
+  | "incomplete"
+  | "recheck"
+  | "verified_extreme";
 
 export type AnthropometryAssessment = {
   measurementQuality: MeasurementQuality;

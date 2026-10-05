@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Camera, Check, RotateCcw } from "lucide-react";
 import { useCamera } from "@/hooks/use-camera";
 import { useCountdown } from "@/hooks/use-countdown";
@@ -12,6 +12,16 @@ type CameraStepProps = {
   ageMonths: number;
   sex: "male" | "female";
   soundEnabled?: boolean;
+  displayOnlyControls?: boolean;
+  remoteControl?: {
+    id: string;
+    action: "retry_camera" | "skip_camera";
+  } | null;
+  onRecoveryState?: (input: {
+    attention: "camera_retry_required" | null;
+    message: string | null;
+  }) => void;
+  onControlApplied?: (controlId: string) => void;
   onComplete: (capture: Capture) => void;
 };
 
@@ -24,7 +34,7 @@ function CaptureCountdown({
   soundEnabled: boolean;
   onComplete: () => void;
 }) {
-  const remaining = useCountdown(6, paused, onComplete);
+  const remaining = useCountdown(4, paused, onComplete);
 
   useEffect(() => {
     if (!soundEnabled || paused) return;
@@ -47,12 +57,37 @@ export function CameraStep({
   ageMonths,
   sex,
   soundEnabled = false,
+  displayOnlyControls = false,
+  remoteControl = null,
+  onRecoveryState,
+  onControlApplied,
   onComplete,
 }: CameraStepProps) {
   const { videoRef, status, attempt, capture, error, retry } = useCamera(
     onComplete,
     { ageMonths, sex },
   );
+  const appliedControlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    onRecoveryState?.({
+      attention: status === "error" ? "camera_retry_required" : null,
+      message: status === "error" ? error : null,
+    });
+  }, [error, onRecoveryState, status]);
+
+  useEffect(() => {
+    if (!remoteControl || appliedControlRef.current === remoteControl.id)
+      return;
+
+    appliedControlRef.current = remoteControl.id;
+    if (remoteControl.action === "retry_camera") {
+      retry();
+    } else {
+      onComplete({ status: "failed" });
+    }
+    onControlApplied?.(remoteControl.id);
+  }, [onComplete, onControlApplied, remoteControl, retry]);
 
   return (
     <div className="camera-step">
@@ -108,7 +143,7 @@ export function CameraStep({
         <span>Cahaya cukup</span>
         <span>Satu anak saja</span>
       </div>
-      {status === "error" && (
+      {status === "error" && !displayOnlyControls && (
         <div className="camera-recovery">
           <button className="secondary-button" onClick={retry}>
             <RotateCcw size={18} />
@@ -121,6 +156,12 @@ export function CameraStep({
             Lanjut tanpa analisis wajah
           </button>
         </div>
+      )}
+      {status === "error" && displayOnlyControls && (
+        <p className="camera-remote-notice" role="status">
+          Pemeriksaan dijeda. Gunakan kontrol pada halaman orang tua/petugas
+          untuk mengambil ulang atau melanjutkan tanpa analisis wajah.
+        </p>
       )}
       <p className="parent-caption">
         Gemini hanya menilai kualitas dan bagian wajah yang terlihat. Status

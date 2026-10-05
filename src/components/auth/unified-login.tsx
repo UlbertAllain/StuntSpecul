@@ -166,6 +166,7 @@ export function UnifiedLogin() {
 
       const child = {
         name: String(form.get("childName") || ""),
+        nik: String(form.get("childNik") || ""),
         birthDate: String(form.get("birthDate") || ""),
         sex: String(form.get("sex") || ""),
       };
@@ -288,6 +289,22 @@ export function UnifiedLogin() {
                       placeholder="Nama anak"
                     />
                   </span>
+                </label>
+              )}
+
+              {mode === "register" && (
+                <label>
+                  NIK anak
+                  <input
+                    name="childNik"
+                    inputMode="numeric"
+                    pattern="[0-9]{16}"
+                    minLength={16}
+                    maxLength={16}
+                    required
+                    placeholder="16 digit NIK anak"
+                    autoComplete="off"
+                  />
                 </label>
               )}
 

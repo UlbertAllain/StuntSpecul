@@ -53,11 +53,11 @@ export function ExaminationStage({
 
   const readingReady =
     phase === "prepare" || (reading !== null && reading !== undefined);
-  const remaining = useCountdown(7, paused, finishStage, readingReady);
+  const remaining = useCountdown(3, paused, finishStage, readingReady);
   const waitingForSensor =
     phase !== "prepare" && remaining === 0 && !readingReady;
   const finished = phase !== "prepare" && remaining === 0 && readingReady;
-  const progress = Math.min(100, ((7 - remaining) / 5) * 100);
+  const progress = Math.min(100, ((3 - remaining) / 3) * 100);
   const item = instructions[phase];
   return (
     <section
@@ -159,7 +159,7 @@ export function ExaminationStage({
       )}
       <Progress
         className="measurement-progress"
-        value={phase === "prepare" ? ((7 - remaining) / 7) * 100 : progress}
+        value={phase === "prepare" ? ((3 - remaining) / 3) * 100 : progress}
         aria-label="Progres tahap pemeriksaan"
       />
     </section>

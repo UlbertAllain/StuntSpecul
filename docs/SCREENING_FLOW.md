@@ -8,27 +8,34 @@ Status stunting tetap ditentukan dari pertumbuhan linear menurut umur, bukan dar
 
 ## Scope
 
-StuntSpecula memiliki dua jalur pemeriksaan:
+StuntSpecula memakai profil anak yang disimpan satu kali, lalu membuat record examination baru setiap kali anak diperiksa.
 
-- usia 0–23 bulan: input manual panjang badan (PB) dan berat badan (BB), karena panjang diukur terlentang;
-- usia 24–59 bulan: pemeriksaan otomatis standing height menggunakan alat, webcam, sensor tinggi, dan sensor berat.
+Pilihan pemeriksaan:
 
-## Manual infant flow (0–23 bulan)
+- usia 0–23 bulan: manual PB + BB; PB diukur terlentang;
+- usia 24–59 bulan: pemeriksaan otomatis memakai alat, webcam, sensor TB, dan sensor BB;
+- usia 24–59 bulan juga dapat memakai input manual TB + BB sebagai alternatif/fallback bila diperlukan.
 
-Parent memilih profil bayi lalu mengisi **Panjang Badan (PB)** dan **Berat Badan (BB)**. Umur dan jenis kelamin selalu diambil dari profil anak, bukan diketik ulang.
+Nama, tanggal lahir, jenis kelamin, dan umur tidak diketik ulang setiap pemeriksaan. Umur dihitung dari `birthDate` ketika examination dibuat dan disimpan sebagai snapshot `ageMonths`.
+
+## Manual flow (0–59 bulan)
+
+Parent memilih profil anak yang sudah terdaftar. Untuk usia 0–23 bulan user memasukkan **Panjang Badan (PB)** + **Berat Badan (BB)**. Untuk usia 24–59 bulan mode manual memakai **Tinggi Badan (TB)** + **Berat Badan (BB)**. Umur dan jenis kelamin selalu diambil dari profil anak, bukan diketik ulang.
 
 ```text
-Parent pilih anak 0–23 bulan
-→ input PB terlentang + BB
+Parent pilih anak existing
+→ pilih Input data manual
+→ sistem hitung umur dari birthDate
+→ input PB/TB terbaru + BB terbaru
 → validation plausibility
-→ WHO/Kemenkes PB/U + BB/U
+→ WHO/Kemenkes PB/U atau TB/U + BB/U
 → risk/trend bila riwayat cukup
 → rekomendasi nutrisi sesuai kelompok usia
 → examination completed + finalized
-→ masuk riwayat orang tua
+→ masuk riwayat anak yang sama
 ```
 
-Manual infant examination tidak memakai station, ESP32, webcam, atau Gemini. Field `measurementMode` adalah `manual_infant`.
+Pemeriksaan manual tidak memakai station, ESP32, webcam, atau Gemini. Record baru memakai `measurementMode = manual`. Nilai `manual_infant` tetap dibaca untuk compatibility data/endpoint lama.
 
 ## Main flow otomatis (24–59 bulan)
 
