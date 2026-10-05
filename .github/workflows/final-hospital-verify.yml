@@ -1,0 +1,31 @@
+name: Final Hospital Revision Verify
+
+on:
+  push:
+    branches: [format-helper-parent-child]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply Prettier
+        run: npx prettier --write src/components/screening/examination-stage.tsx src/components/screening/camera-step.tsx src/components/screening/countdown-cue.tsx src/server/firestore-app.ts
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/screening/examination-stage.tsx src/components/screening/camera-step.tsx src/components/screening/countdown-cue.tsx src/server/firestore-app.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: format final timing changes"
+            git push
+          fi
+      - run: npm run check
+      - run: npm run build
