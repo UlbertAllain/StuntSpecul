@@ -120,6 +120,8 @@ test("disconnected sensors remain missing values throughout the report", () => {
   assert.equal(report.facialAnalysis.status, "unavailable");
   assert.match(reportText(report), /TB\/U Z-score WHO: —/);
   assert.match(reportText(report), /Tinggi badan: — cm/);
+  assert.match(reportText(report), /Permenkes No\. 2 Tahun 2020/);
+  assert.match(reportText(report), /Buku KIA Edisi 2024/);
 });
 
 test("BMI and WHO screening are calculated only from the measurements they require", () => {

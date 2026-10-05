@@ -1,5 +1,10 @@
 import { growthStatusLabel, stuntingScreeningLabel } from "./growth.ts";
 import {
+  KEMENKES_ANTHROPOMETRY_REFERENCE_URL,
+  KIA_2024_REFERENCE_URL,
+  WHO_LENGTH_HEIGHT_REFERENCE_URL,
+} from "./growth-references.ts";
+import {
   growthRecommendationsFor,
   type GrowthRecommendations,
 } from "./growth-recommendations.ts";
@@ -15,8 +20,9 @@ import {
   type ScreeningReport,
 } from "./screening.ts";
 
-export const WHO_REFERENCE_URL =
-  "https://www.who.int/tools/child-growth-standards/standards/length-height-for-age";
+export const WHO_REFERENCE_URL = WHO_LENGTH_HEIGHT_REFERENCE_URL;
+export const KEMENKES_REFERENCE_URL = KEMENKES_ANTHROPOMETRY_REFERENCE_URL;
+export const KIA_REFERENCE_URL = KIA_2024_REFERENCE_URL;
 
 export function reportText(
   report: ScreeningReport,
@@ -125,9 +131,13 @@ export function reportText(
               : "relatif stabil"
         } ${Math.abs(recommendations.trendDelta).toFixed(2)} SD.`,
     "",
-    "Hasil ini merupakan skrining, bukan diagnosis. Stunting ditentukan dari TB/U WHO. BB/U digunakan sebagai validasi tambahan untuk mendeteksi pengukuran ekstrem; analisis visual AI tidak menentukan status stunting.",
+    "Hasil ini merupakan skrining, bukan diagnosis. Stunting ditentukan dari TB/U. BB/U digunakan sebagai indikator tambahan dan validasi pengukuran; analisis visual AI tidak menentukan status stunting.",
+    "Acuan perhitungan: Standar Antropometri Anak Kemenkes RI (Permenkes No. 2 Tahun 2020) dan WHO Child Growth Standards.",
+    "Buku KIA Edisi 2024 digunakan sebagai referensi pendamping pemantauan pertumbuhan keluarga, bukan sebagai pengganti perhitungan Z-score.",
     "Foto wajah tidak disertakan dalam laporan.",
-    `Referensi: ${WHO_REFERENCE_URL}`,
+    `Referensi Kemenkes Antropometri: ${KEMENKES_REFERENCE_URL}`,
+    `Referensi Buku KIA 2024: ${KIA_REFERENCE_URL}`,
+    `Referensi WHO: ${WHO_REFERENCE_URL}`,
   ]
     .filter(Boolean)
     .join("\n");

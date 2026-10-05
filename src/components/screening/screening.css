@@ -3090,3 +3090,18 @@
     gap: 2px;
   }
 }
+
+.clinical-reference-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.clinical-reference-list a {
+  width: fit-content;
+  color: #356f98;
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

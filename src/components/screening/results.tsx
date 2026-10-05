@@ -13,7 +13,12 @@ import {
   ScanFace,
   Utensils,
 } from "lucide-react";
-import { downloadReport, WHO_REFERENCE_URL } from "@/lib/report";
+import {
+  downloadReport,
+  KEMENKES_REFERENCE_URL,
+  KIA_REFERENCE_URL,
+  WHO_REFERENCE_URL,
+} from "@/lib/report";
 import { growthStatusLabel, stuntingScreeningLabel } from "@/lib/growth";
 import {
   growthRecommendationsFor,
@@ -128,7 +133,7 @@ export function Results({
         className={`growth-result ${report.growthStatus === "unavailable" ? "unavailable-result" : ""}`}
       >
         <div className="growth-result-primary">
-          <span>Hasil pertumbuhan WHO</span>
+          <span>Status stunting berdasarkan TB/U</span>
           <strong>
             {report.measurementQuality === "recheck"
               ? "Pengukuran perlu diulang"
@@ -155,7 +160,7 @@ export function Results({
               "Data tinggi atau berat tidak valid. Silakan ulangi pengukuran."
             : report.heightForAgeZ === null
               ? "TB/U belum dapat dihitung karena pembacaan tinggi badan belum tersedia atau tidak valid."
-              : "Hasil ini adalah skrining, bukan diagnosis."}
+              : "Stunting ditandai bila TB/U < -2 SD. Hasil ini adalah skrining, bukan diagnosis."}
         </p>
       </div>
 
@@ -398,14 +403,23 @@ export function Results({
               </div>
             </dl>
             <p>
-              Status stunting utama dihitung dari tinggi menurut umur
-              berdasarkan standar WHO untuk anak usia 24–59 bulan. Gemini hanya
-              menilai kualitas foto dan ciri visual yang tampak; hasil visual
-              tidak menentukan atau menggantikan status TB/U WHO.
+              Status stunting dihitung dari TB/U berdasarkan Standar
+              Antropometri Anak Kemenkes RI dan WHO Child Growth Standards untuk
+              anak usia 24–59 bulan. Buku KIA Edisi 2024 ditampilkan sebagai
+              referensi pendamping pemantauan pertumbuhan keluarga. Gemini hanya
+              membaca foto dan tidak menentukan status stunting.
             </p>
-            <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
-              Referensi WHO: panjang/tinggi menurut umur ↗
-            </a>
+            <div className="clinical-reference-list">
+              <a href={KEMENKES_REFERENCE_URL} target="_blank" rel="noreferrer">
+                Kemenkes RI — Permenkes No. 2 Tahun 2020 ↗
+              </a>
+              <a href={KIA_REFERENCE_URL} target="_blank" rel="noreferrer">
+                Kemenkes RI — Buku KIA Edisi 2024 ↗
+              </a>
+              <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
+                WHO Child Growth Standards ↗
+              </a>
+            </div>
           </div>
         </>
       )}

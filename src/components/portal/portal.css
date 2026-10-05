@@ -6313,3 +6313,21 @@
     grid-template-columns: 1fr;
   }
 }
+
+.parent-history-reference-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 7px;
+}
+
+.parent-history-reference-list a {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #3f7eab;
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
