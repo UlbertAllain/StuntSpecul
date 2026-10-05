@@ -12,7 +12,7 @@ import {
   Play,
   TrendingUp,
 } from "lucide-react";
-import { growthStatusLabel } from "@/lib/growth";
+import { growthStatusLabelForAge } from "@/lib/growth";
 import type {
   ChildProfile,
   Examination,
@@ -26,13 +26,20 @@ import {
   visualAnalysisStatusLabel,
 } from "@/lib/screening";
 
-function MiniGrowthChart({ examinations }: { examinations: Examination[] }) {
+function MiniGrowthChart({
+  examinations,
+  isInfant,
+}: {
+  examinations: Examination[];
+  isInfant: boolean;
+}) {
   const values = examinations
     .filter(
       (exam) =>
         exam.status === "completed" &&
         exam.measurementQuality !== "recheck" &&
-        exam.heightCm !== null,
+        exam.heightCm !== null &&
+        (isInfant ? exam.ageMonths <= 23 : exam.ageMonths >= 24),
     )
     .slice(0, 6)
     .reverse();
@@ -66,7 +73,7 @@ function MiniGrowthChart({ examinations }: { examinations: Examination[] }) {
           vectorEffect="non-scaling-stroke"
         />
       </svg>
-      <span>Perkembangan tinggi badan</span>
+      <span>Perkembangan {isInfant ? "panjang badan" : "tinggi badan"}</span>
     </div>
   );
 }
@@ -102,6 +109,10 @@ export function ParentHome({
   const [showAllHistory, setShowAllHistory] = useState(false);
   const history = examinations;
   const visibleHistory = showAllHistory ? history : history.slice(0, 3);
+  const childAgeMonths = child ? ageInMonths(child.birthDate) : null;
+  const isInfant = childAgeMonths !== null && childAgeMonths <= 23;
+  const linearIndicator = isInfant ? "PB/U" : "TB/U";
+  const linearMeasurementLabel = isInfant ? "Panjang" : "Tinggi";
 
   return (
     <div className="parent-home-dashboard">
@@ -170,11 +181,11 @@ export function ParentHome({
           </div>
         )}
 
-        <MiniGrowthChart examinations={examinations} />
+        <MiniGrowthChart examinations={examinations} isInfant={isInfant} />
 
         <div className="parent-latest-metrics">
           <article>
-            <span>Tinggi</span>
+            <span>{linearMeasurementLabel}</span>
             <strong>{formatReading(latest?.heightCm ?? null)}</strong>
             <small>cm</small>
           </article>
@@ -184,9 +195,11 @@ export function ParentHome({
             <small>kg</small>
           </article>
           <article>
-            <span>TB/U</span>
+            <span>{linearIndicator}</span>
             <strong className="metric-status">
-              {latest ? growthStatusLabel(latest.growthStatus) : "Belum ada"}
+              {latest
+                ? growthStatusLabelForAge(latest.growthStatus, latest.ageMonths)
+                : "Belum ada"}
             </strong>
           </article>
         </div>
@@ -230,7 +243,10 @@ export function ParentHome({
               <strong>
                 {latest.measurementQuality === "recheck"
                   ? "Pengukuran perlu diulang"
-                  : growthStatusLabel(latest.growthStatus)}
+                  : growthStatusLabelForAge(
+                      latest.growthStatus,
+                      latest.ageMonths,
+                    )}
               </strong>
               <small>
                 {latest.measurementQuality === "recheck"
@@ -292,7 +308,10 @@ export function ParentHome({
                   <strong>
                     {exam.measurementQuality === "recheck"
                       ? "Pengukuran perlu diulang"
-                      : growthStatusLabel(exam.growthStatus)}
+                      : growthStatusLabelForAge(
+                          exam.growthStatus,
+                          exam.ageMonths,
+                        )}
                   </strong>
                   <div>
                     <span>{formatReading(exam.heightCm)} cm</span>

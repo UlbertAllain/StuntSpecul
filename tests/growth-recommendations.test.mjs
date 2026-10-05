@@ -78,3 +78,27 @@ test("localized nutrition plan adapts age band and keeps Indonesian food options
     ),
   );
 });
+
+test("localized nutrition adapts recommendations for infant age bands", () => {
+  const infant = growthRecommendationsFor("within_range", {
+    ageMonths: 4,
+    currentHeightForAgeZ: 0,
+  });
+  assert.equal(infant.localizedNutrition.ageBand, "0-5 bulan");
+  assert.equal(infant.localizedNutrition.sampleDay.length, 0);
+  assert.match(infant.nutrition.join(" "), /ASI/);
+  assert.equal(infant.risk.indicator, "PB/U");
+
+  const mpasi = growthRecommendationsFor("within_range", {
+    ageMonths: 14,
+    currentHeightForAgeZ: -0.5,
+  });
+  assert.equal(mpasi.localizedNutrition.ageBand, "12-23 bulan");
+  assert.ok(mpasi.localizedNutrition.sampleDay.length > 0);
+  assert.ok(
+    mpasi.localizedNutrition.sources.some((source) =>
+      source.label.includes("MP-ASI"),
+    ),
+  );
+  assert.equal(mpasi.risk.indicator, "PB/U");
+});

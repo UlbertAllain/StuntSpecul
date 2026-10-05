@@ -42,6 +42,7 @@ export type Examination = {
   sex: "male" | "female";
   deviceId: string;
   deviceName: string;
+  measurementMode: "device" | "manual_infant";
   status: "queued" | "running" | "completed" | "cancelled";
   heightCm: number | null;
   weightKg: number | null;

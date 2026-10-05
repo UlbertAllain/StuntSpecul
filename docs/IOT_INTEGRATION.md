@@ -40,6 +40,7 @@ Contoh response tanpa sesi:
       "success": true,
       "data": {
         "active": null,
+        "claimedExamId": null,
         "serverTime": 1789999999999
       }
     }
@@ -58,6 +59,7 @@ Contoh response dengan sesi:
           "heightCm": null,
           "weightKg": null
         },
+        "claimedExamId": null,
         "serverTime": 1789999999999
       }
     }
@@ -81,11 +83,12 @@ Response:
         "status": "running",
         "ageMonths": 39,
         "sex": "male",
-        "cameraEnabled": true
+        "cameraEnabled": true,
+        "resetMeasurements": true
       }
     }
 
-Claim bersifat idempotent untuk examination yang sudah running.
+Claim bersifat idempotent untuk examination yang sudah running. Firmware wajib menyimpan `examinationId` hasil claim sebagai identitas sesi aktif dan mereset buffer/sample lama ketika ID berubah.
 
 ### POST /api/iot/measurements
 
@@ -94,18 +97,21 @@ Mengirim hasil sensor. Tinggi dan berat boleh dikirim bersamaan atau terpisah.
 Tinggi:
 
     {
+      "examinationId": "uuid-hasil-claim",
       "heightCm": 93.5
     }
 
 Berat:
 
     {
+      "examinationId": "uuid-hasil-claim",
       "weightKg": 18.9
     }
 
 Atau keduanya:
 
     {
+      "examinationId": "uuid-hasil-claim",
       "heightCm": 93.5,
       "weightKg": 18.9
     }
@@ -114,14 +120,15 @@ Validation:
 
 - heightCm: 30–200 cm
 - weightKg: 1–100 kg
-- minimal satu field harus ada
+- minimal satu field measurement harus ada
 - examination harus berstatus running
+- `examinationId` harus cocok dengan sesi yang di-claim perangkat; request dari sesi lama ditolak dengan `iot_stale_session`
 
 Data IoT yang sudah tersimpan diprioritaskan backend ketika web alat menyelesaikan pemeriksaan. Tidak ada lagi generator TB/BB dummy pada flow aktif.
 
 ### Realtime sampling dan nilai final
 
-Endpoint backend menyimpan **nilai valid terakhir yang dikirim ESP32**. Backend tidak merata-ratakan rangkaian POST. Jadi jika firmware mengirim 100.0 cm, lalu 102.0 cm, lalu 101.4 cm pada sesi yang sama, nilai terakhir yang berhasil disimpan adalah 101.4 cm.
+Endpoint backend menyimpan **nilai valid terakhir yang dikirim ESP32 pada examinationId yang sama**. Backend tidak merata-ratakan rangkaian POST. Jadi jika firmware mengirim 100.0 cm, lalu 102.0 cm, lalu 101.4 cm pada sesi yang sama, nilai terakhir yang berhasil disimpan adalah 101.4 cm.
 
 Untuk production, jangan kirim setiap pembacaan mentah sensor ke Firestore. Lakukan stabilisasi di ESP32 lalu kirim satu nilai final per tahap:
 
@@ -202,7 +209,12 @@ Gunakan hanya ketika firmware benar-benar perlu membatalkan sesi. Normal complet
 
     active != null
     ↓
+    jika examinationId berbeda dari localActiveExamId:
+      reset seluruh buffer tinggi/berat lama
+    ↓
     POST /api/iot/session/claim
+    ↓
+    simpan examinationId hasil claim
     ↓
     web /alat mengambil wajah terlebih dahulu
     ↓
@@ -211,12 +223,12 @@ Gunakan hanya ketika firmware benar-benar perlu membatalkan sesi. Normal complet
     stabilisasi sample tinggi di ESP32
     ↓
     POST /api/iot/measurements
-    { heightCm }
+    { examinationId, heightCm }
     ↓
     stabilisasi sample berat di ESP32
     ↓
     POST /api/iot/measurements
-    { weightKg }
+    { examinationId, weightKg }
     ↓
     tetap kirim heartbeat/session polling
     ↓
@@ -264,7 +276,7 @@ Contoh kirim measurement:
 
     int status = postJson(
       "/api/iot/measurements",
-      "{\"heightCm\":93.5,\"weightKg\":18.9}"
+      "{\"examinationId\":\"uuid-hasil-claim\",\"heightCm\":93.5,\"weightKg\":18.9}"
     );
 
     if (status == 200) {
@@ -287,6 +299,31 @@ Gunakan tiga lapis pengecekan:
 
 Dengan begitu keberhasilan tidak dinilai dari angka yang muncul di sensor saja; harus ada acknowledgement dari server. Informasi teknis dipusatkan di halaman admin.
 
+## Session isolation dan stuck recovery
+
+Setiap measurement sekarang diikat ke `examinationId`. Backend juga menyimpan `claimedExamId` perangkat setelah `POST /api/iot/session/claim`.
+
+Tujuannya mencegah data silang antar anak/sesi. Contoh:
+
+    sesi lama = ABC
+    sesi baru = XYZ
+
+Jika firmware terlambat mengirim measurement untuk ABC saat XYZ sudah aktif, backend mengembalikan HTTP 409 dengan code:
+
+    iot_stale_session
+
+Firmware harus:
+
+1. hentikan pengiriman measurement sesi lama;
+2. GET `/api/iot/session`;
+3. jika ID berubah, kosongkan seluruh sample/buffer/flag stabilisasi;
+4. POST `/api/iot/session/claim`;
+5. mulai sampling baru dari nol untuk ID baru.
+
+Anak boleh sudah berdiri di alat sebelum parent menekan **Mulai pemeriksaan**. Pembacaan sensor sebelum ada sesi aktif hanya boleh dianggap raw reading lokal dan **tidak boleh dikirim sebagai hasil pemeriksaan**.
+
+Power-cycle ESP32 dapat terlihat seperti memperbaiki kondisi stuck karena state/buffer lokal ikut terhapus. Firmware production tidak boleh bergantung pada cabut-colok; pergantian `examinationId` harus melakukan reset state secara eksplisit.
+
 ## Measurement plausibility
 
 Backend memvalidasi kombinasi usia, jenis kelamin, tinggi, dan berat sebelum menerima hasil sebagai measurement valid.
@@ -301,7 +338,9 @@ Nilai ekstrem tersebut tidak disimpan sebagai tinggi/berat terbaru. Backend hany
 
 - 200: request berhasil
 - 401 iot_unauthorized: key salah/tidak ada
-- 409: state examination tidak sesuai atau terjadi conflict
+- 409 `iot_session_not_running`: tidak ada sesi running
+- 409 `iot_stale_session`: measurement berasal dari sesi lama/belum di-claim
+- 409 `iot_measurement_conflict`: state berubah saat write
 - 413: body terlalu besar
 - 415: Content-Type bukan application/json
 - 422: payload sensor tidak valid

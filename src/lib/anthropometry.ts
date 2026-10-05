@@ -1,5 +1,6 @@
 import {
-  assessHeightForAge,
+  assessLinearGrowthForAge,
+  linearGrowthIndicator,
   type GrowthStatus,
   type Sex,
   type StuntingScreening,
@@ -16,11 +17,35 @@ export type AnthropometryAssessment = {
   stuntingScreening: StuntingScreening;
 };
 
-const MIN_AGE_MONTHS = 24;
+const MIN_AGE_MONTHS = 0;
 const MAX_AGE_MONTHS = 59;
 
-// WHO Child Growth Standards weight-for-age LMS parameters, 24–59 months.
+// WHO Child Growth Standards weight-for-age LMS parameters, birth–59 months.
 const GIRLS_WFA_LMS = [
+  [0.3809, 3.2322, 0.14171],
+  [0.1714, 4.1873, 0.13724],
+  [0.0962, 5.1282, 0.13],
+  [0.0402, 5.8458, 0.12619],
+  [-0.005, 6.4237, 0.12402],
+  [-0.043, 6.8985, 0.12274],
+  [-0.0756, 7.297, 0.12204],
+  [-0.1039, 7.6422, 0.12178],
+  [-0.1288, 7.9487, 0.12181],
+  [-0.1507, 8.2254, 0.12199],
+  [-0.17, 8.48, 0.12223],
+  [-0.1872, 8.7192, 0.12247],
+  [-0.2024, 8.9481, 0.12268],
+  [-0.2158, 9.1699, 0.12283],
+  [-0.2278, 9.387, 0.12294],
+  [-0.2384, 9.6008, 0.12299],
+  [-0.2478, 9.8124, 0.12303],
+  [-0.2562, 10.0226, 0.12306],
+  [-0.2637, 10.2315, 0.12309],
+  [-0.2703, 10.4393, 0.12315],
+  [-0.2762, 10.6464, 0.12323],
+  [-0.2815, 10.8534, 0.12335],
+  [-0.2862, 11.0608, 0.1235],
+  [-0.2903, 11.2688, 0.12369],
   [-0.2941, 11.4775, 0.1239],
   [-0.2975, 11.6864, 0.12414],
   [-0.3005, 11.8947, 0.12441],
@@ -60,6 +85,30 @@ const GIRLS_WFA_LMS = [
 ] as const;
 
 const BOYS_WFA_LMS = [
+  [0.3487, 3.3464, 0.14602],
+  [0.2297, 4.4709, 0.13395],
+  [0.197, 5.5675, 0.12385],
+  [0.1738, 6.3762, 0.11727],
+  [0.1553, 7.0023, 0.11316],
+  [0.1395, 7.5105, 0.1108],
+  [0.1257, 7.934, 0.10958],
+  [0.1134, 8.297, 0.10902],
+  [0.1021, 8.6151, 0.10882],
+  [0.0917, 8.9014, 0.10881],
+  [0.082, 9.1649, 0.10891],
+  [0.073, 9.4122, 0.10906],
+  [0.0644, 9.6479, 0.10925],
+  [0.0563, 9.8749, 0.10949],
+  [0.0487, 10.0953, 0.10976],
+  [0.0413, 10.3108, 0.11007],
+  [0.0343, 10.5228, 0.11041],
+  [0.0275, 10.7319, 0.11079],
+  [0.0211, 10.9385, 0.11119],
+  [0.0148, 11.143, 0.11164],
+  [0.0087, 11.3462, 0.11211],
+  [0.0029, 11.5486, 0.11261],
+  [-0.0028, 11.7504, 0.11314],
+  [-0.0083, 11.9514, 0.11369],
   [-0.0137, 12.1515, 0.11426],
   [-0.0189, 12.3502, 0.11485],
   [-0.024, 12.5466, 0.11544],
@@ -150,7 +199,8 @@ export function assessAnthropometry(
   heightCm: number | null,
   weightKg: number | null,
 ): AnthropometryAssessment {
-  const height = assessHeightForAge(ageMonths, sex, heightCm);
+  const height = assessLinearGrowthForAge(ageMonths, sex, heightCm);
+  const linearIndicator = linearGrowthIndicator(ageMonths);
   const weightForAgeZ = weightForAgeZScore(ageMonths, sex, weightKg);
 
   const heightNeedsRecheck =
@@ -162,7 +212,7 @@ export function assessAnthropometry(
   if (heightNeedsRecheck || weightNeedsRecheck) {
     const reasons = [
       heightNeedsRecheck
-        ? "Tinggi badan berada di luar rentang valid WHO."
+        ? `${linearIndicator === "PB/U" ? "Panjang" : "Tinggi"} badan berada di luar rentang valid WHO.`
         : null,
       weightNeedsRecheck
         ? "Berat badan berada di luar rentang valid WHO untuk usia."
@@ -184,7 +234,7 @@ export function assessAnthropometry(
       heightCm === null || weightKg === null ? "incomplete" : "valid",
     measurementReason:
       heightCm === null || weightKg === null
-        ? "Pengukuran tinggi dan berat belum lengkap."
+        ? `Pengukuran ${linearIndicator === "PB/U" ? "panjang" : "tinggi"} dan berat belum lengkap.`
         : null,
     heightForAgeZ: height.heightForAgeZ,
     weightForAgeZ,

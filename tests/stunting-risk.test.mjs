@@ -73,3 +73,17 @@ test("risk engine keeps stable or improving longitudinal data low risk", () => {
   assert.equal(result.level, "low");
   assert.ok(result.projectedHeightForAgeZ > -2);
 });
+
+test("risk copy uses PB/U for infant longitudinal screening", () => {
+  const result = stuntingRiskFor({
+    growthStatus: "within_range",
+    currentHeightForAgeZ: -1.2,
+    indicator: "PB/U",
+    currentAt: now,
+    history: [{ at: now - 60 * DAY, heightForAgeZ: -1.0 }],
+  });
+
+  assert.equal(result.indicator, "PB/U");
+  assert.match(result.reasons.join(" "), /PB\/U/);
+  assert.match(result.disclaimer, /PB\/U/);
+});

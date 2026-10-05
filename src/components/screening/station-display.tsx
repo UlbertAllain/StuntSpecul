@@ -10,6 +10,7 @@ import { StationCompleteScreen } from "./station-complete-screen";
 import { StationIdleScreen } from "./station-idle-screen";
 
 type StationActive = {
+  examinationId: string;
   status: "queued" | "running" | "completed";
   cameraEnabled: boolean;
   createdAt: number;
@@ -97,7 +98,7 @@ export function StationDisplay() {
 
         setState(value);
 
-        if (!value.active) {
+        if (!value.active || value.active.examinationId !== assignment?.id) {
           setAssignment(null);
           setError("");
           return;
@@ -145,7 +146,7 @@ export function StationDisplay() {
   if (assignment) {
     return (
       <NutriMirror
-        key="station-running"
+        key={assignment.id}
         assignment={assignment}
         canBegin
         onComplete={saveCompletion}

@@ -4,7 +4,12 @@ import {
   assessAnthropometry,
   weightForAgeZScore,
 } from "../src/lib/anthropometry.ts";
-import { assessHeightForAge } from "../src/lib/growth.ts";
+import {
+  assessHeightForAge,
+  assessLengthForAge,
+  growthStatusLabelForAge,
+  linearGrowthIndicator,
+} from "../src/lib/growth.ts";
 import {
   childSchema,
   createScreeningReport,
@@ -65,6 +70,37 @@ test("WHO height-for-age engine classifies monthly standing height deterministic
   assert.equal(severeGirl.growthStatus, "severely_stunted");
   assert.equal(severeGirl.stuntingScreening, "severe");
   assert.ok(severeGirl.heightForAgeZ < -3);
+});
+
+test("WHO infant length-for-age uses PB/U for children under 24 months", () => {
+  const newbornBoy = assessLengthForAge(0, "male", 49.8842);
+  assert.equal(newbornBoy.heightForAgeZ, 0);
+  assert.equal(newbornBoy.growthStatus, "within_range");
+
+  const twelveMonthBoy = assessLengthForAge(12, "male", 75.7488);
+  assert.equal(twelveMonthBoy.heightForAgeZ, 0);
+  assert.equal(twelveMonthBoy.growthStatus, "within_range");
+
+  const stuntedBoy = assessLengthForAge(12, "male", 70);
+  assert.equal(stuntedBoy.growthStatus, "stunted");
+  assert.ok(stuntedBoy.heightForAgeZ < -2);
+  assert.ok(stuntedBoy.heightForAgeZ >= -3);
+
+  const severeBoy = assessLengthForAge(12, "male", 67);
+  assert.equal(severeBoy.growthStatus, "severely_stunted");
+  assert.ok(severeBoy.heightForAgeZ < -3);
+
+  assert.equal(linearGrowthIndicator(12), "PB/U");
+  assert.equal(linearGrowthIndicator(24), "TB/U");
+  assert.match(growthStatusLabelForAge("within_range", 12), /PB\/U ≥ -2 SD/);
+});
+
+test("infant anthropometry calculates PB/U and BB/U from WHO age-sex references", () => {
+  const result = assessAnthropometry(12, "male", 75.7488, 9.6479);
+  assert.equal(result.measurementQuality, "valid");
+  assert.equal(result.heightForAgeZ, 0);
+  assert.equal(result.weightForAgeZ, 0);
+  assert.equal(result.growthStatus, "within_range");
 });
 
 test("WHO engine rejects unavailable, out-of-scope and biologically implausible measurements", () => {

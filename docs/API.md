@@ -42,7 +42,8 @@ Format error:
 - GET /api/parent-account/me — parent dashboard data.
 - POST /api/parent-account/children — tambah profil anak milik parent.
 - PATCH /api/parent-account/profile — update parent profile.
-- POST /api/parent-account/examinations — start examination.
+- POST /api/parent-account/examinations — start pemeriksaan otomatis usia 24–59 bulan.
+- POST /api/parent-account/examinations/manual-infant — simpan pemeriksaan manual bayi usia 0–23 bulan dengan `lengthCm` + `weightKg`; umur/jenis kelamin diambil dari profil.
 - POST /api/parent-account/examinations/:id/finalize — finalize owned examination.
 - POST /api/parent-account/examinations/:id/cancel — cancel owned examination.
 - GET /api/parent-account/messages — chat history.
@@ -81,7 +82,7 @@ Staff-authenticated:
 
 ## Station
 
-- GET /api/station/active — current station assignment state.
+- GET /api/station/active — current station assignment state, termasuk `examinationId` untuk isolasi state frontend.
 - POST /api/station/claim — claim active examination.
 - POST /api/station/complete — save station result.
 - POST /api/station/cancel — cancel station session.
@@ -97,8 +98,8 @@ Semua endpoint berikut menggunakan header:
     Authorization: Bearer <IOT_API_KEY>
 
 - GET /api/iot/session — poll active examination dan update device lastSeen.
-- POST /api/iot/session/claim — claim examination menjadi running.
-- POST /api/iot/measurements — kirim tinggi dan/atau berat; response mengembalikan `saved`, `ack=measurement_saved`, field yang diterima, nilai terakhir, dan `measurementUpdatedAt`. Measurement yang terkena WHO plausibility flag ditolak dengan code `measurement_recheck_required`.
+- POST /api/iot/session/claim — claim examination menjadi running dan bind perangkat ke `examinationId`; firmware harus reset buffer bila ID berubah.
+- POST /api/iot/measurements — kirim `examinationId` + tinggi dan/atau berat; response mengembalikan `saved`, `ack=measurement_saved`, field yang diterima, nilai terakhir, dan `measurementUpdatedAt`. Measurement dari sesi lama ditolak dengan `iot_stale_session`; measurement yang terkena plausibility flag ditolak dengan `measurement_recheck_required`.
 - POST /api/iot/heartbeat — kirim firmware/sensor health.
 - POST /api/iot/session/cancel — cancel active queued/running session.
 
@@ -108,9 +109,9 @@ IoT request tidak menggunakan browser same-origin guard karena diautentikasi den
 
 Active screening:
 
-- POST /api/visual-analysis — menerima image JPEG/PNG/WebP + header konteks age/sex/TB/BB, menghitung konteks WHO server-side, lalu meminta Gemini menghasilkan observasi visual terstruktur.
+- POST /api/visual-analysis — menerima image JPEG/PNG/WebP + header konteks age/sex, lalu meminta Gemini menghasilkan observasi visual terstruktur.
 
-Response visual tidak mengandung diagnosis atau probabilitas stunting. Sebelum Gemini dipanggil, konteks TB/BB juga melewati plausibility validation; input ekstrem dikembalikan sebagai `measurement_recheck_required`. Detail ada di VISUAL_ANALYSIS.md.
+Response visual tidak mengandung diagnosis atau probabilitas stunting. Webcam berjalan sebelum TB/BB; antropometri divalidasi secara terpisah pada jalur measurement/completion. Detail ada di VISUAL_ANALYSIS.md.
 
 ## Model A legacy
 

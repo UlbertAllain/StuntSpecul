@@ -6331,3 +6331,53 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+.parent-manual-infant-form {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #c8dce8;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.parent-manual-infant-note {
+  display: grid;
+  gap: 5px;
+}
+
+.parent-manual-infant-note strong {
+  color: #18334d;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.parent-manual-infant-note span,
+.parent-manual-infant-form > small {
+  color: #647b8c;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.parent-manual-unit {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.parent-manual-unit input {
+  width: 100%;
+}
+
+.parent-manual-unit > span {
+  min-width: 42px;
+  color: #526b7d;
+  font-size: 12px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.parent-manual-infant-form > small {
+  display: block;
+  margin-top: 14px;
+}

@@ -56,6 +56,36 @@ const BOYS_S = [
   0.0419, 0.04202, 0.04214,
 ] as const;
 
+// WHO Child Growth Standards, length-for-age birth to 23 months.
+// L=1 for this indicator. Source:
+// https://www.who.int/toolkits/child-growth-standards/standards/length-height-for-age
+const INFANT_GIRLS_M = [
+  49.1477, 53.6872, 57.0673, 59.8029, 62.0899, 64.0301, 65.7311, 67.2873,
+  68.7498, 70.1435, 71.4818, 72.771, 74.015, 75.2176, 76.3817, 77.5099, 78.6055,
+  79.671, 80.7079, 81.7182, 82.7036, 83.6654, 84.604, 85.5202,
+] as const;
+
+const INFANT_GIRLS_S = [
+  0.0379, 0.0364, 0.03568, 0.0352, 0.03486, 0.03463, 0.03448, 0.03441, 0.0344,
+  0.03444, 0.03452, 0.03464, 0.03479, 0.03496, 0.03514, 0.03534, 0.03555,
+  0.03576, 0.03598, 0.0362, 0.03643, 0.03666, 0.03688, 0.03711,
+] as const;
+
+const INFANT_BOYS_M = [
+  49.8842, 54.7244, 58.4249, 61.4292, 63.886, 65.9026, 67.6236, 69.1645,
+  70.5994, 71.9687, 73.2812, 74.5388, 75.7488, 76.9186, 78.0497, 79.1458,
+  80.2113, 81.2487, 82.2587, 83.2418, 84.1996, 85.1348, 86.0477, 86.941,
+] as const;
+
+const INFANT_BOYS_S = [
+  0.03795, 0.03557, 0.03424, 0.03328, 0.03257, 0.03204, 0.03165, 0.03139,
+  0.03124, 0.03117, 0.03118, 0.03125, 0.03137, 0.03154, 0.03174, 0.03197,
+  0.03222, 0.0325, 0.03279, 0.0331, 0.03342, 0.03376, 0.0341, 0.03445,
+] as const;
+
+const INFANT_MIN_AGE_MONTHS = 0;
+const INFANT_MAX_AGE_MONTHS = 23;
+
 const MIN_AGE_MONTHS = 24;
 const MAX_AGE_MONTHS = 59;
 
@@ -148,6 +178,88 @@ export function assessHeightForAge(
   };
 }
 
+export function assessLengthForAge(
+  ageMonths: number,
+  sex: Sex,
+  lengthCm: number | null,
+): GrowthAssessment {
+  if (
+    lengthCm === null ||
+    !Number.isFinite(lengthCm) ||
+    !Number.isInteger(ageMonths) ||
+    ageMonths < INFANT_MIN_AGE_MONTHS ||
+    ageMonths > INFANT_MAX_AGE_MONTHS
+  ) {
+    return {
+      heightForAgeZ: null,
+      growthStatus: "unavailable",
+      stuntingScreening: null,
+      measurementValid: lengthCm === null,
+    };
+  }
+
+  const median =
+    sex === "male" ? INFANT_BOYS_M[ageMonths] : INFANT_GIRLS_M[ageMonths];
+  const sValue =
+    sex === "male" ? INFANT_BOYS_S[ageMonths] : INFANT_GIRLS_S[ageMonths];
+  if (median === undefined || sValue === undefined) {
+    return {
+      heightForAgeZ: null,
+      growthStatus: "unavailable",
+      stuntingScreening: null,
+      measurementValid: false,
+    };
+  }
+
+  const z = (lengthCm - median) / (median * sValue);
+  if (!Number.isFinite(z) || z < -6 || z > 6) {
+    return {
+      heightForAgeZ: null,
+      growthStatus: "unavailable",
+      stuntingScreening: null,
+      measurementValid: false,
+    };
+  }
+
+  const rounded = Math.round(z * 100) / 100;
+  if (z < -3) {
+    return {
+      heightForAgeZ: rounded,
+      growthStatus: "severely_stunted",
+      stuntingScreening: "severe",
+      measurementValid: true,
+    };
+  }
+  if (z < -2) {
+    return {
+      heightForAgeZ: rounded,
+      growthStatus: "stunted",
+      stuntingScreening: "indicated",
+      measurementValid: true,
+    };
+  }
+  return {
+    heightForAgeZ: rounded,
+    growthStatus: "within_range",
+    stuntingScreening: "not_indicated",
+    measurementValid: true,
+  };
+}
+
+export function assessLinearGrowthForAge(
+  ageMonths: number,
+  sex: Sex,
+  lengthOrHeightCm: number | null,
+): GrowthAssessment {
+  return ageMonths <= INFANT_MAX_AGE_MONTHS
+    ? assessLengthForAge(ageMonths, sex, lengthOrHeightCm)
+    : assessHeightForAge(ageMonths, sex, lengthOrHeightCm);
+}
+
+export function linearGrowthIndicator(ageMonths: number): "PB/U" | "TB/U" {
+  return ageMonths <= INFANT_MAX_AGE_MONTHS ? "PB/U" : "TB/U";
+}
+
 export function growthStatusLabel(status: GrowthStatus): string {
   switch (status) {
     case "within_range":
@@ -173,6 +285,44 @@ export function stuntingScreeningLabel(status: StuntingScreening): string {
       return "Terindikasi stunting (TB/U < -2 SD)";
     case "severe":
       return "Terindikasi stunting berat (TB/U < -3 SD)";
+    default:
+      return "Belum tersedia";
+  }
+}
+
+export function growthStatusLabelForAge(
+  status: GrowthStatus,
+  ageMonths: number,
+): string {
+  const indicator = linearGrowthIndicator(ageMonths);
+  switch (status) {
+    case "within_range":
+      return `Tidak terindikasi stunting (${indicator} ≥ -2 SD)`;
+    case "monitor":
+      return `Tidak terindikasi stunting; pantau tren ${indicator}`;
+    case "stunted":
+      return `Terindikasi stunting (${indicator} < -2 SD)`;
+    case "severely_stunted":
+      return `Terindikasi stunting berat (${indicator} < -3 SD)`;
+    default:
+      return "Belum tersedia";
+  }
+}
+
+export function stuntingScreeningLabelForAge(
+  status: StuntingScreening,
+  ageMonths: number,
+): string {
+  const indicator = linearGrowthIndicator(ageMonths);
+  switch (status) {
+    case "not_indicated":
+      return `Tidak terindikasi stunting (${indicator} ≥ -2 SD)`;
+    case "monitor":
+      return `Tidak terindikasi stunting; pantau tren ${indicator}`;
+    case "indicated":
+      return `Terindikasi stunting (${indicator} < -2 SD)`;
+    case "severe":
+      return `Terindikasi stunting berat (${indicator} < -3 SD)`;
     default:
       return "Belum tersedia";
   }
