@@ -10,7 +10,10 @@ import {
   Scale,
 } from "lucide-react";
 
-import { growthStatusLabel } from "@/lib/growth";
+import {
+  growthStatusLabelForAge,
+  linearGrowthIndicator,
+} from "@/lib/growth";
 import type { ChildProfile, Examination } from "@/lib/portal";
 import { formatReading } from "@/lib/screening";
 
@@ -39,43 +42,50 @@ type MetricOption = {
   referenceLines?: ReferenceLine[];
 };
 
-const METRICS: MetricOption[] = [
-  {
-    key: "heightCm",
-    label: "Tinggi badan",
-    shortLabel: "Tinggi",
-    unit: "cm",
-    decimals: 1,
-    description: "Perubahan tinggi dari beberapa pemeriksaan terakhir.",
-  },
-  {
-    key: "weightKg",
-    label: "Berat badan",
-    shortLabel: "Berat",
-    unit: "kg",
-    decimals: 1,
-    description: "Perubahan berat dari beberapa pemeriksaan terakhir.",
-  },
-  {
-    key: "heightForAgeZ",
-    label: "TB/U WHO",
-    shortLabel: "TB/U",
-    unit: "SD",
-    decimals: 2,
-    description: "Perubahan Z-score tinggi badan menurut umur.",
-    referenceLines: [
-      { value: -2, label: "-2 SD" },
-      { value: -3, label: "-3 SD" },
-    ],
-  },
-];
+function metricOptions(isInfant: boolean): MetricOption[] {
+  const indicator = isInfant ? "PB/U" : "TB/U";
+  const measure = isInfant ? "Panjang badan" : "Tinggi badan";
+  return [
+    {
+      key: "heightCm",
+      label: measure,
+      shortLabel: isInfant ? "Panjang" : "Tinggi",
+      unit: "cm",
+      decimals: 1,
+      description: `Perubahan ${measure.toLowerCase()} dari beberapa pemeriksaan terakhir.`,
+    },
+    {
+      key: "weightKg",
+      label: "Berat badan",
+      shortLabel: "Berat",
+      unit: "kg",
+      decimals: 1,
+      description: "Perubahan berat dari beberapa pemeriksaan terakhir.",
+    },
+    {
+      key: "heightForAgeZ",
+      label: `${indicator} WHO`,
+      shortLabel: indicator,
+      unit: "SD",
+      decimals: 2,
+      description: `Perubahan Z-score ${measure.toLowerCase()} menurut umur.`,
+      referenceLines: [
+        { value: -2, label: "-2 SD" },
+        { value: -3, label: "-3 SD" },
+      ],
+    },
+  ];
+}
 
 function sameChildExams(examinations: Examination[]) {
   const latest = examinations[0];
   if (!latest) return [];
+  const indicator = linearGrowthIndicator(latest.ageMonths);
   return examinations.filter(
     (exam) =>
-      exam.childId === latest.childId && exam.measurementQuality !== "recheck",
+      exam.childId === latest.childId &&
+      exam.measurementQuality !== "recheck" &&
+      linearGrowthIndicator(exam.ageMonths) === indicator,
   );
 }
 
@@ -112,7 +122,11 @@ function signed(value: number, digits = 1) {
   return value > 0 ? `+${formatted}` : formatted;
 }
 
-function zTrend(latest: Examination, previous: Examination | undefined) {
+function zTrend(
+  latest: Examination,
+  previous: Examination | undefined,
+  indicator: "PB/U" | "TB/U",
+) {
   if (
     latest.heightForAgeZ === null ||
     previous?.heightForAgeZ === null ||
@@ -121,7 +135,7 @@ function zTrend(latest: Examination, previous: Examination | undefined) {
     return {
       tone: "unavailable" as TrendTone,
       title: "Belum cukup data untuk membaca tren",
-      text: "Minimal dua pemeriksaan diperlukan untuk membandingkan perubahan TB/U.",
+      text: `Minimal dua pemeriksaan diperlukan untuk membandingkan perubahan ${indicator}.`,
     };
   }
 
@@ -130,7 +144,7 @@ function zTrend(latest: Examination, previous: Examination | undefined) {
   if (change > 0) {
     return {
       tone: "up" as TrendTone,
-      title: "TB/U meningkat dari pemeriksaan sebelumnya",
+      title: `${indicator} meningkat dari pemeriksaan sebelumnya`,
       text: `Perubahan tercatat ${signed(change, 2)} SD.`,
     };
   }
@@ -138,15 +152,15 @@ function zTrend(latest: Examination, previous: Examination | undefined) {
   if (change < 0) {
     return {
       tone: "down" as TrendTone,
-      title: "TB/U menurun dari pemeriksaan sebelumnya",
+      title: `${indicator} menurun dari pemeriksaan sebelumnya`,
       text: `Perubahan tercatat ${signed(change, 2)} SD. Pantau pemeriksaan berikutnya.`,
     };
   }
 
   return {
     tone: "stable" as TrendTone,
-    title: "TB/U sama dengan pemeriksaan sebelumnya",
-    text: "Belum ada perubahan nilai TB/U.",
+    title: `${indicator} sama dengan pemeriksaan sebelumnya`,
+    text: `Belum ada perubahan nilai ${indicator}.`,
   };
 }
 
@@ -369,11 +383,15 @@ export function ParentGrowthInsights({
   }
 
   const previous = childExams[1];
+  const isInfant = latest.ageMonths <= 23;
+  const indicator = linearGrowthIndicator(latest.ageMonths);
+  const measureLabel = isInfant ? "Panjang" : "Tinggi";
+  const metrics = metricOptions(isInfant);
   const heightChange = delta(latest.heightCm, previous?.heightCm ?? null);
   const weightChange = delta(latest.weightKg, previous?.weightKg ?? null);
-  const trend = zTrend(latest, previous);
+  const trend = zTrend(latest, previous, indicator);
   const activeOption =
-    METRICS.find((option) => option.key === activeMetric) || METRICS[0];
+    metrics.find((option) => option.key === activeMetric) || metrics[0];
   const activeValues = metricValues(childExams, activeOption.key);
 
   return (
@@ -390,7 +408,7 @@ export function ParentGrowthInsights({
         <div className="parent-insight-summary-grid">
           <article>
             <Ruler size={17} />
-            <span>Tinggi</span>
+            <span>{measureLabel}</span>
             <strong>{formatReading(latest.heightCm)} cm</strong>
             <small>
               {heightChange === null
@@ -412,13 +430,15 @@ export function ParentGrowthInsights({
 
           <article>
             <ChartNoAxesCombined size={17} />
-            <span>TB/U</span>
+            <span>{indicator}</span>
             <strong>
               {latest.heightForAgeZ === null
                 ? "—"
                 : `${latest.heightForAgeZ.toFixed(2)} SD`}
             </strong>
-            <small>{growthStatusLabel(latest.growthStatus)}</small>
+            <small>
+              {growthStatusLabelForAge(latest.growthStatus, latest.ageMonths)}
+            </small>
           </article>
         </div>
       </div>
@@ -443,7 +463,7 @@ export function ParentGrowthInsights({
           role="tablist"
           aria-label="Pilih grafik"
         >
-          {METRICS.map((option) => (
+          {metrics.map((option) => (
             <button
               key={option.key}
               type="button"
@@ -471,7 +491,7 @@ export function ParentGrowthInsights({
             )}
           </span>
           <div>
-            <small>TREN TB/U</small>
+            <small>TREN {indicator}</small>
             <strong>{trend.title}</strong>
             <p>{trend.text}</p>
           </div>
@@ -488,7 +508,7 @@ export function ParentGrowthInsights({
           {latest.recommendations.risk.projectedHeightForAgeZ !== null && (
             <dl>
               <div>
-                <dt>Proyeksi TB/U</dt>
+                <dt>Proyeksi {indicator}</dt>
                 <dd>
                   {latest.recommendations.risk.projectedHeightForAgeZ.toFixed(
                     2,
@@ -511,10 +531,12 @@ export function ParentGrowthInsights({
 
         <article className="parent-insight-who-card">
           <small>STATUS WHO TERBARU</small>
-          <strong>{growthStatusLabel(latest.growthStatus)}</strong>
+          <strong>
+            {growthStatusLabelForAge(latest.growthStatus, latest.ageMonths)}
+          </strong>
           <dl>
             <div>
-              <dt>TB/U Z-score</dt>
+              <dt>{indicator} Z-score</dt>
               <dd>
                 {latest.heightForAgeZ === null
                   ? "Belum tersedia"

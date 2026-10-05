@@ -82,12 +82,13 @@ Satu parent dapat memiliki beberapa child. `parentId` boleh null untuk legacy/st
 - sex
 - deviceId
 - deviceName
+- measurementMode: device | manual_infant
 - status
 - cameraEnabled
-- heightCm
+- heightCm — untuk manual infant menyimpan panjang badan agar tetap backward-compatible
 - weightKg
 - measurementUpdatedAt
-- measurementSource: iot atau null
+- measurementSource: iot | manual | null
 - bmi
 - captureStatus
 - facialStatus (legacy Model A)
@@ -140,7 +141,7 @@ Satu parent dapat memiliki beberapa child. `parentId` boleh null untuk legacy/st
 - completedAt
 - finalizedAt
 
-WHO-derived values dikalkulasi dari data examination saat dibaca/dibentuk menjadi response. Response juga memuat TB/U, BB/U, `measurementQuality`, dan `measurementReason`. Nilai dengan flag WHO biologically implausible tidak diperlakukan sebagai hasil pertumbuhan valid.
+Nilai antropometri dikalkulasi dari data examination saat dibaca/dibentuk menjadi response. Usia 0–23 bulan memakai PB/U + BB/U; usia 24–59 bulan memakai TB/U + BB/U. Response juga memuat Z-score linear-growth, BB/U, `measurementQuality`, dan `measurementReason`. Nilai dengan flag WHO biologically implausible tidak diperlakukan sebagai hasil pertumbuhan valid.
 
 `visualAnalysis` adalah hasil observasi Gemini terhadap kualitas foto/visibilitas area wajah. Field ini tidak boleh digunakan untuk menentukan `growthStatus`. Raw photo tidak disimpan pada examination.
 
@@ -192,6 +193,7 @@ Status hardware ESP32 untuk monitoring admin:
 - firmwareVersion
 - heightSensor
 - weightSensor
+- claimedExamId
 - createdAt
 
 ### `parentMessages/{id}`
@@ -227,6 +229,7 @@ Enforcement utama dilakukan application layer:
 - child/examination ID memakai UUID;
 - examination hanya boleh diakses oleh role/owner yang sesuai;
 - active station hanya menunjuk satu examination;
+- measurement IoT harus terikat ke examination yang sudah di-claim perangkat; stale session ditolak;
 - child age divalidasi sesuai flow;
 - parent hanya dapat menambahkan dan memakai child miliknya sendiri;
 - hasil antropometri ekstrem diflag menggunakan batas plausibility WHO sebelum disimpan sebagai hasil final.

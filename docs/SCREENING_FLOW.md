@@ -2,9 +2,28 @@
 
 ## Scope
 
-Standing-height screening ditujukan untuk anak usia 24–59 bulan.
+StuntSpecula memiliki dua jalur pemeriksaan:
+- usia 0–23 bulan: input manual panjang badan (PB) dan berat badan (BB), karena panjang diukur terlentang;
+- usia 24–59 bulan: pemeriksaan otomatis standing height menggunakan alat, webcam, sensor tinggi, dan sensor berat.
 
-## Main flow
+## Manual infant flow (0–23 bulan)
+
+Parent memilih profil bayi lalu mengisi **Panjang Badan (PB)** dan **Berat Badan (BB)**. Umur dan jenis kelamin selalu diambil dari profil anak, bukan diketik ulang.
+
+```text
+Parent pilih anak 0–23 bulan
+→ input PB terlentang + BB
+→ validation plausibility
+→ WHO/Kemenkes PB/U + BB/U
+→ risk/trend bila riwayat cukup
+→ rekomendasi nutrisi sesuai kelompok usia
+→ examination completed + finalized
+→ masuk riwayat orang tua
+```
+
+Manual infant examination tidak memakai station, ESP32, webcam, atau Gemini. Field `measurementMode` adalah `manual_infant`.
+
+## Main flow otomatis (24–59 bulan)
 
 ```text
 Parent
@@ -73,7 +92,7 @@ Sebelum measurement diterima/finalized, backend menjalankan validation gate WHO:
 - nilai di luar range dianggap kemungkinan measurement/input error dan menghasilkan `measurement_recheck_required`;
 - data tersebut tidak boleh diberi kesimpulan stunting. User diminta mengulang pengukuran.
 
-Stunting tetap ditentukan dari TB/U < -2 SD. BB/U tidak mengubah definisi stunting; BB/U dipakai sebagai indikator tambahan dan validasi plausibility pengukuran.
+Untuk usia 0–23 bulan, stunting ditentukan dari PB/U < -2 SD. Untuk usia 24–59 bulan, stunting ditentukan dari TB/U < -2 SD. BB/U tidak mengubah definisi stunting; BB/U dipakai sebagai indikator tambahan dan validasi plausibility pengukuran.
 
 ### Referensi antropometri dan pemantauan
 
@@ -87,7 +106,7 @@ Buku KIA tidak menggantikan perhitungan Z-score dan tidak dipakai untuk membuat 
 
 Copywriting status juga harus menyebut arti hasil secara eksplisit. Contoh: `Tidak terindikasi stunting (TB/U ≥ -2 SD)`, `Terindikasi stunting (TB/U < -2 SD)`, dan `Terindikasi stunting berat (TB/U < -3 SD)`. Hindari label samar seperti `dalam rentang pemantauan` tanpa menjelaskan status TB/U.
 
-Setelah TB/U WHO dihitung, backend membuat snapshot rekomendasi edukasi berdasarkan growthStatus dan tren TB/U dibanding examination completed sebelumnya untuk anak yang sama:
+Setelah PB/U atau TB/U dihitung, backend membuat snapshot rekomendasi edukasi berdasarkan growthStatus dan tren indikator linear-growth yang sama dibanding examination completed sebelumnya untuk anak yang sama:
 
 - recommendations.nutrition
 - recommendations.nextSteps
@@ -101,21 +120,21 @@ Snapshot disimpan bersama examination supaya riwayat lama tidak berubah ketika a
 
 ### Prediksi risiko stunting berbasis tren
 
-Setelah pemeriksaan valid selesai, backend membangun seri TB/U dari maksimal empat pemeriksaan valid sebelumnya ditambah pemeriksaan saat ini. `src/lib/stunting-risk.ts` menjalankan regresi linear sederhana terhadap TB/U berdasarkan waktu dan membuat simulasi tren 90 hari.
+Setelah pemeriksaan valid selesai, backend membangun seri PB/U (bayi) atau TB/U (anak standing) dari maksimal empat pemeriksaan valid sebelumnya dengan indikator yang sama ditambah pemeriksaan saat ini. `src/lib/stunting-risk.ts` menjalankan regresi linear sederhana terhadap TB/U berdasarkan waktu dan membuat simulasi tren 90 hari.
 
 Output:
 
 - `insufficient_data`: belum ada minimal dua pengukuran dengan rentang sekurangnya 28 hari;
-- `low`: tren tidak memproyeksikan TB/U melewati -2 SD dalam 90 hari;
-- `watch`: TB/U menurun lebih dari 0,1 SD per 30 hari tetapi proyeksi 90 hari belum melewati -2 SD;
+- `low`: tren tidak memproyeksikan PB/U atau TB/U melewati -2 SD dalam 90 hari;
+- `watch`: indikator menurun lebih dari 0,1 SD per 30 hari tetapi proyeksi 90 hari belum melewati -2 SD;
 - `high`: proyeksi tren 90 hari melewati -2 SD;
-- `current_stunting`: TB/U saat ini sudah < -2 SD, sehingga status WHO saat ini lebih relevan daripada forecast.
+- `current_stunting`: PB/U atau TB/U saat ini sudah < -2 SD, sehingga status saat ini lebih relevan daripada forecast.
 
 Engine ini tidak menghasilkan probabilitas klinis dan tidak diklaim sebagai model ML tervalidasi. Nilainya adalah early-warning berbasis tren untuk membantu pemantauan; diagnosis dan keputusan klinis tetap dilakukan tenaga kesehatan.
 
 ### Localized Nutrition Recommendation Engine
 
-`src/lib/growth-recommendations.ts` menghasilkan rekomendasi edukasi pangan lokal Indonesia untuk usia 24-59 bulan. Engine menyesuaikan fokus berdasarkan status TB/U dan tren, lalu menyediakan:
+`src/lib/growth-recommendations.ts` menghasilkan rekomendasi edukasi sesuai usia 0–59 bulan. Usia 0–5 bulan tidak diberi menu MP-ASI; usia 6–23 bulan mengikuti tahap MP-ASI; usia 24–59 bulan mengikuti pola makan balita. Engine menyesuaikan fokus berdasarkan status TB/U dan tren, lalu menyediakan:
 
 - contoh sumber protein hewani lokal (telur, lele, kembung, ayam, daging);
 - lauk nabati seperti tempe/tahu;
@@ -125,6 +144,7 @@ Engine ini tidak menghasilkan probabilitas klinis dan tidak diklaim sebagai mode
 
 Dasar edukasi:
 
+- Kemenkes RI — Juknis MP-ASI Anak Usia 6–23 Bulan: https://ayosehat.kemkes.go.id/petunjuk-teknis-pemantauan-praktik-mp-asi-anak-usia-6-23-bulan
 - Kemenkes RI — Isi Piringku Balita 2-5 Tahun: https://ayosehat.kemkes.go.id/1000-hari-pertama-kehidupan/category/balita
 - Kemenkes RI — PMT Berbahan Pangan Lokal bagi Balita: https://ayosehat.kemkes.go.id/pemberian-makanan-tambahan-pada-balita
 
@@ -171,15 +191,15 @@ Field pendukung:
 
 Tidak ada probability atau prediksi stunting dari wajah pada flow aktif. Hasil stunting di layar tetap bersumber dari TB/U WHO.
 
-## WHO outcome
+## WHO/Kemenkes outcome
 
-`src/lib/growth.ts` menghitung Height-for-Age berdasarkan age, sex, dan height. `src/lib/anthropometry.ts` menambahkan Weight-for-Age dan measurement plausibility gate.
+`src/lib/growth.ts` menghitung Length-for-Age (PB/U) untuk 0–23 bulan dan Height-for-Age (TB/U) untuk 24–59 bulan berdasarkan usia, jenis kelamin, dan pengukuran linear. `src/lib/anthropometry.ts` menambahkan Weight-for-Age dan measurement plausibility gate.
 
 Aturan utama:
 
-- stunting: TB/U < -2 SD;
-- stunting berat: TB/U < -3 SD;
-- TB/U antara -2 SD dan batas atas bukan stunting;
+- stunting: PB/U atau TB/U < -2 SD;
+- stunting berat: PB/U atau TB/U < -3 SD;
+- nilai ≥ -2 SD tidak terindikasi stunting;
 - measurement dengan WHO plausibility flag tidak menghasilkan status pertumbuhan dan harus diulang.
 
 Status pertumbuhan menjadi field utama pada report/examination response.

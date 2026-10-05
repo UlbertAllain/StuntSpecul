@@ -1,14 +1,19 @@
-import type { GrowthStatus } from "./growth.ts";
+import {
+  linearGrowthIndicator,
+  type GrowthStatus,
+} from "./growth.ts";
 import {
   stuntingRiskFor,
   type StuntingRiskAssessment,
   type StuntingRiskPoint,
 } from "./stunting-risk.ts";
 
-export const GROWTH_RECOMMENDATION_VERSION = "growth-rec-v3";
-export const LOCAL_NUTRITION_VERSION = "nutrition-id-v1";
+export const GROWTH_RECOMMENDATION_VERSION = "growth-rec-v4";
+export const LOCAL_NUTRITION_VERSION = "nutrition-id-v2";
 export const KEMENKES_BALITA_NUTRITION_URL =
   "https://ayosehat.kemkes.go.id/1000-hari-pertama-kehidupan/category/balita";
+export const KEMENKES_MPASI_URL =
+  "https://ayosehat.kemkes.go.id/petunjuk-teknis-pemantauan-praktik-mp-asi-anak-usia-6-23-bulan";
 export const KEMENKES_LOCAL_FOOD_URL =
   "https://ayosehat.kemkes.go.id/pemberian-makanan-tambahan-pada-balita";
 
@@ -32,7 +37,14 @@ export type LocalMeal = {
 export type LocalizedNutritionPlan = {
   version: string;
   locale: "id-ID";
-  ageBand: "24-35 bulan" | "36-59 bulan" | "24-59 bulan";
+  ageBand:
+    | "0-5 bulan"
+    | "6-8 bulan"
+    | "9-11 bulan"
+    | "12-23 bulan"
+    | "24-35 bulan"
+    | "36-59 bulan"
+    | "0-59 bulan";
   title: string;
   focus: string[];
   foodGroups: LocalFoodGroup[];
@@ -83,17 +95,43 @@ function trendFrom(
   return { trend: "stable", delta };
 }
 
-function baseRecommendations(status: GrowthStatus) {
+function nutritionForAge(ageMonths: number | null) {
+  if (ageMonths !== null && ageMonths < 6) {
+    return [
+      "Untuk bayi usia 0–5 bulan, fokus pemberian makan adalah ASI sesuai anjuran Kemenkes dan arahan tenaga kesehatan; aplikasi tidak membuat menu MP-ASI untuk usia ini.",
+      "Bila ada kesulitan menyusu, kenaikan berat tidak sesuai, atau kondisi kesehatan tertentu, konsultasikan ke tenaga kesehatan.",
+    ];
+  }
+
+  if (ageMonths !== null && ageMonths < 24) {
+    return [
+      "Mulai usia 6 bulan, lanjutkan ASI dan berikan MP-ASI sesuai tahap usia, tekstur, kemampuan makan, dan anjuran Kemenkes.",
+      "Utamakan makanan beragam dengan sumber protein hewani seperti telur, ikan, ayam, atau daging; kombinasikan dengan makanan pokok, sayur, buah, serta tempe atau tahu.",
+      "Naikkan tekstur makanan bertahap sesuai usia dan kemampuan mengunyah/menelan anak.",
+    ];
+  }
+
+  return [
+    "Pertahankan pola makan beragam dan seimbang dengan protein hewani, lauk nabati, sayur, buah, dan sumber karbohidrat.",
+    "Utamakan air putih dan batasi minuman manis serta makanan rendah gizi yang menggantikan makanan utama.",
+    "Pertahankan jadwal makan teratur dan kebiasaan makan responsif tanpa memaksa anak.",
+  ];
+}
+
+function baseRecommendations(
+  status: GrowthStatus,
+  ageMonths: number | null,
+) {
+  const indicator = linearGrowthIndicator(ageMonths ?? 24);
+  const measureName = indicator === "PB/U" ? "panjang badan" : "tinggi badan";
+  const nutrition = nutritionForAge(ageMonths);
+
   switch (status) {
     case "severely_stunted":
       return {
-        nutrition: [
-          "Utamakan makanan beragam dan padat gizi dengan protein hewani yang mudah dijumpai, misalnya telur, ikan, ayam, atau daging sesuai toleransi anak.",
-          "Lengkapi makanan utama dengan sumber karbohidrat, sayur, buah, serta lauk nabati seperti tempe atau tahu.",
-          "Pertahankan jadwal makan teratur dan catat bila nafsu makan terus menurun untuk dibahas dengan tenaga kesehatan.",
-        ],
+        nutrition,
         nextSteps: [
-          "Ulangi pengukuran tinggi dengan posisi yang benar untuk memastikan hasil.",
+          `Ulangi pengukuran ${measureName} dengan teknik yang benar untuk memastikan hasil.`,
           "Jadwalkan penilaian di Posyandu, Puskesmas, dokter, atau tenaga kesehatan untuk konfirmasi pertumbuhan dan mencari faktor penyebab.",
           "Bawa riwayat hasil sebelumnya dan diskusikan pola makan, penyakit berulang, perkembangan, serta kondisi lingkungan anak.",
           "Jika anak tampak sangat lemas, sulit makan atau minum, atau sedang sakit berat, cari pertolongan medis segera.",
@@ -101,37 +139,24 @@ function baseRecommendations(status: GrowthStatus) {
       };
     case "stunted":
       return {
-        nutrition: [
-          "Berikan makanan beragam dan padat gizi dengan sumber protein hewani secara rutin, misalnya telur, ikan, ayam, daging, atau susu/olahannya sesuai toleransi anak.",
-          "Lengkapi menu keluarga dengan karbohidrat, sayur, buah, serta lauk nabati seperti tempe atau tahu.",
-          "Batasi minuman manis dan makanan rendah gizi yang dapat menggantikan makanan utama.",
-        ],
+        nutrition,
         nextSteps: [
-          "Ulangi pengukuran tinggi dengan posisi yang benar untuk memastikan hasil.",
-          "Bawa hasil ini ke Posyandu, Puskesmas, dokter, atau tenaga kesehatan untuk penilaian pertumbuhan dan penyebab yang mungkin mendasari.",
-          "Pantau tinggi dan berat secara berkala serta diskusikan pola makan, riwayat penyakit, sanitasi, dan perkembangan anak dengan tenaga kesehatan.",
+          `Ulangi pengukuran ${measureName} dengan teknik yang benar untuk memastikan hasil.`,
+          "Bawa hasil ini ke Posyandu, Puskesmas, dokter, atau tenaga kesehatan untuk penilaian pertumbuhan dan faktor yang mungkin mendasari.",
+          `Pantau ${measureName} dan berat badan secara berkala serta diskusikan pola makan, riwayat penyakit, sanitasi, dan perkembangan anak dengan tenaga kesehatan.`,
         ],
       };
     case "monitor":
       return {
-        nutrition: [
-          "Pertahankan pola makan beragam dengan protein hewani, lauk nabati, sayur, buah, karbohidrat, dan lemak sehat.",
-          "Jaga jadwal makan teratur dan pilih camilan bergizi agar asupan utama tidak tergantikan makanan atau minuman tinggi gula.",
-          "Pastikan makanan diolah dan disajikan dengan kebersihan yang baik.",
-        ],
+        nutrition,
         nextSteps: [
-          "Pantau tinggi dan berat secara berkala dan bandingkan tren antar pemeriksaan.",
-          "Ulangi pengukuran bila posisi anak saat pemeriksaan kurang ideal atau hasil terasa tidak sesuai.",
-          "Konsultasikan ke tenaga kesehatan bila pertumbuhan melambat, berat tidak bertambah, nafsu makan menurun terus-menerus, atau ada keluhan kesehatan lain.",
+          `Pantau ${measureName} dan berat badan secara berkala dan bandingkan tren antar pemeriksaan.`,
+          "Konsultasikan ke tenaga kesehatan bila pertumbuhan melambat atau ada keluhan lain.",
         ],
       };
     case "within_range":
       return {
-        nutrition: [
-          "Pertahankan pola makan beragam dan seimbang dengan protein hewani, lauk nabati, sayur, buah, dan sumber karbohidrat.",
-          "Utamakan air putih dan batasi minuman manis serta makanan tinggi gula, garam, atau lemak trans.",
-          "Pertahankan jadwal makan yang teratur dan kebiasaan makan responsif tanpa memaksa anak.",
-        ],
+        nutrition,
         nextSteps: [
           "Lanjutkan pemantauan pertumbuhan secara rutin di Posyandu atau fasilitas kesehatan.",
           "Simpan hasil ini untuk dibandingkan dengan pemeriksaan berikutnya.",
@@ -140,11 +165,9 @@ function baseRecommendations(status: GrowthStatus) {
       };
     default:
       return {
-        nutrition: [
-          "Pertahankan pola makan beragam dan seimbang sesuai usia sambil menunggu hasil pengukuran yang valid.",
-        ],
+        nutrition,
         nextSteps: [
-          "Ulangi pengukuran tinggi badan dengan posisi yang benar karena TB/U belum dapat dihitung.",
+          `Ulangi pengukuran ${measureName} karena ${indicator} belum dapat dihitung.`,
           "Konsultasikan ke petugas kesehatan bila pengukuran berulang tetap tidak sesuai atau ada keluhan pertumbuhan.",
         ],
       };
@@ -154,6 +177,7 @@ function baseRecommendations(status: GrowthStatus) {
 function trendRecommendation(
   trend: GrowthTrend,
   delta: number | null,
+  indicator: "PB/U" | "TB/U",
 ): {
   nutrition: string[];
   nextSteps: string[];
@@ -164,34 +188,28 @@ function trendRecommendation(
     case "declining":
       return {
         nutrition: [
-          "Karena tren TB/U tercatat menurun, catat pola makan harian dan bawa catatan tersebut saat berdiskusi dengan tenaga kesehatan agar kecukupan makan dapat ditinjau bersama.",
+          `Karena tren ${indicator} menurun, catat pola makan yang benar-benar dikonsumsi anak dan bawa catatan tersebut saat berdiskusi dengan tenaga kesehatan.`,
         ],
         nextSteps: [
-          "TB/U turun " +
-            magnitude +
-            " SD dibanding pemeriksaan sebelumnya. Ulangi pengukuran dengan teknik yang benar dan bawa tren ini saat konsultasi atau pemantauan berikutnya.",
+          `${indicator} turun ${magnitude} SD dibanding pemeriksaan sebelumnya. Ulangi pengukuran dengan teknik yang benar dan bawa tren ini saat konsultasi atau pemantauan berikutnya.`,
         ],
       };
     case "improving":
       return {
         nutrition: [
-          "Pertahankan pola makan beragam dan kebiasaan makan yang sudah berjalan karena tren TB/U tercatat lebih tinggi dibanding pemeriksaan sebelumnya.",
+          `Pertahankan pola makan sesuai usia karena tren ${indicator} tercatat lebih tinggi dibanding pemeriksaan sebelumnya.`,
         ],
         nextSteps: [
-          "TB/U naik " +
-            magnitude +
-            " SD dibanding pemeriksaan sebelumnya. Lanjutkan pemantauan karena status WHO saat ini tetap menjadi dasar tindak lanjut.",
+          `${indicator} naik ${magnitude} SD dibanding pemeriksaan sebelumnya. Lanjutkan pemantauan karena status pertumbuhan saat ini tetap menjadi dasar tindak lanjut.`,
         ],
       };
     case "stable":
       return {
         nutrition: [
-          "Pertahankan pola makan beragam dan teratur sambil terus memantau pertumbuhan dari waktu ke waktu.",
+          "Pertahankan pola makan sesuai usia sambil terus memantau pertumbuhan dari waktu ke waktu.",
         ],
         nextSteps: [
-          "TB/U relatif stabil dibanding pemeriksaan sebelumnya (perubahan " +
-            magnitude +
-            " SD). Lanjutkan pemantauan rutin.",
+          `${indicator} relatif stabil dibanding pemeriksaan sebelumnya (perubahan ${magnitude} SD). Lanjutkan pemantauan rutin.`,
         ],
       };
     default:
@@ -199,32 +217,154 @@ function trendRecommendation(
   }
 }
 
+function ageBandFor(ageMonths: number | null): LocalizedNutritionPlan["ageBand"] {
+  if (ageMonths === null || ageMonths < 0 || ageMonths > 59) return "0-59 bulan";
+  if (ageMonths <= 5) return "0-5 bulan";
+  if (ageMonths <= 8) return "6-8 bulan";
+  if (ageMonths <= 11) return "9-11 bulan";
+  if (ageMonths <= 23) return "12-23 bulan";
+  if (ageMonths <= 35) return "24-35 bulan";
+  return "36-59 bulan";
+}
+
 function localizedNutritionFor(
   status: GrowthStatus,
   trend: GrowthTrend,
   ageMonths: number | null,
 ): LocalizedNutritionPlan {
-  const ageBand =
-    ageMonths !== null && ageMonths >= 24 && ageMonths <= 35
-      ? "24-35 bulan"
-      : ageMonths !== null && ageMonths >= 36 && ageMonths <= 59
-        ? "36-59 bulan"
-        : "24-59 bulan";
+  const ageBand = ageBandFor(ageMonths);
+  const indicator = linearGrowthIndicator(ageMonths ?? 24);
+  const commonCautions = [
+    "Rekomendasi ini bersifat edukatif, bukan resep medis atau hitungan porsi individual.",
+    "Sesuaikan dengan alergi, toleransi, kemampuan mengunyah/menelan, budaya keluarga, harga, dan ketersediaan pangan setempat.",
+    "Jika anak memiliki masalah pertumbuhan, penyakit tertentu, atau sulit makan menetap, susun kebutuhan individual bersama tenaga kesehatan atau ahli gizi.",
+  ];
+
+  if (ageBand === "0-5 bulan") {
+    return {
+      version: LOCAL_NUTRITION_VERSION,
+      locale: "id-ID",
+      ageBand,
+      title: "Panduan pemberian makan usia 0–5 bulan",
+      focus: [
+        "Aplikasi tidak membuat menu makanan padat untuk bayi 0–5 bulan.",
+        "Fokus pada ASI sesuai anjuran Kemenkes dan evaluasi tenaga kesehatan bila terdapat kendala menyusu atau pertumbuhan.",
+      ],
+      foodGroups: [],
+      sampleDay: [],
+      cautions: commonCautions,
+      sources: [
+        {
+          label: "Kemenkes RI — 1000 Hari Pertama Kehidupan / Balita",
+          url: KEMENKES_BALITA_NUTRITION_URL,
+        },
+      ],
+    };
+  }
 
   const focus = [
     "Gunakan bahan pangan yang mudah ditemukan di sekitar keluarga dan tetap jaga keragaman menu.",
-    "Utamakan sumber protein hewani seperti telur, ikan, ayam, atau daging; kombinasikan dengan tempe/tahu, sayur, buah, dan makanan pokok.",
+    "Utamakan protein hewani seperti telur, ikan, ayam, atau daging; kombinasikan dengan tempe/tahu, sayur, buah, dan makanan pokok.",
   ];
 
   if (status === "stunted" || status === "severely_stunted") {
     focus.unshift(
-      "Karena TB/U berada di bawah batas WHO, rekomendasi makanan hanya bersifat pendamping dan perlu dibarengi evaluasi tenaga kesehatan.",
+      `Karena ${indicator} berada di bawah -2 SD, rekomendasi makanan hanya bersifat pendamping dan perlu dibarengi evaluasi tenaga kesehatan.`,
     );
   }
   if (trend === "declining") {
     focus.push(
-      "Tren TB/U menurun: catat makanan yang benar-benar dimakan anak, bukan hanya yang disajikan, untuk dibawa saat konsultasi.",
+      `Tren ${indicator} menurun: catat makanan yang benar-benar dimakan anak, bukan hanya yang disajikan, untuk dibawa saat konsultasi.`,
     );
+  }
+
+  if (ageMonths !== null && ageMonths < 24) {
+    const sampleDay: LocalMeal[] =
+      ageBand === "6-8 bulan"
+        ? [
+            {
+              slot: "Makan utama",
+              menu: "Bubur kental dari makanan pokok + telur/ikan/ayam + sayur, dengan tekstur lumat sesuai kemampuan anak.",
+            },
+            {
+              slot: "Selingan",
+              menu: "Buah lumat seperti pisang atau pepaya sesuai toleransi.",
+            },
+          ]
+        : ageBand === "9-11 bulan"
+          ? [
+              {
+                slot: "Pagi",
+                menu: "Nasi tim/lembek + telur + sayur dengan tekstur cincang halus.",
+              },
+              {
+                slot: "Siang",
+                menu: "Nasi tim + ikan lele/kembung + tempe + sayur.",
+              },
+              {
+                slot: "Selingan",
+                menu: "Pisang, pepaya, ubi, atau bahan lokal lain dengan tekstur aman.",
+              },
+            ]
+          : [
+              {
+                slot: "Pagi",
+                menu: "Makanan keluarga yang disesuaikan teksturnya: nasi + telur + sayur + buah.",
+              },
+              {
+                slot: "Siang",
+                menu: "Nasi + ikan lele/kembung + tempe + sayur.",
+              },
+              {
+                slot: "Selingan",
+                menu: "Buah, ubi, jagung, atau pangan lokal lain yang sesuai kemampuan makan anak.",
+              },
+              {
+                slot: "Malam",
+                menu: "Nasi + ayam + tahu + sayur + buah.",
+              },
+            ];
+
+    return {
+      version: LOCAL_NUTRITION_VERSION,
+      locale: "id-ID",
+      ageBand,
+      title: "Contoh MP-ASI berbahan pangan lokal",
+      focus: [
+        "Lanjutkan ASI dan berikan MP-ASI sesuai tahap usia serta kemampuan makan anak.",
+        ...focus,
+      ],
+      foodGroups: [
+        {
+          label: "Protein hewani",
+          examples: ["telur", "ikan lele", "ikan kembung", "ayam", "daging"],
+        },
+        {
+          label: "Protein nabati",
+          examples: ["tempe", "tahu", "kacang hijau"],
+        },
+        {
+          label: "Makanan pokok",
+          examples: ["nasi", "ubi", "jagung", "kentang"],
+        },
+        {
+          label: "Sayur dan buah",
+          examples: ["bayam", "wortel", "labu", "pisang", "pepaya"],
+        },
+      ],
+      sampleDay,
+      cautions: commonCautions,
+      sources: [
+        {
+          label: "Kemenkes RI — Juknis MP-ASI Anak Usia 6–23 Bulan",
+          url: KEMENKES_MPASI_URL,
+        },
+        {
+          label: "Kemenkes RI — PMT Berbahan Pangan Lokal",
+          url: KEMENKES_LOCAL_FOOD_URL,
+        },
+      ],
+    };
   }
 
   return {
@@ -274,11 +414,7 @@ function localizedNutritionFor(
         menu: "Nasi + ayam + tahu + wortel atau labu siam + buah.",
       },
     ],
-    cautions: [
-      "Ini contoh susunan menu, bukan resep medis atau hitungan porsi individual.",
-      "Sesuaikan bahan dengan alergi, toleransi, kemampuan mengunyah/menelan, budaya keluarga, harga, dan ketersediaan pangan setempat.",
-      "Untuk anak dengan masalah pertumbuhan, penyakit tertentu, atau sulit makan menetap, susun kebutuhan individual bersama tenaga kesehatan atau ahli gizi.",
-    ],
+    cautions: commonCautions,
     sources: [
       {
         label: "Kemenkes RI — Isi Piringku Balita 2-5 Tahun",
@@ -297,17 +433,19 @@ export function growthRecommendationsFor(
   context: GrowthRecommendationContext = {},
 ): GrowthRecommendations {
   const ageMonths = context.ageMonths ?? null;
+  const indicator = linearGrowthIndicator(ageMonths ?? 24);
   const currentHeightForAgeZ = context.currentHeightForAgeZ ?? null;
   const previousHeightForAgeZ = context.previousHeightForAgeZ ?? null;
   const { trend, delta } = trendFrom(
     currentHeightForAgeZ,
     previousHeightForAgeZ,
   );
-  const base = baseRecommendations(status);
-  const contextual = trendRecommendation(trend, delta);
+  const base = baseRecommendations(status, ageMonths);
+  const contextual = trendRecommendation(trend, delta, indicator);
   const risk = stuntingRiskFor({
     growthStatus: status,
     currentHeightForAgeZ,
+    indicator,
     currentAt: context.currentAt ?? null,
     history: context.riskHistory ?? [],
   });

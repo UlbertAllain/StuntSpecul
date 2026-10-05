@@ -15,7 +15,10 @@ import {
   Utensils,
 } from "lucide-react";
 import { api, ClientError, errorMessage } from "@/lib/api-client";
-import { growthStatusLabel } from "@/lib/growth";
+import {
+  growthStatusLabelForAge,
+  linearGrowthIndicator,
+} from "@/lib/growth";
 import type { Examination, ParentAccountView } from "@/lib/portal";
 import {
   KEMENKES_REFERENCE_URL,
@@ -135,6 +138,10 @@ export function ParentHistoryDetailPage() {
 
   const recommendations = exam.recommendations;
   const visual = exam.visualAnalysis;
+  const linearIndicator = linearGrowthIndicator(exam.ageMonths);
+  const linearMeasurementLabel =
+    linearIndicator === "PB/U" ? "Panjang badan" : "Tinggi badan";
+  const manualInfant = exam.measurementMode === "manual_infant";
   const showFacialReason =
     Boolean(exam.facialReason) &&
     (exam.facialStatus === "rejected" || exam.facialStatus === "unavailable");
@@ -168,7 +175,7 @@ export function ParentHistoryDetailPage() {
           <span className="parent-history-page-status">
             {exam.measurementQuality === "recheck"
               ? "Pengukuran perlu diulang"
-              : growthStatusLabel(exam.growthStatus)}
+              : growthStatusLabelForAge(exam.growthStatus, exam.ageMonths)}
           </span>
         </div>
 
@@ -181,7 +188,7 @@ export function ParentHistoryDetailPage() {
           <article>
             <span>
               <Ruler size={18} />
-              Tinggi badan
+              {linearMeasurementLabel}
             </span>
             <strong>
               {formatReading(exam.heightCm)}
@@ -202,15 +209,15 @@ export function ParentHistoryDetailPage() {
         </div>
 
         <section className="parent-history-detail-section parent-history-who">
-          <span>HASIL PERTUMBUHAN WHO</span>
+          <span>STATUS STUNTING BERDASARKAN {linearIndicator}</span>
           <strong>
             {exam.measurementQuality === "recheck"
               ? "Pengukuran perlu diulang"
-              : growthStatusLabel(exam.growthStatus)}
+              : growthStatusLabelForAge(exam.growthStatus, exam.ageMonths)}
           </strong>
           <dl>
             <div>
-              <dt>TB/U Z-score</dt>
+              <dt>{linearIndicator} Z-score</dt>
               <dd>{formatReading(exam.heightForAgeZ)} SD</dd>
             </div>
             <div>
@@ -228,7 +235,7 @@ export function ParentHistoryDetailPage() {
           <p>
             {exam.measurementQuality === "recheck"
               ? exam.measurementReason ||
-                "Nilai tinggi atau berat berada di luar rentang valid WHO. Silakan ukur ulang."
+                `Nilai ${linearMeasurementLabel.toLowerCase()} atau berat berada di luar rentang valid. Silakan ukur ulang.`
               : "Hasil WHO merupakan skrining pertumbuhan, bukan diagnosis."}
           </p>
         </section>
@@ -246,7 +253,13 @@ export function ParentHistoryDetailPage() {
             </div>
           </div>
 
-          {visual ? (
+          {manualInfant ? (
+            <p>
+              Analisis visual tidak digunakan pada pemeriksaan manual bayi.
+              Hasil pertumbuhan dihitung dari panjang badan, berat badan, usia,
+              dan jenis kelamin.
+            </p>
+          ) : visual ? (
             <>
               <dl>
                 <div>
@@ -305,7 +318,7 @@ export function ParentHistoryDetailPage() {
 
           <p>
             AI visual hanya menilai kualitas foto dan bagian wajah yang
-            terlihat. Status stunting tetap ditentukan dari TB/U WHO.
+            terlihat. Status stunting tetap ditentukan dari {linearIndicator}.
           </p>
         </section>
 
@@ -324,7 +337,7 @@ export function ParentHistoryDetailPage() {
               </dd>
             </div>
             <div>
-              <dt>TB/U Z-score WHO</dt>
+              <dt>{linearIndicator} Z-score WHO</dt>
               <dd>{formatReading(exam.heightForAgeZ)}</dd>
             </div>
             <div>
@@ -346,7 +359,7 @@ export function ParentHistoryDetailPage() {
               <dd>
                 {exam.measurementQuality === "recheck"
                   ? "Belum dapat disimpulkan"
-                  : growthStatusLabel(exam.growthStatus)}
+                  : growthStatusLabelForAge(exam.growthStatus, exam.ageMonths)}
               </dd>
             </div>
             <div>
@@ -364,12 +377,12 @@ export function ParentHistoryDetailPage() {
           </dl>
 
           <p>
-            Status stunting dihitung dari TB/U berdasarkan Standar Antropometri
-            Anak Kemenkes RI dan WHO Child Growth Standards. BB/U adalah
-            indikator tambahan dan membantu mendeteksi hasil pengukuran yang
-            perlu diverifikasi. Buku KIA Edisi 2024 digunakan sebagai referensi
-            pendamping pemantauan pertumbuhan keluarga. Analisis visual AI tidak
-            menentukan status stunting.
+            Status stunting dihitung dari {linearIndicator} berdasarkan Standar
+            Antropometri Anak Kemenkes RI dan WHO Child Growth Standards. BB/U
+            adalah indikator tambahan dan membantu mendeteksi hasil pengukuran
+            yang perlu diverifikasi. Buku KIA Edisi 2024 digunakan sebagai
+            referensi pendamping pemantauan pertumbuhan keluarga. Analisis
+            visual AI tidak menentukan status stunting.
           </p>
 
           <div className="parent-history-reference-list">
@@ -392,7 +405,7 @@ export function ParentHistoryDetailPage() {
           <div className="parent-history-trend-note">
             <strong>Perbandingan dengan pemeriksaan sebelumnya</strong>
             <span>
-              TB/U{" "}
+              {linearIndicator}{" "}
               {recommendations.trend === "declining"
                 ? "turun"
                 : recommendations.trend === "improving"
@@ -417,7 +430,7 @@ export function ParentHistoryDetailPage() {
               <dd>{recommendations.risk.pointsUsed} pemeriksaan</dd>
             </div>
             <div>
-              <dt>Perubahan TB/U per 30 hari</dt>
+              <dt>Perubahan {linearIndicator} per 30 hari</dt>
               <dd>
                 {recommendations.risk.zChangePer30Days === null
                   ? "Belum tersedia"
@@ -425,7 +438,7 @@ export function ParentHistoryDetailPage() {
               </dd>
             </div>
             <div>
-              <dt>Proyeksi TB/U 90 hari</dt>
+              <dt>Proyeksi {linearIndicator} 90 hari</dt>
               <dd>
                 {recommendations.risk.projectedHeightForAgeZ === null
                   ? "Belum tersedia"
@@ -467,15 +480,19 @@ export function ParentHistoryDetailPage() {
               ))}
             </div>
 
-            <h4>Contoh menu sehari</h4>
-            <dl>
-              {recommendations.localizedNutrition.sampleDay.map((meal) => (
-                <div key={meal.slot}>
-                  <dt>{meal.slot}</dt>
-                  <dd>{meal.menu}</dd>
-                </div>
-              ))}
-            </dl>
+            {recommendations.localizedNutrition.sampleDay.length > 0 && (
+              <>
+                <h4>Contoh menu sehari</h4>
+                <dl>
+                  {recommendations.localizedNutrition.sampleDay.map((meal) => (
+                    <div key={meal.slot}>
+                      <dt>{meal.slot}</dt>
+                      <dd>{meal.menu}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </>
+            )}
 
             <ul className="parent-history-follow-up">
               {recommendations.localizedNutrition.cautions.map((item) => (
@@ -513,8 +530,8 @@ export function ParentHistoryDetailPage() {
         </section>
 
         <p className="parent-history-recommendation-source">
-          Rekomendasi ini merupakan edukasi berdasarkan status TB/U, tren
-          pertumbuhan, serta panduan gizi Kemenkes. Bukan diagnosis, resep, atau
+          Rekomendasi ini merupakan edukasi berdasarkan status {linearIndicator},
+          tren pertumbuhan, serta panduan gizi Kemenkes. Bukan diagnosis, resep, atau
           pengganti konsultasi tenaga kesehatan.
         </p>
 

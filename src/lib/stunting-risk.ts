@@ -1,10 +1,12 @@
 import type { GrowthStatus } from "./growth.ts";
 
-export const STUNTING_RISK_VERSION = "stunting-risk-v1";
+export const STUNTING_RISK_VERSION = "stunting-risk-v2";
 export const STUNTING_RISK_HORIZON_DAYS = 90;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MIN_TREND_SPAN_DAYS = 28;
+
+export type LinearGrowthIndicator = "PB/U" | "TB/U";
 
 export type StuntingRiskLevel =
   | "insufficient_data"
@@ -20,6 +22,7 @@ export type StuntingRiskPoint = {
 
 export type StuntingRiskAssessment = {
   version: string;
+  indicator: LinearGrowthIndicator;
   level: StuntingRiskLevel;
   label: string;
   currentHeightForAgeZ: number | null;
@@ -35,6 +38,7 @@ export type StuntingRiskAssessment = {
 export type StuntingRiskContext = {
   growthStatus: GrowthStatus;
   currentHeightForAgeZ: number | null;
+  indicator?: LinearGrowthIndicator;
   currentAt?: number | null;
   history?: StuntingRiskPoint[];
 };
@@ -100,8 +104,10 @@ function result(
   label: string,
   details: Partial<StuntingRiskAssessment> = {},
 ): StuntingRiskAssessment {
+  const indicator = context.indicator ?? "TB/U";
   return {
     version: STUNTING_RISK_VERSION,
+    indicator,
     level,
     label,
     currentHeightForAgeZ: context.currentHeightForAgeZ,
@@ -112,7 +118,7 @@ function result(
     projectedHeightForAgeZ: details.projectedHeightForAgeZ ?? null,
     reasons: details.reasons ?? [],
     disclaimer:
-      "Prediksi ini adalah proyeksi tren TB/U untuk skrining awal, bukan probabilitas klinis, diagnosis, atau pengganti penilaian tenaga kesehatan.",
+      `Prediksi ini adalah proyeksi tren ${indicator} untuk skrining awal, bukan probabilitas klinis, diagnosis, atau pengganti penilaian tenaga kesehatan.`,
   };
 }
 
@@ -120,13 +126,15 @@ export function stuntingRiskFor(
   context: StuntingRiskContext,
 ): StuntingRiskAssessment {
   const current = context.currentHeightForAgeZ;
+  const indicator = context.indicator ?? "TB/U";
+
   if (current === null || !Number.isFinite(current)) {
     return result(
       context,
       "insufficient_data",
-      "Prediksi belum tersedia — TB/U belum valid",
+      `Prediksi belum tersedia — ${indicator} belum valid`,
       {
-        reasons: ["TB/U saat ini belum tersedia atau belum valid."],
+        reasons: [`${indicator} saat ini belum tersedia atau belum valid.`],
       },
     );
   }
@@ -142,7 +150,7 @@ export function stuntingRiskFor(
       "Stunting terindikasi saat ini — bukan prediksi",
       {
         reasons: [
-          "TB/U saat ini sudah berada di bawah -2 SD, sehingga yang ditampilkan adalah status WHO saat ini, bukan prediksi risiko baru.",
+          `${indicator} saat ini sudah berada di bawah -2 SD, sehingga yang ditampilkan adalah status pertumbuhan saat ini, bukan prediksi risiko baru.`,
         ],
       },
     );
@@ -161,7 +169,7 @@ export function stuntingRiskFor(
       {
         pointsUsed: points.length,
         reasons: [
-          "Minimal dua pemeriksaan TB/U diperlukan untuk membuat proyeksi tren.",
+          `Minimal dua pemeriksaan ${indicator} diperlukan untuk membuat proyeksi tren.`,
         ],
       },
     );
@@ -177,7 +185,7 @@ export function stuntingRiskFor(
         pointsUsed: points.length,
         spanDays: round2(spanDays),
         reasons: [
-          "Rentang data kurang dari 28 hari. Pantau lagi pada pemeriksaan berkala berikutnya agar tren tidak dibaca dari perubahan jangka sangat pendek.",
+          "Rentang data kurang dari 28 hari. Pantau lagi pada pemeriksaan berkala berikutnya agar perubahan jangka sangat pendek tidak dibaca sebagai tren.",
         ],
       },
     );
@@ -217,7 +225,7 @@ export function stuntingRiskFor(
       {
         ...common,
         reasons: [
-          "Jika pola TB/U terakhir berlanjut secara linear, proyeksi 90 hari melewati batas -2 SD.",
+          `Jika pola ${indicator} terakhir berlanjut secara linear, proyeksi 90 hari melewati batas -2 SD.`,
           "Kecepatan perubahan tren sekitar " +
             zChangePer30Days.toFixed(2) +
             " SD per 30 hari.",
@@ -230,11 +238,11 @@ export function stuntingRiskFor(
     return result(
       context,
       "watch",
-      "TB/U menurun, tetapi belum diproyeksikan stunting",
+      `${indicator} menurun, tetapi belum diproyeksikan stunting`,
       {
         ...common,
         reasons: [
-          "TB/U menunjukkan tren menurun, tetapi proyeksi 90 hari belum melewati batas -2 SD.",
+          `${indicator} menunjukkan tren menurun, tetapi proyeksi 90 hari belum melewati batas -2 SD.`,
           "Kecepatan perubahan tren sekitar " +
             zChangePer30Days.toFixed(2) +
             " SD per 30 hari.",
@@ -246,7 +254,7 @@ export function stuntingRiskFor(
   return result(context, "low", "Tren 90 hari tidak mengarah ke stunting", {
     ...common,
     reasons: [
-      "Tren TB/U tidak memproyeksikan lintasan ke bawah -2 SD dalam 90 hari bila pola yang sama berlanjut.",
+      `Tren ${indicator} tidak memproyeksikan lintasan ke bawah -2 SD dalam 90 hari bila pola yang sama berlanjut.`,
     ],
   });
 }

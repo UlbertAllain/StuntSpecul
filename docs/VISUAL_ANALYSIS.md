@@ -8,21 +8,17 @@ Hasil utama tetap:
 
 ```text
 umur + jenis kelamin + tinggi sensor
-→ WHO Height-for-Age (TB/U)
+→ WHO/Kemenkes Height-for-Age (TB/U)
 → z-score
 → growthStatus
 ```
 
-Gemini menerima foto wajah beserta konteks pemeriksaan yang sudah diketahui:
+Gemini menerima foto wajah beserta konteks yang sudah tersedia saat webcam dijalankan:
 
 - usia bulan;
-- jenis kelamin;
-- tinggi badan sensor;
-- berat badan sensor;
-- TB/U z-score WHO;
-- status WHO.
+- jenis kelamin.
 
-Konteks WHO hanya dipakai agar laporan tetap konsisten. Gemini tidak boleh menghitung ulang, mengganti, atau menyimpulkan status stunting dari wajah.
+Webcam berjalan sebelum sensor tinggi dan berat. Karena itu Gemini tidak menerima atau menebak TB, BB, Z-score, maupun status stunting. Status antropometri dihitung terpisah setelah measurement sensor tersedia.
 
 ## Active pipeline
 
@@ -96,8 +92,6 @@ POST /api/visual-analysis
 Content-Type: image/jpeg
 X-Age-Months: 39
 X-Sex: male
-X-Height-Cm: 93.5
-X-Weight-Kg: 18.9
 ```
 
 Endpoint memakai `GEMINI_API_KEY` dan `GEMINI_MODEL` dari server environment. Credential Gemini tidak pernah dikirim ke browser.
@@ -115,8 +109,8 @@ Selama sensor tinggi/berat masih dikalibrasi, admin dapat memakai menu **Penguji
 Flow:
 
     Admin
-    -> isi usia, jenis kelamin, tinggi manual, berat manual
-    -> mulai kamera
+    -> isi usia, jenis kelamin, tinggi manual, berat manual untuk preview WHO
+    -> mulai kamera (Gemini tetap menerima usia + jenis kelamin saja)
     -> ambil foto
     -> endpoint visual analysis yang sama
     -> Gemini
