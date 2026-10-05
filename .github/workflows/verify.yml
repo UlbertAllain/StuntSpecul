@@ -25,6 +25,21 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - name: Show Prettier diff
+        run: |
+          npx prettier --write \
+            src/components/portal/parent/history-detail-page.tsx \
+            src/components/portal/portal.css \
+            src/components/screening/results.tsx \
+            src/components/screening/screening.css \
+            src/lib/stunting-risk.ts
+          git diff -- \
+            src/components/portal/parent/history-detail-page.tsx \
+            src/components/portal/portal.css \
+            src/components/screening/results.tsx \
+            src/components/screening/screening.css \
+            src/lib/stunting-risk.ts
+          exit 1
       - run: npm run check
       - run: npm run build
       - run: node tests/deployment-smoke.mjs
