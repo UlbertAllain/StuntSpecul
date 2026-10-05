@@ -15,10 +15,7 @@ import {
   Utensils,
 } from "lucide-react";
 import { api, ClientError, errorMessage } from "@/lib/api-client";
-import {
-  growthStatusLabelForAge,
-  linearGrowthIndicator,
-} from "@/lib/growth";
+import { growthStatusLabelForAge, linearGrowthIndicator } from "@/lib/growth";
 import type { Examination, ParentAccountView } from "@/lib/portal";
 import {
   KEMENKES_REFERENCE_URL,
@@ -530,9 +527,9 @@ export function ParentHistoryDetailPage() {
         </section>
 
         <p className="parent-history-recommendation-source">
-          Rekomendasi ini merupakan edukasi berdasarkan status {linearIndicator},
-          tren pertumbuhan, serta panduan gizi Kemenkes. Bukan diagnosis, resep, atau
-          pengganti konsultasi tenaga kesehatan.
+          Rekomendasi ini merupakan edukasi berdasarkan status {linearIndicator}
+          , tren pertumbuhan, serta panduan gizi Kemenkes. Bukan diagnosis,
+          resep, atau pengganti konsultasi tenaga kesehatan.
         </p>
 
         <p className="parent-history-disclaimer">

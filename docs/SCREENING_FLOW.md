@@ -3,6 +3,7 @@
 ## Scope
 
 StuntSpecula memiliki dua jalur pemeriksaan:
+
 - usia 0–23 bulan: input manual panjang badan (PB) dan berat badan (BB), karena panjang diukur terlentang;
 - usia 24–59 bulan: pemeriksaan otomatis standing height menggunakan alat, webcam, sensor tinggi, dan sensor berat.
 

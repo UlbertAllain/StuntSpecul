@@ -10,10 +10,7 @@ import {
   Scale,
 } from "lucide-react";
 
-import {
-  growthStatusLabelForAge,
-  linearGrowthIndicator,
-} from "@/lib/growth";
+import { growthStatusLabelForAge, linearGrowthIndicator } from "@/lib/growth";
 import type { ChildProfile, Examination } from "@/lib/portal";
 import { formatReading } from "@/lib/screening";
 
