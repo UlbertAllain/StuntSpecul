@@ -163,7 +163,7 @@ export function DeviceMonitoringPanel() {
       } finally {
         if (!controller.signal.aborted) {
           setRefreshing(false);
-          timer = setTimeout(() => void load(true), 5000);
+          timer = setTimeout(() => void load(true), 15000);
         }
       }
     }
@@ -344,17 +344,15 @@ export function DeviceMonitoringPanel() {
                 >
                   {forceStopping ? "Menghentikan…" : "Paksa hentikan sesi"}
                 </button>
-                {data.debug.stuckSessions.length > 0 && (
-                  <button
-                    className="portal-secondary"
-                    disabled={cleaningStuck}
-                    onClick={() => void cleanupStuckSessions()}
-                  >
-                    {cleaningStuck
-                      ? "Membersihkan…"
-                      : `Bersihkan ${data.debug.stuckSessions.length} sesi nyangkut`}
-                  </button>
-                )}
+                <button
+                  className="portal-secondary"
+                  disabled={cleaningStuck}
+                  onClick={() => void cleanupStuckSessions()}
+                >
+                  {cleaningStuck
+                    ? "Memeriksa…"
+                    : "Cek / bersihkan sesi nyangkut"}
+                </button>
               </div>
             </div>
 
@@ -407,17 +405,11 @@ export function DeviceMonitoringPanel() {
               </p>
             )}
 
-            {data.debug.stuckSessions.length > 0 && (
-              <div className="ref-stuck-session-list">
-                <strong>Sesi tersembunyi / nyangkut</strong>
-                {data.debug.stuckSessions.map((session) => (
-                  <span key={session.id}>
-                    {session.childName} · {session.status} ·{" "}
-                    {new Date(session.createdAt).toLocaleString("id-ID")}
-                  </span>
-                ))}
-              </div>
-            )}
+            <p className="ref-device-debug-warning">
+              Scan sesi nyangkut tidak lagi dijalankan otomatis setiap refresh
+              untuk menghemat pembacaan Firestore. Gunakan tombol di atas hanya
+              saat diperlukan.
+            </p>
           </section>
 
           <div className="ref-stat-grid ref-stat-grid-three">

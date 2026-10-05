@@ -55,6 +55,9 @@ const STATION_NAME = "StuntSpecula Station 01";
 const SYSTEM_SCREENING_STAFF_ID = "guest-screening-system";
 const DAY = 24 * 60 * 60 * 1000;
 const ONLINE_WINDOW_MS = 8_000;
+const HEARTBEAT_PERSIST_MS = 6_000;
+let heartbeatPersistedAt = 0;
+let heartbeatStateSignature = "";
 const GOOGLE_OAUTH_STATE_COOKIE = "ss_google_oauth";
 const GOOGLE_OAUTH_INTENT_COOKIE = "ss_google_oauth_intent";
 const GOOGLE_REGISTER_COOKIE = "ss_google_register";
@@ -1192,8 +1195,14 @@ type DeviceHeartbeat = {
 async function touchIotDevice(env: Env, heartbeat: DeviceHeartbeat = {}) {
   const db = store(env);
   const path = `devices/${STATION_ID}`;
-  const current = await db.get<DeviceRecord>(path);
   const now = Date.now();
+  const stateSignature = JSON.stringify(heartbeat);
+  const stateChanged = stateSignature !== heartbeatStateSignature;
+
+  if (!stateChanged && now - heartbeatPersistedAt < HEARTBEAT_PERSIST_MS) {
+    return;
+  }
+
   const patch: Omit<Partial<DeviceRecord>, "createdAt"> = {
     name: STATION_NAME,
     active: true,
@@ -1222,29 +1231,11 @@ async function touchIotDevice(env: Env, heartbeat: DeviceHeartbeat = {}) {
     patch.wifiConnected = heartbeat.wifiConnected;
   }
 
-  if (current) {
-    await db.set(path, patch, {
-      mergeFields: Object.keys(patch),
-    });
-    return;
-  }
-
-  await db.set(path, {
-    ...patch,
-    firmwareVersion: patch.firmwareVersion ?? null,
-    heightSensor: patch.heightSensor ?? "unknown",
-    weightSensor: patch.weightSensor ?? "unknown",
-    claimedExamId: null,
-    resetToken: null,
-    resetRequestedAt: null,
-    resetReason: null,
-    resetExamId: null,
-    appliedResetToken: patch.appliedResetToken ?? null,
-    currentExaminationId: patch.currentExaminationId ?? null,
-    localSessionState: patch.localSessionState ?? "unknown",
-    wifiConnected: patch.wifiConnected ?? null,
-    createdAt: now,
+  await db.set(path, patch, {
+    mergeFields: Object.keys(patch),
   });
+  heartbeatPersistedAt = now;
+  heartbeatStateSignature = stateSignature;
 }
 
 async function stationDeviceState(env: Env) {
@@ -2242,6 +2233,17 @@ async function parentView(request: Request, env: Env) {
     examinations: exams,
     aiAvailable: !!env.GEMINI_API_KEY && !!env.GEMINI_MODEL,
   });
+}
+
+async function parentActiveExam(request: Request, env: Env) {
+  const parent = await requireParent(request, env);
+  const { exam } = await activeStation(env);
+
+  if (!exam || exam.data.parentId !== parent.id) {
+    return ok(null);
+  }
+
+  return ok(asExam(exam));
 }
 
 async function parentBlogs(request: Request, env: Env) {
@@ -3944,27 +3946,16 @@ async function monitoringOverview(request: Request, env: Env) {
 
 async function deviceMonitoring(request: Request, env: Env) {
   await requireStaff(request, env, true);
-  const db = store(env);
-  const [{ exam, station }, device, recent] = await Promise.all([
+  const [{ exam, station }, device] = await Promise.all([
     activeStation(env),
     stationDeviceState(env),
-    db.query<ExamRecord>("examinations", {
-      orderBy: [{ field: "createdAt", direction: "DESCENDING" }],
-      limit: 50,
-    }),
   ]);
-  const stuckSessions = recent
-    .filter(
-      (item) =>
-        ["queued", "running"].includes(item.data.status) &&
-        item.id !== exam?.id,
-    )
-    .map((item) => ({
-      id: item.id,
-      childName: item.data.childName,
-      status: item.data.status,
-      createdAt: item.data.createdAt,
-    }));
+  const stuckSessions: Array<{
+    id: string;
+    childName: string;
+    status: "queued" | "running";
+    createdAt: number;
+  }> = [];
   const resetPending =
     !!device.resetToken && device.appliedResetToken !== device.resetToken;
   const deviceSessionKnown =
@@ -4255,6 +4246,8 @@ export async function routeFirestore(
       return parentLogout(request, env);
     case "GET /api/parent-account/me":
       return parentView(request, env);
+    case "GET /api/parent-account/active-exam":
+      return parentActiveExam(request, env);
     case "POST /api/parent-account/children":
       return createParentChild(request, env);
     case "PATCH /api/parent-account/profile":
