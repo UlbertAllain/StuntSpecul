@@ -1,7 +1,4 @@
-import {
-  linearGrowthIndicator,
-  type GrowthStatus,
-} from "./growth.ts";
+import { linearGrowthIndicator, type GrowthStatus } from "./growth.ts";
 import {
   stuntingRiskFor,
   type StuntingRiskAssessment,
@@ -118,10 +115,7 @@ function nutritionForAge(ageMonths: number | null) {
   ];
 }
 
-function baseRecommendations(
-  status: GrowthStatus,
-  ageMonths: number | null,
-) {
+function baseRecommendations(status: GrowthStatus, ageMonths: number | null) {
   const indicator = linearGrowthIndicator(ageMonths ?? 24);
   const measureName = indicator === "PB/U" ? "panjang badan" : "tinggi badan";
   const nutrition = nutritionForAge(ageMonths);
@@ -217,8 +211,11 @@ function trendRecommendation(
   }
 }
 
-function ageBandFor(ageMonths: number | null): LocalizedNutritionPlan["ageBand"] {
-  if (ageMonths === null || ageMonths < 0 || ageMonths > 59) return "0-59 bulan";
+function ageBandFor(
+  ageMonths: number | null,
+): LocalizedNutritionPlan["ageBand"] {
+  if (ageMonths === null || ageMonths < 0 || ageMonths > 59)
+    return "0-59 bulan";
   if (ageMonths <= 5) return "0-5 bulan";
   if (ageMonths <= 8) return "6-8 bulan";
   if (ageMonths <= 11) return "9-11 bulan";

@@ -56,20 +56,19 @@ const BOYS_S = [
   0.0419, 0.04202, 0.04214,
 ] as const;
 
-
 // WHO Child Growth Standards, length-for-age birth to 23 months.
 // L=1 for this indicator. Source:
 // https://www.who.int/toolkits/child-growth-standards/standards/length-height-for-age
 const INFANT_GIRLS_M = [
   49.1477, 53.6872, 57.0673, 59.8029, 62.0899, 64.0301, 65.7311, 67.2873,
-  68.7498, 70.1435, 71.4818, 72.771, 74.015, 75.2176, 76.3817, 77.5099,
-  78.6055, 79.671, 80.7079, 81.7182, 82.7036, 83.6654, 84.604, 85.5202,
+  68.7498, 70.1435, 71.4818, 72.771, 74.015, 75.2176, 76.3817, 77.5099, 78.6055,
+  79.671, 80.7079, 81.7182, 82.7036, 83.6654, 84.604, 85.5202,
 ] as const;
 
 const INFANT_GIRLS_S = [
-  0.0379, 0.0364, 0.03568, 0.0352, 0.03486, 0.03463, 0.03448, 0.03441,
-  0.0344, 0.03444, 0.03452, 0.03464, 0.03479, 0.03496, 0.03514, 0.03534,
-  0.03555, 0.03576, 0.03598, 0.0362, 0.03643, 0.03666, 0.03688, 0.03711,
+  0.0379, 0.0364, 0.03568, 0.0352, 0.03486, 0.03463, 0.03448, 0.03441, 0.0344,
+  0.03444, 0.03452, 0.03464, 0.03479, 0.03496, 0.03514, 0.03534, 0.03555,
+  0.03576, 0.03598, 0.0362, 0.03643, 0.03666, 0.03688, 0.03711,
 ] as const;
 
 const INFANT_BOYS_M = [
@@ -179,7 +178,6 @@ export function assessHeightForAge(
   };
 }
 
-
 export function assessLengthForAge(
   ageMonths: number,
   sex: Sex,
@@ -200,8 +198,10 @@ export function assessLengthForAge(
     };
   }
 
-  const median = sex === "male" ? INFANT_BOYS_M[ageMonths] : INFANT_GIRLS_M[ageMonths];
-  const sValue = sex === "male" ? INFANT_BOYS_S[ageMonths] : INFANT_GIRLS_S[ageMonths];
+  const median =
+    sex === "male" ? INFANT_BOYS_M[ageMonths] : INFANT_GIRLS_M[ageMonths];
+  const sValue =
+    sex === "male" ? INFANT_BOYS_S[ageMonths] : INFANT_GIRLS_S[ageMonths];
   if (median === undefined || sValue === undefined) {
     return {
       heightForAgeZ: null,
@@ -289,7 +289,6 @@ export function stuntingScreeningLabel(status: StuntingScreening): string {
       return "Belum tersedia";
   }
 }
-
 
 export function growthStatusLabelForAge(
   status: GrowthStatus,

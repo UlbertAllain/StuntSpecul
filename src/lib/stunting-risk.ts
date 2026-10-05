@@ -117,8 +117,7 @@ function result(
     projectionHorizonDays: details.projectionHorizonDays ?? null,
     projectedHeightForAgeZ: details.projectedHeightForAgeZ ?? null,
     reasons: details.reasons ?? [],
-    disclaimer:
-      `Prediksi ini adalah proyeksi tren ${indicator} untuk skrining awal, bukan probabilitas klinis, diagnosis, atau pengganti penilaian tenaga kesehatan.`,
+    disclaimer: `Prediksi ini adalah proyeksi tren ${indicator} untuk skrining awal, bukan probabilitas klinis, diagnosis, atau pengganti penilaian tenaga kesehatan.`,
   };
 }
 
