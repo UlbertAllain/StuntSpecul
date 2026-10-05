@@ -79,6 +79,10 @@ export function NutriMirror({
   measurementIssue = null,
   waitingLabel = "Petugas menyiapkan pemeriksaan.",
   awaitingParentFinalize = false,
+  displayOnlyControls = false,
+  remoteControl = null,
+  onStationState,
+  onRemoteControlApplied,
 }: {
   assignment?: MirrorAssignment;
   canBegin?: boolean;
@@ -91,6 +95,17 @@ export function NutriMirror({
   measurementIssue?: string | null;
   waitingLabel?: string;
   awaitingParentFinalize?: boolean;
+  displayOnlyControls?: boolean;
+  remoteControl?: {
+    id: string;
+    action: "retry_camera" | "skip_camera";
+  } | null;
+  onStationState?: (input: {
+    step: "camera" | "prepare" | "height" | "weight" | "analysis" | "result";
+    attention: "camera_retry_required" | null;
+    message: string | null;
+  }) => void;
+  onRemoteControlApplied?: (controlId: string) => void;
 }) {
   const {
     session,
@@ -112,7 +127,15 @@ export function NutriMirror({
   useEffect(() => {
     stageRef.current?.focus({ preventScroll: true });
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [step]);
+
+    if (assignment && step !== "welcome") {
+      onStationState?.({
+        step,
+        attention: null,
+        message: null,
+      });
+    }
+  }, [assignment, onStationState, step]);
 
   async function reset() {
     try {
@@ -222,6 +245,15 @@ export function NutriMirror({
               ageMonths={session.child?.ageMonths ?? 0}
               sex={session.child?.sex ?? "male"}
               soundEnabled={soundEnabled}
+              displayOnlyControls={displayOnlyControls}
+              remoteControl={remoteControl}
+              onRecoveryState={(recovery) =>
+                onStationState?.({
+                  step: "camera",
+                  ...recovery,
+                })
+              }
+              onControlApplied={onRemoteControlApplied}
               onComplete={(capture) => dispatch({ type: "capture", capture })}
             />
           </section>
@@ -268,38 +300,52 @@ export function NutriMirror({
       className={`mirror-shell screen-${step} ${isPaused ? "is-paused" : ""}`}
     >
       <header className="mirror-header">
-        <button
-          className="wordmark"
-          onClick={requestExit}
-          aria-label="StuntSpecula, kembali ke awal"
-        >
-          <Image
-            src="/images/stuntspecula-logo.jpeg"
-            alt="StuntSpecula"
-            width={1536}
-            height={1024}
-            priority
-          />
-        </button>
-        <div className="header-tools">
-          <button
-            className="icon-button"
-            onClick={toggleSound}
-            aria-label={
-              soundEnabled ? "Matikan efek suara" : "Aktifkan efek suara"
-            }
-            aria-pressed={soundEnabled}
-          >
-            {soundEnabled ? <Volume2 /> : <VolumeX />}
-          </button>
-          <button
-            className="icon-button fullscreen-button"
-            onClick={fullscreen}
-            aria-label="Layar penuh"
-          >
-            <Maximize />
-          </button>
-        </div>
+        {displayOnlyControls ? (
+          <div className="wordmark" aria-label="StuntSpecula">
+            <Image
+              src="/images/stuntspecula-logo.jpeg"
+              alt="StuntSpecula"
+              width={1536}
+              height={1024}
+              priority
+            />
+          </div>
+        ) : (
+          <>
+            <button
+              className="wordmark"
+              onClick={requestExit}
+              aria-label="StuntSpecula, kembali ke awal"
+            >
+              <Image
+                src="/images/stuntspecula-logo.jpeg"
+                alt="StuntSpecula"
+                width={1536}
+                height={1024}
+                priority
+              />
+            </button>
+            <div className="header-tools">
+              <button
+                className="icon-button"
+                onClick={toggleSound}
+                aria-label={
+                  soundEnabled ? "Matikan efek suara" : "Aktifkan efek suara"
+                }
+                aria-pressed={soundEnabled}
+              >
+                {soundEnabled ? <Volume2 /> : <VolumeX />}
+              </button>
+              <button
+                className="icon-button fullscreen-button"
+                onClick={fullscreen}
+                aria-label="Layar penuh"
+              >
+                <Maximize />
+              </button>
+            </div>
+          </>
+        )}
       </header>
       <main
         ref={stageRef}
@@ -308,8 +354,10 @@ export function NutriMirror({
         data-step={step}
       >
         {step !== "welcome" && (
-          <div className="stage-controls">
-            {!resultLocked && (
+          <div
+            className={`stage-controls ${displayOnlyControls ? "display-only" : ""}`}
+          >
+            {!displayOnlyControls && !resultLocked && (
               <button
                 className="back-button"
                 onClick={requestExit}
@@ -324,7 +372,7 @@ export function NutriMirror({
                 ? "HASIL SCREENING"
                 : "PEMERIKSAAN BERLANGSUNG"}
             </span>
-            {active && (
+            {active && !displayOnlyControls && (
               <button
                 className="pause-button"
                 onClick={() => dispatch({ type: "toggle-pause" })}
@@ -346,22 +394,24 @@ export function NutriMirror({
         {saveError && (
           <div className="field-error" role="alert">
             <p>{saveError}</p>
-            <button
-              className="text-button"
-              disabled={saving}
-              onClick={() =>
-                complete(
-                  effectiveReadings
-                    ? {
-                        heightCm: effectiveReadings.heightCm,
-                        weightKg: effectiveReadings.weightKg,
-                      }
-                    : undefined,
-                )
-              }
-            >
-              Coba simpan lagi
-            </button>
+            {!displayOnlyControls && (
+              <button
+                className="text-button"
+                disabled={saving}
+                onClick={() =>
+                  complete(
+                    effectiveReadings
+                      ? {
+                          heightCm: effectiveReadings.heightCm,
+                          weightKg: effectiveReadings.weightKg,
+                        }
+                      : undefined,
+                  )
+                }
+              >
+                Coba simpan lagi
+              </button>
+            )}
           </div>
         )}
         {paused && active && (

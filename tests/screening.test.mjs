@@ -18,6 +18,7 @@ import {
   readMeasurements,
 } from "../src/lib/screening.ts";
 import { reportText } from "../src/lib/report.ts";
+import { formatDetailedAge } from "../src/lib/portal.ts";
 
 const child = { ageMonths: 36, sex: "male", canStand: true };
 const missingCapture = { status: "skipped" };
@@ -45,6 +46,12 @@ test("month display does not round a child up to the next year", () => {
   assert.equal(formatAge(23), "1 tahun 11 bulan");
   assert.equal(formatAge(36), "3 tahun");
   assert.equal(formatReading(null), "—");
+});
+
+test("profile age is derived from birth date down to completed days", () => {
+  const at = new Date(2026, 9, 5, 12, 0, 0);
+  assert.equal(formatDetailedAge("2022-05-14", at), "4 tahun 4 bulan 21 hari");
+  assert.equal(formatDetailedAge("2026-10-01", at), "0 bulan 4 hari");
 });
 
 test("WHO height-for-age engine classifies monthly standing height deterministically", () => {
@@ -93,6 +100,32 @@ test("WHO infant length-for-age uses PB/U for children under 24 months", () => {
   assert.equal(linearGrowthIndicator(12), "PB/U");
   assert.equal(linearGrowthIndicator(24), "TB/U");
   assert.match(growthStatusLabelForAge("within_range", 12), /PB\/U ≥ -2 SD/);
+});
+
+test("infant report labels PB/U and includes official result sources", () => {
+  const baseReport = createScreeningReport(
+    child,
+    { heightCm: 96.1, weightKg: 15 },
+    missingCapture,
+    completedAt,
+  );
+  const report = {
+    ...baseReport,
+    child: { ...baseReport.child, ageMonths: 20 },
+    readings: { heightCm: 78, weightKg: 10 },
+    bmi: null,
+    heightForAgeZ: -2.2,
+    weightForAgeZ: -1.13,
+    growthStatus: "stunted",
+    stuntingScreening: "indicated",
+  };
+  const text = reportText(report);
+
+  assert.match(text, /Panjang badan: 78 cm/);
+  assert.match(text, /PB\/U Z-score WHO: -2.2/);
+  assert.match(text, /Stunting ditentukan dari PB\/U/);
+  assert.match(text, /WHO Child Growth Standards/);
+  assert.match(text, /Buku KIA Edisi 2024/);
 });
 
 test("infant anthropometry calculates PB/U and BB/U from WHO age-sex references", () => {

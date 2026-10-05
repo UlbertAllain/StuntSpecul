@@ -235,6 +235,25 @@ export function ParentHistoryDetailPage() {
                 `Nilai ${linearMeasurementLabel.toLowerCase()} atau berat berada di luar rentang valid. Silakan ukur ulang.`
               : "Hasil WHO merupakan skrining pertumbuhan, bukan diagnosis."}
           </p>
+
+          <div className="parent-result-sources">
+            <span>SUMBER HASIL</span>
+            <div className="parent-result-source-links">
+              <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
+                WHO Child Growth Standards
+                <ExternalLink size={13} />
+              </a>
+              <a href={KIA_REFERENCE_URL} target="_blank" rel="noreferrer">
+                Buku KIA 2024
+                <ExternalLink size={13} />
+              </a>
+            </div>
+            <small>
+              Z-score {linearIndicator} dihitung menggunakan standar pertumbuhan
+              WHO. Buku KIA Kemenkes RI digunakan sebagai referensi pendamping
+              pemantauan pertumbuhan anak.
+            </small>
+          </div>
         </section>
 
         <section className="parent-history-detail-section">
@@ -322,7 +341,7 @@ export function ParentHistoryDetailPage() {
         <section className="parent-history-clinical-section">
           <div className="parent-history-clinical-title">
             <Info size={20} />
-            <h3>Dasar hasil</h3>
+            <h3>Dasar penilaian & sumber resmi</h3>
           </div>
 
           <dl>

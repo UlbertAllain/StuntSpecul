@@ -66,6 +66,7 @@ export function ParentPortal() {
   const [view, setView] = useState<ParentAccountView | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [stationControlBusy, setStationControlBusy] = useState(false);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("home");
   const [selectedExamId, setSelectedExamId] = useState("");
@@ -77,8 +78,12 @@ export function ParentPortal() {
     useState<AssistantFabPosition | null>(null);
   const [examSheetOpen, setExamSheetOpen] = useState(false);
   const [selectedChildId, setSelectedChildId] = useState("");
-  const [manualLengthCm, setManualLengthCm] = useState("");
+  const [examInputMode, setExamInputMode] = useState<"device" | "manual">(
+    "device",
+  );
+  const [manualLinearCm, setManualLinearCm] = useState("");
   const [manualWeightKg, setManualWeightKg] = useState("");
+  const [manualExtremeWarning, setManualExtremeWarning] = useState("");
   const assistantFabRef = useRef<HTMLButtonElement>(null);
   const assistantFabDragRef = useRef<AssistantFabDrag | null>(null);
   const suppressAssistantClickRef = useRef(false);
@@ -204,6 +209,9 @@ export function ParentPortal() {
         const firstChild = value.children[0];
         if (firstChild) {
           setSelectedChildId(firstChild.id);
+          setExamInputMode(
+            ageInMonths(firstChild.birthDate) <= 23 ? "manual" : "device",
+          );
           const latest = completed(value.examinations).find(
             (exam) => exam.childId === firstChild.id,
           );
@@ -238,6 +246,29 @@ export function ParentPortal() {
     selectedChildAgeMonths !== null &&
     selectedChildAgeMonths >= 24 &&
     selectedChildAgeMonths <= 59;
+  const selectedChildInScope =
+    selectedChildAgeMonths !== null &&
+    selectedChildAgeMonths >= 0 &&
+    selectedChildAgeMonths <= 59;
+  const manualLinearLabel = selectedChildIsInfant
+    ? "Panjang badan (PB)"
+    : "Tinggi badan (TB)";
+
+  function selectChild(childId: string) {
+    setSelectedChildId(childId);
+
+    const child = view?.children.find((item) => item.id === childId);
+    if (child) {
+      setExamInputMode(
+        ageInMonths(child.birthDate) <= 23 ? "manual" : "device",
+      );
+    }
+
+    setManualLinearCm("");
+    setManualWeightKg("");
+    setManualExtremeWarning("");
+    setError("");
+  }
 
   const completedExams = useMemo(
     () =>
@@ -270,7 +301,7 @@ export function ParentPortal() {
       })
         .then(setView)
         .catch(() => {});
-    }, 2500);
+    }, 1200);
 
     return () => {
       controller.abort();
@@ -326,18 +357,20 @@ export function ParentPortal() {
     }
   }
 
-  async function saveManualInfantExamination() {
-    if (!selectedChildId || !selectedChildIsInfant || busy) return;
+  async function saveManualExamination(confirmExtreme = false) {
+    if (!selectedChildId || !selectedChildInScope || busy) return;
 
-    const lengthCm = Number(manualLengthCm);
+    const linearCm = Number(manualLinearCm);
     const weightKg = Number(manualWeightKg);
     if (
-      !Number.isFinite(lengthCm) ||
+      !Number.isFinite(linearCm) ||
       !Number.isFinite(weightKg) ||
-      lengthCm <= 0 ||
+      linearCm <= 0 ||
       weightKg <= 0
     ) {
-      setError("Isi panjang badan dan berat badan dengan angka yang valid.");
+      setError(
+        `Isi ${manualLinearLabel.toLowerCase()} dan berat badan dengan angka yang valid.`,
+      );
       return;
     }
 
@@ -345,23 +378,33 @@ export function ParentPortal() {
     setError("");
     try {
       const saved = await api<Examination>(
-        "/parent-account/examinations/manual-infant",
+        "/parent-account/examinations/manual",
         {
           method: "POST",
           body: {
             childId: selectedChildId,
-            lengthCm,
+            linearCm,
             weightKg,
+            confirmExtreme,
           },
         },
       );
       setSelectedExamId(saved.id);
-      setManualLengthCm("");
+      setManualLinearCm("");
       setManualWeightKg("");
+      setManualExtremeWarning("");
       await refresh();
       setExamSheetOpen(false);
     } catch (e) {
-      setError(errorMessage(e));
+      if (
+        e instanceof ClientError &&
+        e.code === "measurement_recheck_required"
+      ) {
+        setManualExtremeWarning(e.message);
+        setError("");
+      } else {
+        setError(errorMessage(e));
+      }
     } finally {
       setBusy(false);
     }
@@ -382,6 +425,24 @@ export function ParentPortal() {
       setError(errorMessage(e));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function sendStationControl(action: "retry_camera" | "skip_camera") {
+    if (!activeExam || stationControlBusy) return;
+
+    setStationControlBusy(true);
+    setError("");
+    try {
+      await api(`/parent-account/examinations/${activeExam.id}/control`, {
+        method: "POST",
+        body: { action },
+      });
+      await refresh();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setStationControlBusy(false);
     }
   }
 
@@ -531,7 +592,7 @@ export function ParentPortal() {
             examinations={completedExams}
             latest={latest}
             activeExam={activeExam}
-            onSelectChild={setSelectedChildId}
+            onSelectChild={selectChild}
             onStart={() => setExamSheetOpen(true)}
           />
         )}
@@ -644,8 +705,66 @@ export function ParentPortal() {
                 <p>
                   {activeExam.status === "completed"
                     ? "Hasil sudah tersimpan. Selesaikan sesi supaya alat kembali siap untuk anak berikutnya."
-                    : "Sesi ini sedang menunggu atau berjalan di alat. Jika sesi sebelumnya tertinggal, Anda dapat membatalkannya."}
+                    : "Sesi ini sedang menunggu atau berjalan di alat. Kontrol pemeriksaan dilakukan dari halaman ini agar layar alat cukup menjadi tampilan untuk anak."}
                 </p>
+
+                {activeExam.status === "running" &&
+                  activeExam.stationAttention === "camera_retry_required" && (
+                    <div className="parent-station-control-alert">
+                      <strong>Kamera meminta tindakan petugas</strong>
+                      <p>
+                        {activeExam.stationAttentionMessage ||
+                          "Wajah belum cukup stabil atau gambar belum dapat digunakan."}
+                      </p>
+                      <p>
+                        Pastikan posisi anak sudah siap, lalu pilih tindakan
+                        berikut. Tombol ini akan mengontrol layar /alat dari
+                        halaman orang tua.
+                      </p>
+                      <div className="parent-station-control-actions">
+                        <button
+                          type="button"
+                          className="portal-primary"
+                          disabled={stationControlBusy}
+                          onClick={() =>
+                            void sendStationControl("retry_camera")
+                          }
+                        >
+                          {stationControlBusy
+                            ? "Mengirim…"
+                            : "Ambil ulang wajah"}
+                        </button>
+                        <button
+                          type="button"
+                          className="portal-secondary"
+                          disabled={stationControlBusy}
+                          onClick={() => void sendStationControl("skip_camera")}
+                        >
+                          Lanjut tanpa analisis wajah
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                {activeExam.status === "running" &&
+                  activeExam.stationStep &&
+                  activeExam.stationAttention !== "camera_retry_required" && (
+                    <small className="parent-station-step">
+                      Tahap alat:{" "}
+                      {activeExam.stationStep === "camera"
+                        ? "pengambilan wajah"
+                        : activeExam.stationStep === "prepare"
+                          ? "persiapan posisi"
+                          : activeExam.stationStep === "height"
+                            ? "pengukuran tinggi"
+                            : activeExam.stationStep === "weight"
+                              ? "pengukuran berat"
+                              : activeExam.stationStep === "analysis"
+                                ? "menyiapkan hasil"
+                                : "hasil"}
+                    </small>
+                  )}
+
                 {activeExam.status === "completed" ? (
                   <button
                     className="portal-primary parent-sheet-primary"
@@ -671,125 +790,194 @@ export function ParentPortal() {
                 <p>
                   Pilih anak. Metode pemeriksaan akan menyesuaikan usia anak.
                 </p>
-                <label>
-                  Profil anak
-                  <select
-                    value={selectedChildId}
-                    onChange={(event) => {
-                      setSelectedChildId(event.target.value);
-                      setManualLengthCm("");
-                      setManualWeightKg("");
-                      setError("");
-                    }}
-                  >
-                    {view.children.map((child) => {
-                      const months = ageInMonths(child.birthDate);
-                      const eligible = months >= 0 && months <= 59;
-                      const mode =
-                        months <= 23
-                          ? "input manual PB + BB"
-                          : months <= 59
-                            ? "alat otomatis"
-                            : "di luar cakupan";
-                      return (
-                        <option
-                          key={child.id}
-                          value={child.id}
-                          disabled={!eligible}
-                        >
-                          {child.name} · {formatAge(months)} · {mode}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </label>
+                {view.children.length === 0 ? (
+                  <small>
+                    Belum ada profil anak. Tambahkan anak dari menu Profil
+                    terlebih dahulu.
+                  </small>
+                ) : (
+                  <>
+                    <label>
+                      Profil anak
+                      <select
+                        value={selectedChildId}
+                        onChange={(event) => selectChild(event.target.value)}
+                      >
+                        {view.children.map((child) => {
+                          const months = ageInMonths(child.birthDate);
+                          const eligible = months >= 0 && months <= 59;
 
-                {selectedChildIsInfant ? (
-                  <div className="parent-manual-infant-form">
-                    <div className="parent-manual-infant-note">
-                      <strong>Input manual bayi 0–23 bulan</strong>
-                      <span>
-                        Panjang badan (PB) diukur dalam posisi terlentang. Usia
-                        dan jenis kelamin diambil otomatis dari profil anak.
-                      </span>
+                          return (
+                            <option
+                              key={child.id}
+                              value={child.id}
+                              disabled={!eligible}
+                            >
+                              {child.name} · {formatAge(months)}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </label>
+
+                    <div
+                      className="parent-exam-mode-options"
+                      role="group"
+                      aria-label="Metode pemeriksaan"
+                    >
+                      <button
+                        type="button"
+                        className="parent-exam-mode-option"
+                        aria-pressed={examInputMode === "device"}
+                        disabled={!selectedChildCanUseDevice}
+                        onClick={() => setExamInputMode("device")}
+                      >
+                        <strong>Pemeriksaan otomatis</strong>
+                        <small>
+                          Webcam + sensor TB dan BB. Tersedia untuk usia 24–59
+                          bulan.
+                        </small>
+                      </button>
+                      <button
+                        type="button"
+                        className="parent-exam-mode-option"
+                        aria-pressed={examInputMode === "manual"}
+                        disabled={!selectedChildInScope}
+                        onClick={() => setExamInputMode("manual")}
+                      >
+                        <strong>Input data manual</strong>
+                        <small>
+                          Pilih anak yang sama, lalu masukkan PB/TB dan BB
+                          terbaru.
+                        </small>
+                      </button>
                     </div>
 
-                    <label>
-                      Panjang badan (PB)
-                      <div className="parent-manual-unit">
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          min="30"
-                          max="120"
-                          step="0.1"
-                          value={manualLengthCm}
-                          onChange={(event) =>
-                            setManualLengthCm(event.target.value)
+                    {examInputMode === "manual" && selectedChildInScope ? (
+                      <div className="parent-manual-form">
+                        <div className="parent-manual-note">
+                          <strong>
+                            {selectedChildIsInfant
+                              ? "Pemeriksaan manual bayi 0–23 bulan"
+                              : "Pemeriksaan manual anak 24–59 bulan"}
+                          </strong>
+                          <span>
+                            {selectedChildIsInfant
+                              ? "Panjang badan (PB) diukur terlentang."
+                              : "Tinggi badan (TB) diukur berdiri."}{" "}
+                            Umur dan jenis kelamin diambil otomatis dari profil
+                            anak, jadi tidak perlu diinput ulang.
+                          </span>
+                        </div>
+
+                        <label>
+                          {manualLinearLabel}
+                          <div className="parent-manual-unit">
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              min="30"
+                              max={selectedChildIsInfant ? "120" : "130"}
+                              step="0.1"
+                              value={manualLinearCm}
+                              onChange={(event) => {
+                                setManualLinearCm(event.target.value);
+                                setManualExtremeWarning("");
+                              }}
+                              placeholder={
+                                selectedChildIsInfant
+                                  ? "Contoh: 76.2"
+                                  : "Contoh: 102.4"
+                              }
+                            />
+                            <span>cm</span>
+                          </div>
+                        </label>
+
+                        <label>
+                          Berat badan
+                          <div className="parent-manual-unit">
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              min="0.5"
+                              max="40"
+                              step="0.1"
+                              value={manualWeightKg}
+                              onChange={(event) => {
+                                setManualWeightKg(event.target.value);
+                                setManualExtremeWarning("");
+                              }}
+                              placeholder="Contoh: 15.2"
+                            />
+                            <span>kg</span>
+                          </div>
+                        </label>
+
+                        <small>
+                          Hasil dihitung berdasarkan{" "}
+                          {selectedChildIsInfant ? "PB/U" : "TB/U"} dan BB/U
+                          sesuai umur saat pemeriksaan.
+                        </small>
+
+                        {manualExtremeWarning && (
+                          <div className="parent-manual-extreme-warning">
+                            <strong>Nilai ekstrem terdeteksi</strong>
+                            <p>{manualExtremeWarning}</p>
+                            <p>
+                              Ukur ulang terlebih dahulu. Jika hasil kedua tetap
+                              sama dan posisi pengukuran sudah benar, simpan
+                              sebagai nilai ekstrem terverifikasi. Sistem tidak
+                              akan memaksakan status pertumbuhan otomatis dari
+                              nilai tersebut.
+                            </p>
+                            <button
+                              type="button"
+                              className="portal-secondary"
+                              disabled={busy}
+                              onClick={() => void saveManualExamination(true)}
+                            >
+                              Konfirmasi nilai ekstrem
+                            </button>
+                          </div>
+                        )}
+
+                        <button
+                          className="portal-primary parent-sheet-primary"
+                          disabled={
+                            !selectedChildId ||
+                            !manualLinearCm ||
+                            !manualWeightKg ||
+                            busy
                           }
-                          placeholder="Contoh: 76.2"
-                        />
-                        <span>cm</span>
+                          onClick={() => void saveManualExamination()}
+                        >
+                          {busy ? "Menyimpan…" : "Simpan pemeriksaan manual"}
+                        </button>
                       </div>
-                    </label>
-
-                    <label>
-                      Berat badan
-                      <div className="parent-manual-unit">
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          min="0.5"
-                          max="30"
-                          step="0.1"
-                          value={manualWeightKg}
-                          onChange={(event) =>
-                            setManualWeightKg(event.target.value)
-                          }
-                          placeholder="Contoh: 9.4"
-                        />
-                        <span>kg</span>
-                      </div>
-                    </label>
-
-                    <small>
-                      Hasil dihitung sebagai PB/U dan BB/U berdasarkan Standar
-                      Antropometri Anak Kemenkes RI/WHO. Buku KIA Edisi 2024
-                      ditampilkan sebagai referensi pendamping.
-                    </small>
-
-                    <button
-                      className="portal-primary parent-sheet-primary"
-                      disabled={
-                        !selectedChildId ||
-                        !manualLengthCm ||
-                        !manualWeightKg ||
-                        busy
-                      }
-                      onClick={() => void saveManualInfantExamination()}
-                    >
-                      {busy ? "Menyimpan…" : "Simpan pemeriksaan manual"}
-                    </button>
-                  </div>
-                ) : selectedChildCanUseDevice ? (
-                  <>
-                    <button
-                      className="portal-primary parent-sheet-primary"
-                      disabled={!selectedChildId || busy}
-                      onClick={() => void startExamination()}
-                    >
-                      <Play size={19} />
-                      {busy ? "Menyiapkan…" : "Mulai pemeriksaan dengan alat"}
-                    </button>
-                    <small>
-                      Usia 24–59 bulan menggunakan webcam, sensor tinggi badan,
-                      dan sensor berat badan pada alat StuntSpecula.
-                    </small>
+                    ) : examInputMode === "device" &&
+                      selectedChildCanUseDevice ? (
+                      <>
+                        <button
+                          className="portal-primary parent-sheet-primary"
+                          disabled={!selectedChildId || busy}
+                          onClick={() => void startExamination()}
+                        >
+                          <Play size={19} />
+                          {busy ? "Menyiapkan…" : "Mulai pemeriksaan otomatis"}
+                        </button>
+                        <small>
+                          Sistem memakai webcam, sensor tinggi badan, dan sensor
+                          berat badan pada alat StuntSpecula.
+                        </small>
+                      </>
+                    ) : (
+                      <small>
+                        Profil ini berada di luar cakupan pemeriksaan 0–59
+                        bulan.
+                      </small>
+                    )}
                   </>
-                ) : (
-                  <small>
-                    Profil ini berada di luar cakupan pemeriksaan 0–59 bulan.
-                  </small>
                 )}
               </>
             )}

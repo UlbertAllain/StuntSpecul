@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ScreeningCompletion } from "@/hooks/use-screening-session";
 import { api, errorMessage } from "@/lib/api-client";
 import type { GrowthRecommendations } from "@/lib/growth-recommendations";
@@ -19,6 +19,19 @@ type StationActive = {
   measurementUpdatedAt: number | null;
   measurementIssue: string | null;
   measurementIssueAt: number | null;
+  stationStep:
+    | "camera"
+    | "prepare"
+    | "height"
+    | "weight"
+    | "analysis"
+    | "result"
+    | null;
+  stationAttention: "camera_retry_required" | null;
+  stationAttentionMessage: string | null;
+  stationControlId: string | null;
+  stationControlAction: "retry_camera" | "skip_camera" | null;
+  stationControlAckId: string | null;
 };
 
 type StationState = {
@@ -121,6 +134,31 @@ export function StationDisplay() {
     };
   }, [assignment]);
 
+  const reportStationState = useCallback(
+    async (input: {
+      step: "camera" | "prepare" | "height" | "weight" | "analysis" | "result";
+      attention: "camera_retry_required" | null;
+      message: string | null;
+    }) => {
+      try {
+        await api("/station/state", {
+          method: "POST",
+          body: input,
+        });
+      } catch {}
+    },
+    [],
+  );
+
+  const acknowledgeControl = useCallback(async (controlId: string) => {
+    try {
+      await api("/station/control-ack", {
+        method: "POST",
+        body: { controlId },
+      });
+    } catch {}
+  }, []);
+
   async function saveCompletion(payload: ScreeningCompletion) {
     const result = await api<{
       saved: boolean;
@@ -163,6 +201,19 @@ export function StationDisplay() {
         }
         measurementIssue={state?.active?.measurementIssue ?? null}
         awaitingParentFinalize
+        displayOnlyControls
+        remoteControl={
+          state?.active?.stationControlId &&
+          state.active.stationControlAction &&
+          state.active.stationControlAckId !== state.active.stationControlId
+            ? {
+                id: state.active.stationControlId,
+                action: state.active.stationControlAction,
+              }
+            : null
+        }
+        onStationState={reportStationState}
+        onRemoteControlApplied={acknowledgeControl}
       />
     );
   }

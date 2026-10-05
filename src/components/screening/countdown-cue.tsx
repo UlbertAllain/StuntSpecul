@@ -22,7 +22,7 @@ export function CountdownCue({
       <span className="countdown-caption">
         {paused
           ? "Kita jeda dulu"
-          : remaining > 3
+          : remaining > 1
             ? "Tahan posisi, ya…"
             : "Sedikit lagi…"}
       </span>

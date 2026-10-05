@@ -60,7 +60,7 @@ Index lookup:
 - id
 - code
 - name
-- birthDate
+- birthDate — sumber umur dinamis; umur saat ini tidak disimpan sebagai field statis
 - sex
 - guardian
 - parentId
@@ -78,11 +78,11 @@ Satu parent dapat memiliki beberapa child. `parentId` boleh null untuk legacy/st
 - childCode
 - parentId
 - staffId
-- ageMonths
+- ageMonths — snapshot umur pada saat pemeriksaan dibuat; tidak berubah ketika anak bertambah usia
 - sex
 - deviceId
 - deviceName
-- measurementMode: device | manual_infant
+- measurementMode: device | manual | manual_infant (legacy compatibility)
 - status
 - cameraEnabled
 - heightCm — untuk manual infant menyimpan panjang badan agar tetap backward-compatible
@@ -234,7 +234,8 @@ Enforcement utama dilakukan application layer:
 - measurement IoT harus terikat ke examination yang sudah di-claim perangkat; stale session ditolak;
 - reset perangkat dari dashboard menerbitkan resetToken baru agar web dan firmware dapat membuang state sementara tanpa menghapus riwayat completed;
 - child age divalidasi sesuai flow;
-- parent hanya dapat menambahkan dan memakai child miliknya sendiri;
+- parent hanya dapat menambahkan, mengedit, dan memakai child miliknya sendiri;
+- perubahan profil child tidak menulis ulang snapshot umur/jenis kelamin pada examination lama;
 - hasil antropometri ekstrem diflag menggunakan batas plausibility WHO sebelum disimpan sebagai hasil final.
 
 ## Schema changes

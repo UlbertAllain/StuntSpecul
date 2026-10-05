@@ -2,10 +2,11 @@
 
 StuntSpecula adalah sistem skrining pertumbuhan anak usia **0–59 bulan**.
 
-Sistem memakai dua jalur pemeriksaan:
+Sistem menyimpan profil anak satu kali dan membuat record pemeriksaan baru setiap screening:
 
 - **0–23 bulan:** pengukuran manual panjang badan (PB) dan berat badan (BB);
-- **24–59 bulan:** pemeriksaan otomatis menggunakan webcam, sensor tinggi badan, dan sensor berat badan pada alat.
+- **24–59 bulan:** pemeriksaan otomatis menggunakan webcam, sensor tinggi badan, dan sensor berat badan pada alat;
+- **24–59 bulan:** tersedia juga input manual TB + BB sebagai alternatif/fallback tanpa mendaftarkan anak ulang.
 
 Penentuan stunting tetap berdasarkan pertumbuhan linear menurut umur:
 
@@ -51,7 +52,7 @@ npm run dev:model-a
 ## Yang sudah tersedia
 
 - satu akun orang tua dapat memiliki beberapa profil anak;
-- input manual untuk bayi 0–23 bulan;
+- input manual PB/BB untuk 0–23 bulan dan TB/BB untuk 24–59 bulan;
 - pemeriksaan otomatis untuk anak 24–59 bulan;
 - validasi data pengukuran ekstrem sebelum hasil ditampilkan;
 - status stunting dengan label yang jelas, bukan istilah samar;

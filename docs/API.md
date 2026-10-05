@@ -41,9 +41,11 @@ Format error:
 - POST /api/parent-account/logout — parent logout.
 - GET /api/parent-account/me — parent dashboard data.
 - POST /api/parent-account/children — tambah profil anak milik parent.
+- PATCH /api/parent-account/children/:id — koreksi nama, tanggal lahir, atau jenis kelamin child milik parent; riwayat pemeriksaan lama tidak ditulis ulang.
 - PATCH /api/parent-account/profile — update parent profile.
 - POST /api/parent-account/examinations — start pemeriksaan otomatis usia 24–59 bulan.
-- POST /api/parent-account/examinations/manual-infant — simpan pemeriksaan manual bayi usia 0–23 bulan dengan `lengthCm` + `weightKg`; umur/jenis kelamin diambil dari profil.
+- POST /api/parent-account/examinations/manual — simpan pemeriksaan manual usia 0–59 bulan dengan `linearCm` + `weightKg`; `linearCm` diperlakukan sebagai PB untuk 0–23 bulan dan TB untuk 24–59 bulan. Umur/jenis kelamin diambil dari profil.
+- POST /api/parent-account/examinations/manual-infant — endpoint kompatibilitas untuk flow manual bayi lama (`lengthCm` + `weightKg`).
 - POST /api/parent-account/examinations/:id/finalize — finalize owned examination.
 - POST /api/parent-account/examinations/:id/cancel — cancel owned examination.
 - GET /api/parent-account/messages — chat history.

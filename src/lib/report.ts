@@ -1,4 +1,8 @@
-import { growthStatusLabel, stuntingScreeningLabel } from "./growth.ts";
+import {
+  growthStatusLabel,
+  linearGrowthIndicator,
+  stuntingScreeningLabel,
+} from "./growth.ts";
 import {
   KEMENKES_ANTHROPOMETRY_REFERENCE_URL,
   KIA_2024_REFERENCE_URL,
@@ -37,6 +41,9 @@ export function reportText(
     });
   const facial = report.facialAnalysis;
   const visual = report.visualAnalysis;
+  const linearIndicator = linearGrowthIndicator(report.child.ageMonths);
+  const linearMeasurementLabel =
+    linearIndicator === "PB/U" ? "Panjang badan" : "Tinggi badan";
   const visualLines = visual
     ? [
         "ANALISIS VISUAL AI — PENDUKUNG",
@@ -66,10 +73,10 @@ export function reportText(
     `Usia: ${formatAge(report.child.ageMonths)}`,
     `Jenis kelamin: ${report.child.sex === "male" ? "Laki-laki" : "Perempuan"}`,
     `Waktu: ${new Date(report.completedAt).toLocaleString("id-ID")}`,
-    `Tinggi badan: ${formatReading(report.readings.heightCm)} cm`,
+    `${linearMeasurementLabel}: ${formatReading(report.readings.heightCm)} cm`,
     `Berat badan: ${formatReading(report.readings.weightKg)} kg`,
     `IMT: ${formatReading(report.bmi)} kg/m²`,
-    `TB/U Z-score WHO: ${formatReading(report.heightForAgeZ)}`,
+    `${linearIndicator} Z-score WHO: ${formatReading(report.heightForAgeZ)}`,
     `BB/U Z-score WHO: ${formatReading(report.weightForAgeZ)}`,
     `Validitas pengukuran: ${
       report.measurementQuality === "recheck"
@@ -94,13 +101,13 @@ export function reportText(
     "PREDIKSI RISIKO STUNTING BERBASIS TREN",
     "Status: " + recommendations.risk.label,
     recommendations.risk.zChangePer30Days === null
-      ? "Perubahan TB/U per 30 hari: —"
-      : "Perubahan TB/U per 30 hari: " +
+      ? `Perubahan ${linearIndicator} per 30 hari: —`
+      : `Perubahan ${linearIndicator} per 30 hari: ` +
         recommendations.risk.zChangePer30Days.toFixed(2) +
         " SD",
     recommendations.risk.projectedHeightForAgeZ === null
-      ? "Proyeksi TB/U 90 hari: —"
-      : "Proyeksi TB/U 90 hari: " +
+      ? `Proyeksi ${linearIndicator} 90 hari: —`
+      : `Proyeksi ${linearIndicator} 90 hari: ` +
         recommendations.risk.projectedHeightForAgeZ.toFixed(2) +
         " SD",
     ...recommendations.risk.reasons.map((item) => "- " + item),
@@ -123,7 +130,7 @@ export function reportText(
     ...recommendations.nextSteps.map((item, index) => `${index + 1}. ${item}`),
     recommendations.trendDelta === null
       ? ""
-      : `Perbandingan TB/U sebelumnya: ${
+      : `Perbandingan ${linearIndicator} sebelumnya: ${
           recommendations.trend === "declining"
             ? "turun"
             : recommendations.trend === "improving"
@@ -131,13 +138,16 @@ export function reportText(
               : "relatif stabil"
         } ${Math.abs(recommendations.trendDelta).toFixed(2)} SD.`,
     "",
-    "Hasil ini merupakan skrining, bukan diagnosis. Stunting ditentukan dari TB/U. BB/U digunakan sebagai indikator tambahan dan validasi pengukuran; analisis visual AI tidak menentukan status stunting.",
-    "Acuan perhitungan: Standar Antropometri Anak Kemenkes RI (Permenkes No. 2 Tahun 2020) dan WHO Child Growth Standards.",
-    "Buku KIA Edisi 2024 digunakan sebagai referensi pendamping pemantauan pertumbuhan keluarga, bukan sebagai pengganti perhitungan Z-score.",
+    `Hasil ini merupakan skrining, bukan diagnosis. Stunting ditentukan dari ${linearIndicator}. BB/U digunakan sebagai indikator tambahan dan validasi pengukuran; analisis visual AI tidak menentukan status stunting.`,
+    "",
+    "SUMBER HASIL",
+    "WHO Child Growth Standards — acuan utama perhitungan Z-score pertumbuhan.",
+    `WHO: ${WHO_REFERENCE_URL}`,
+    "Buku KIA Edisi 2024 — referensi pendamping pemantauan pertumbuhan keluarga.",
+    `Buku KIA: ${KIA_REFERENCE_URL}`,
+    "Standar nasional: Permenkes No. 2 Tahun 2020 tentang Standar Antropometri Anak.",
+    `Permenkes: ${KEMENKES_REFERENCE_URL}`,
     "Foto wajah tidak disertakan dalam laporan.",
-    `Referensi Kemenkes Antropometri: ${KEMENKES_REFERENCE_URL}`,
-    `Referensi Buku KIA 2024: ${KIA_REFERENCE_URL}`,
-    `Referensi WHO: ${WHO_REFERENCE_URL}`,
   ]
     .filter(Boolean)
     .join("\n");

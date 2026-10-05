@@ -1,14 +1,18 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
-import { Camera, Plus, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Camera, Pencil, Plus, UserRound } from "lucide-react";
 import type { ParentAccountView } from "@/lib/portal";
-import { ageInMonths } from "@/lib/portal";
+import { formatDetailedAge } from "@/lib/portal";
 import { api, errorMessage } from "@/lib/api-client";
 import { uploadProfilePhoto } from "@/lib/cloudinary";
-import { formatAge } from "@/lib/screening";
 import { Message } from "../shared/shell";
+
+function maskNik(nik: string | null) {
+  if (!nik) return "Belum dilengkapi";
+  return `${nik.slice(0, 4)}********${nik.slice(-4)}`;
+}
 
 export function ParentProfile({
   view,
@@ -19,9 +23,21 @@ export function ParentProfile({
 }) {
   const [uploading, setUploading] = useState(false);
   const [addingChild, setAddingChild] = useState(false);
+  const [savingChildId, setSavingChildId] = useState("");
   const [showChildForm, setShowChildForm] = useState(false);
+  const [editingChildId, setEditingChildId] = useState("");
   const [profileError, setProfileError] = useState("");
   const [childNotice, setChildNotice] = useState("");
+  const [ageReferenceDate, setAgeReferenceDate] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setAgeReferenceDate(new Date()),
+      60 * 60 * 1000,
+    );
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   async function uploadAvatar(file: File | undefined) {
     if (!file || uploading) return;
@@ -56,18 +72,48 @@ export function ParentProfile({
         method: "POST",
         body: {
           name: formData.get("name"),
+          nik: formData.get("nik"),
           birthDate: formData.get("birthDate"),
           sex: formData.get("sex"),
         },
       });
       form.reset();
       setShowChildForm(false);
+      setEditingChildId("");
       setChildNotice("Profil anak berhasil ditambahkan.");
       await onRefresh();
     } catch (cause) {
       setProfileError(errorMessage(cause));
     } finally {
       setAddingChild(false);
+    }
+  }
+
+  async function updateChild(form: HTMLFormElement, childId: string) {
+    if (savingChildId) return;
+
+    const formData = new FormData(form);
+    setSavingChildId(childId);
+    setProfileError("");
+    setChildNotice("");
+
+    try {
+      await api(`/parent-account/children/${childId}`, {
+        method: "PATCH",
+        body: {
+          name: formData.get("name"),
+          nik: formData.get("nik"),
+          birthDate: formData.get("birthDate"),
+          sex: formData.get("sex"),
+        },
+      });
+      setEditingChildId("");
+      setChildNotice("Data anak berhasil diperbarui.");
+      await onRefresh();
+    } catch (cause) {
+      setProfileError(errorMessage(cause));
+    } finally {
+      setSavingChildId("");
     }
   }
 
@@ -115,7 +161,10 @@ export function ParentProfile({
           <button
             type="button"
             className="portal-secondary"
-            onClick={() => setShowChildForm((value) => !value)}
+            onClick={() => {
+              setEditingChildId("");
+              setShowChildForm((value) => !value);
+            }}
           >
             <Plus size={16} />
             Tambah anak
@@ -133,6 +182,19 @@ export function ParentProfile({
             <label>
               Nama anak
               <input name="name" required minLength={2} maxLength={80} />
+            </label>
+            <label>
+              NIK anak
+              <input
+                name="nik"
+                inputMode="numeric"
+                pattern="[0-9]{16}"
+                minLength={16}
+                maxLength={16}
+                required
+                placeholder="16 digit NIK anak"
+                autoComplete="off"
+              />
             </label>
             <label>
               Tanggal lahir
@@ -153,26 +215,118 @@ export function ParentProfile({
 
         <div className="parent-child-profile-list">
           {view.children.map((child) => (
-            <article key={child.id} className="parent-child-profile-item">
-              <span className="parent-child-profile-avatar">
-                <UserRound size={18} />
-              </span>
-              <div>
-                <strong>{child.name}</strong>
-                <small>
-                  {formatAge(ageInMonths(child.birthDate))} ·{" "}
-                  {child.sex === "male" ? "Laki-laki" : "Perempuan"}
-                </small>
-                <small>Kode {child.code}</small>
-              </div>
-            </article>
+            <div key={child.id} className="parent-child-profile-entry">
+              <article className="parent-child-profile-item">
+                <span className="parent-child-profile-avatar">
+                  <UserRound size={18} />
+                </span>
+                <div>
+                  <strong>{child.name}</strong>
+                  <small>
+                    {formatDetailedAge(child.birthDate, ageReferenceDate)} ·{" "}
+                    {child.sex === "male" ? "Laki-laki" : "Perempuan"}
+                  </small>
+                  <small>NIK {maskNik(child.nik)}</small>
+                  <small>Kode {child.code}</small>
+                </div>
+                <button
+                  type="button"
+                  className="portal-secondary parent-child-edit-button"
+                  onClick={() => {
+                    setShowChildForm(false);
+                    setEditingChildId((current) =>
+                      current === child.id ? "" : child.id,
+                    );
+                    setProfileError("");
+                    setChildNotice("");
+                  }}
+                >
+                  <Pencil size={14} />
+                  Edit
+                </button>
+              </article>
+
+              {editingChildId === child.id && (
+                <form
+                  className="profile-form parent-add-child-form parent-edit-child-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void updateChild(event.currentTarget, child.id);
+                  }}
+                >
+                  <label>
+                    Nama anak
+                    <input
+                      name="name"
+                      required
+                      minLength={2}
+                      maxLength={80}
+                      defaultValue={child.name}
+                    />
+                  </label>
+                  <label>
+                    NIK anak
+                    <input
+                      name="nik"
+                      inputMode="numeric"
+                      pattern="[0-9]{16}"
+                      minLength={16}
+                      maxLength={16}
+                      required
+                      defaultValue={child.nik ?? ""}
+                      placeholder={
+                        child.nik ? "16 digit NIK anak" : "Lengkapi NIK anak"
+                      }
+                      autoComplete="off"
+                    />
+                  </label>
+                  <label>
+                    Tanggal lahir
+                    <input
+                      name="birthDate"
+                      type="date"
+                      required
+                      defaultValue={child.birthDate}
+                    />
+                  </label>
+                  <label>
+                    Jenis kelamin
+                    <select name="sex" defaultValue={child.sex} required>
+                      <option value="male">Laki-laki</option>
+                      <option value="female">Perempuan</option>
+                    </select>
+                  </label>
+                  <div className="parent-edit-child-actions">
+                    <button
+                      type="button"
+                      className="portal-secondary"
+                      disabled={savingChildId === child.id}
+                      onClick={() => setEditingChildId("")}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      className="portal-primary"
+                      disabled={savingChildId === child.id}
+                    >
+                      {savingChildId === child.id
+                        ? "Menyimpan…"
+                        : "Simpan perubahan"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           ))}
         </div>
       </section>
 
       <p className="portal-note profile-note">
-        Setiap anak memiliki riwayat pemeriksaan dan foto terakhirnya sendiri.
-        Data pemeriksaan tidak dapat diubah dari halaman profil.
+        Umur dihitung otomatis dari tanggal lahir dan akan berubah seiring
+        waktu. Anak lama yang belum memiliki NIK tetap bisa dibuka, tetapi NIK
+        perlu dilengkapi saat data anak diedit. NIK ditampilkan dalam bentuk
+        tersamarkan. Perubahan profil berlaku untuk pemeriksaan berikutnya;
+        riwayat lama tetap tersimpan sebagai data saat pemeriksaan dilakukan.
       </p>
     </>
   );
