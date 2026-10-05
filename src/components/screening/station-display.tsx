@@ -22,6 +22,8 @@ type StationActive = {
 };
 
 type StationState = {
+  resetToken: string | null;
+  resetRequestedAt: number | null;
   active: StationActive | null;
 };
 
@@ -146,7 +148,7 @@ export function StationDisplay() {
   if (assignment) {
     return (
       <NutriMirror
-        key={assignment.id}
+        key={`${assignment.id}:${state?.resetToken ?? "initial"}`}
         assignment={assignment}
         canBegin
         onComplete={saveCompletion}
