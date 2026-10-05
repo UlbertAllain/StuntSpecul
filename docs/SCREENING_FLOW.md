@@ -1,5 +1,11 @@
 # Screening Flow
 
+## Ringkasnya
+
+Sistem tidak memperlakukan semua usia dengan cara yang sama. Bayi di bawah 2 tahun menggunakan panjang badan terlentang dan input manual, sedangkan anak 2–5 tahun menggunakan pemeriksaan berdiri pada alat.
+
+Status stunting tetap ditentukan dari pertumbuhan linear menurut umur, bukan dari foto wajah dan bukan dari berat badan saja.
+
 ## Scope
 
 StuntSpecula memiliki dua jalur pemeriksaan:
@@ -89,7 +95,7 @@ Tidak ada generator TB/BB dummy. Tahap tinggi dan berat menunggu nilai sensor Io
 Sebelum measurement diterima/finalized, backend menjalankan validation gate WHO:
 
 - TB/U (height-for-age) harus berada dalam flag range WHO -6 sampai +6 SD;
-- BB/U (weight-for-age) harus berada dalam flag range WHO -6 sampai +5 SD;
+- BB/U (weight-for-age) harus berada dalam flag range yang digunakan sistem -5 sampai +5 SD;
 - nilai di luar range dianggap kemungkinan measurement/input error dan menghasilkan `measurement_recheck_required`;
 - data tersebut tidak boleh diberi kesimpulan stunting. User diminta mengulang pengukuran.
 
@@ -204,6 +210,14 @@ Aturan utama:
 - measurement dengan WHO plausibility flag tidak menghasilkan status pertumbuhan dan harus diulang.
 
 Status pertumbuhan menjadi field utama pada report/examination response.
+
+## Recovery jika alat terlihat stuck
+
+Jika alat berhenti pada tahap pengukuran atau terlihat membawa state lama, petugas/admin dapat memakai tombol **Refresh alat**.
+
+Tombol ini tidak menghapus riwayat pemeriksaan yang sudah selesai. Yang dibersihkan adalah state sementara dari sesi yang sedang berjalan, seperti hasil sensor sementara, measurement issue, claim IoT, dan state flow pada halaman /alat.
+
+Backend juga menerbitkan `resetToken` baru. Firmware ESP32 perlu membaca token tersebut dan membersihkan buffer sample lokal agar recovery benar-benar menggantikan cabut-colok perangkat.
 
 ## Finalization
 

@@ -57,7 +57,7 @@ Prompt server-side mewajibkan Gemini:
 - hanya mendeskripsikan kualitas foto dan area wajah yang terlihat;
 - mengembalikan JSON terstruktur.
 
-WHO result dikirim sebagai data konteks, bukan instruksi untuk membuat diagnosis visual.
+Gemini hanya menerima konteks yang memang sudah tersedia saat webcam berjalan, yaitu usia dan jenis kelamin. Hasil PB/U atau TB/U dihitung terpisah setelah data antropometri tersedia.
 
 ## Failure behavior
 
