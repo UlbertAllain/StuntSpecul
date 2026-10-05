@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Activity, Baby, CheckCircle2, Clock3, RefreshCw } from "lucide-react";
+import {
+  Activity,
+  Baby,
+  CheckCircle2,
+  Clock3,
+  RefreshCw,
+  RotateCcw,
+} from "lucide-react";
 import { api, errorMessage } from "@/lib/api-client";
 import type { MonitoringOverview } from "@/lib/portal";
 import { formatAge, formatReading } from "@/lib/screening";
@@ -34,6 +41,7 @@ export function MonitoringPanel() {
   const [notice, setNotice] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [finalizing, setFinalizing] = useState("");
+  const [resettingDevice, setResettingDevice] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [since] = useState(() => startOfToday());
 
@@ -68,6 +76,31 @@ export function MonitoringPanel() {
     };
   }, [since, refreshKey]);
 
+  async function resetDevice() {
+    if (resettingDevice) return;
+    const hasActive = (overview?.active.length ?? 0) > 0;
+    const message = hasActive
+      ? "Refresh alat akan menghapus hasil tinggi/berat sementara dan mengulang sesi aktif dari awal. Lanjutkan?"
+      : "Refresh alat akan mereset state/handshake perangkat. Lanjutkan?";
+    if (!window.confirm(message)) return;
+
+    setResettingDevice(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await api<{ message: string }>("/device/reset-session", {
+        method: "POST",
+        body: {},
+      });
+      setNotice(result.message);
+      setRefreshKey((value) => value + 1);
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setResettingDevice(false);
+    }
+  }
+
   async function finalize(id: string) {
     if (finalizing) return;
     setFinalizing(id);
@@ -97,14 +130,24 @@ export function MonitoringPanel() {
             Data diperbarui otomatis selama dashboard dibuka.
           </p>
         </div>
-        <button
-          className="portal-text"
-          disabled={refreshing}
-          onClick={() => setRefreshKey((value) => value + 1)}
-        >
-          <RefreshCw size={17} />
-          {refreshing ? "Memperbarui…" : "Perbarui"}
-        </button>
+        <div className="staff-monitoring-actions">
+          <button
+            className="portal-secondary"
+            disabled={resettingDevice}
+            onClick={() => void resetDevice()}
+          >
+            <RotateCcw size={17} />
+            {resettingDevice ? "Me-refresh…" : "Refresh alat"}
+          </button>
+          <button
+            className="portal-text"
+            disabled={refreshing}
+            onClick={() => setRefreshKey((value) => value + 1)}
+          >
+            <RefreshCw size={17} />
+            {refreshing ? "Memperbarui…" : "Perbarui"}
+          </button>
+        </div>
       </div>
 
       {notice && <Message>{notice}</Message>}

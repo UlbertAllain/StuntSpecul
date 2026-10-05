@@ -10,6 +10,7 @@ import {
   Cpu,
   MonitorCheck,
   RefreshCw,
+  RotateCcw,
   Ruler,
   Scale,
   Wifi,
@@ -27,6 +28,7 @@ type DeviceState = {
   lastSeen: number | null;
   status: "offline" | "ready" | "assigned" | "in_use";
   firmwareVersion: string | null;
+  resetRequestedAt: number | null;
   examination: {
     status: "queued" | "running" | "completed";
     createdAt: number;
@@ -107,6 +109,8 @@ export function DeviceMonitoringPanel() {
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -141,6 +145,30 @@ export function DeviceMonitoringPanel() {
     };
   }, [refreshKey]);
 
+  async function resetDevice(hasActiveSession: boolean) {
+    if (resetting) return;
+    const message = hasActiveSession
+      ? "Refresh alat akan menghapus hasil tinggi/berat sementara dan mengulang sesi aktif dari awal. Lanjutkan?"
+      : "Refresh alat akan mereset state/handshake perangkat. Lanjutkan?";
+    if (!window.confirm(message)) return;
+
+    setResetting(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await api<{ message: string }>("/device/reset-session", {
+        method: "POST",
+        body: {},
+      });
+      setNotice(result.message);
+      setRefreshKey((value) => value + 1);
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setResetting(false);
+    }
+  }
+
   const online = data?.devices.filter((item) => item.online).length ?? 0;
   const active =
     data?.devices.filter((item) => item.status === "in_use").length ?? 0;
@@ -166,6 +194,7 @@ export function DeviceMonitoringPanel() {
         </button>
       </div>
 
+      {notice && <Message>{notice}</Message>}
       {error && <Message error>{error}</Message>}
       {!data && !error && <Message>Memuat status alat…</Message>}
 
@@ -207,9 +236,19 @@ export function DeviceMonitoringPanel() {
                   <h3>{item.name}</h3>
                   <p>{STATUS_LABEL[item.status]}</p>
                 </div>
-                <div className="ref-last-seen">
-                  <Clock3 />
-                  <span>{lastSeenLabel(item.lastSeen)}</span>
+                <div className="ref-device-head-actions">
+                  <div className="ref-last-seen">
+                    <Clock3 />
+                    <span>{lastSeenLabel(item.lastSeen)}</span>
+                  </div>
+                  <button
+                    className="portal-secondary ref-device-reset"
+                    disabled={resetting}
+                    onClick={() => void resetDevice(!!item.examination)}
+                  >
+                    <RotateCcw size={15} />
+                    {resetting ? "Me-refresh…" : "Refresh alat"}
+                  </button>
                 </div>
               </div>
 
@@ -217,6 +256,21 @@ export function DeviceMonitoringPanel() {
                 <span>
                   Firmware
                   <strong>{item.firmwareVersion || "Belum dilaporkan"}</strong>
+                </span>
+                <span>
+                  Refresh terakhir
+                  <strong>
+                    {item.resetRequestedAt
+                      ? new Date(item.resetRequestedAt).toLocaleTimeString(
+                          "id-ID",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                          },
+                        )
+                      : "Belum pernah"}
+                  </strong>
                 </span>
                 <span>
                   Measurement terakhir
