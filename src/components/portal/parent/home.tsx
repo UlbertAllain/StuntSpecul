@@ -73,9 +73,7 @@ function MiniGrowthChart({
           vectorEffect="non-scaling-stroke"
         />
       </svg>
-      <span>
-        Perkembangan {isInfant ? "panjang badan" : "tinggi badan"}
-      </span>
+      <span>Perkembangan {isInfant ? "panjang badan" : "tinggi badan"}</span>
     </div>
   );
 }
@@ -199,7 +197,9 @@ export function ParentHome({
           <article>
             <span>{linearIndicator}</span>
             <strong className="metric-status">
-              {latest ? growthStatusLabelForAge(latest.growthStatus, latest.ageMonths) : "Belum ada"}
+              {latest
+                ? growthStatusLabelForAge(latest.growthStatus, latest.ageMonths)
+                : "Belum ada"}
             </strong>
           </article>
         </div>
@@ -243,7 +243,10 @@ export function ParentHome({
               <strong>
                 {latest.measurementQuality === "recheck"
                   ? "Pengukuran perlu diulang"
-                  : growthStatusLabelForAge(latest.growthStatus, latest.ageMonths)}
+                  : growthStatusLabelForAge(
+                      latest.growthStatus,
+                      latest.ageMonths,
+                    )}
               </strong>
               <small>
                 {latest.measurementQuality === "recheck"
@@ -305,7 +308,10 @@ export function ParentHome({
                   <strong>
                     {exam.measurementQuality === "recheck"
                       ? "Pengukuran perlu diulang"
-                      : growthStatusLabelForAge(exam.growthStatus, exam.ageMonths)}
+                      : growthStatusLabelForAge(
+                          exam.growthStatus,
+                          exam.ageMonths,
+                        )}
                   </strong>
                   <div>
                     <span>{formatReading(exam.heightCm)} cm</span>

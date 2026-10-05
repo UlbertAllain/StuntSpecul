@@ -98,10 +98,7 @@ export function StationDisplay() {
 
         setState(value);
 
-        if (
-          !value.active ||
-          value.active.examinationId !== assignment?.id
-        ) {
+        if (!value.active || value.active.examinationId !== assignment?.id) {
           setAssignment(null);
           setError("");
           return;
