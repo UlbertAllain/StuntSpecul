@@ -1,8 +1,18 @@
 # StuntSpecula
 
-StuntSpecula adalah sistem skrining pertumbuhan anak usia 24–59 bulan. Orang tua memulai pemeriksaan dari HP, alat menjalankan alur pengukuran, petugas memonitor proses, dan admin mengelola perangkat serta akun petugas.
+StuntSpecula adalah sistem skrining pertumbuhan anak usia **0–59 bulan**.
 
-Status pertumbuhan utama menggunakan **TB/U WHO**. Gemini dipakai untuk analisis visual pendukung (kualitas foto dan bagian wajah yang terlihat) dan tidak boleh menentukan atau mengganti status stunting WHO.
+Sistem memakai dua jalur pemeriksaan:
+
+- **0–23 bulan:** pengukuran manual panjang badan (PB) dan berat badan (BB);
+- **24–59 bulan:** pemeriksaan otomatis menggunakan webcam, sensor tinggi badan, dan sensor berat badan pada alat.
+
+Penentuan stunting tetap berdasarkan pertumbuhan linear menurut umur:
+
+- bayi 0–23 bulan memakai **PB/U**;
+- anak 24–59 bulan memakai **TB/U**.
+
+**BB/U** digunakan sebagai informasi tambahan dan membantu memeriksa apakah data pengukuran masuk akal. Gemini hanya dipakai untuk observasi visual pendukung dari foto wajah dan **tidak menentukan status stunting**.
 
 ## Stack
 
@@ -37,6 +47,21 @@ Jika perlu menjalankan runtime Model A lama untuk audit/rollback:
 ```powershell
 npm run dev:model-a
 ```
+
+## Yang sudah tersedia
+
+- satu akun orang tua dapat memiliki beberapa profil anak;
+- input manual untuk bayi 0–23 bulan;
+- pemeriksaan otomatis untuk anak 24–59 bulan;
+- validasi data pengukuran ekstrem sebelum hasil ditampilkan;
+- status stunting dengan label yang jelas, bukan istilah samar;
+- prediksi tren risiko 90 hari jika riwayat pemeriksaan cukup;
+- rekomendasi nutrisi lokal berdasarkan usia dan kondisi pertumbuhan;
+- referensi Kemenkes, Buku KIA, dan WHO pada hasil;
+- foto wajah terbaru anak pada Beranda orang tua;
+- menu **Refresh alat** untuk petugas/admin agar state pengukuran dapat di-reset tanpa harus mencabut-colok perangkat.
+
+Penjelasan non-teknis untuk client/pengguna ada di [Ringkasan Sistem untuk Client](docs/CLIENT_OVERVIEW.md).
 
 ## Route aplikasi
 
@@ -91,6 +116,7 @@ node tests/deployment-smoke.mjs
 
 ## Dokumentasi
 
+- [Ringkasan Sistem untuk Client](docs/CLIENT_OVERVIEW.md)
 - [Getting Started](docs/GETTING_STARTED.md)
 - [Project Structure](docs/PROJECT_STRUCTURE.md)
 - [Architecture](docs/ARCHITECTURE.md)
@@ -108,10 +134,11 @@ node tests/deployment-smoke.mjs
 
 ## Prinsip penting
 
-1. WHO TB/U adalah sumber hasil pertumbuhan utama.
-2. Gemini visual hanya menilai kualitas foto/visibilitas area wajah dan tidak menentukan stunting.
-3. Raw photo pemeriksaan diproses sementara dan tidak menjadi bagian laporan atau Firestore.
-4. Client input selalu divalidasi kembali di server.
-5. Controller/route tetap tipis; business flow berada di server application layer.
-6. Jangan menaruh credential di source code.
-7. Hindari menambah layer/folder baru tanpa ownership atau tanggung jawab yang jelas.
+1. Stunting ditentukan dari PB/U untuk usia 0–23 bulan dan TB/U untuk usia 24–59 bulan.
+2. BB/U adalah indikator tambahan, bukan penentu stunting.
+3. Gemini visual hanya menilai kualitas foto/visibilitas area wajah dan tidak menentukan stunting.
+4. Raw photo pemeriksaan tidak menjadi bagian dari examination report; hanya foto wajah terbaru per anak yang disimpan untuk tampilan Beranda orang tua.
+5. Client input selalu divalidasi kembali di server.
+6. Controller/route tetap tipis; business flow berada di server application layer.
+7. Jangan menaruh credential di source code.
+8. Hindari menambah layer/folder baru tanpa ownership atau tanggung jawab yang jelas.

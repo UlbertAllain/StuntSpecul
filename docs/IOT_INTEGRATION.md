@@ -306,7 +306,14 @@ Dengan begitu keberhasilan tidak dinilai dari angka yang muncul di sensor saja; 
 
 ## Refresh alat dari dashboard
 
-Petugas maupun admin memiliki tombol **Refresh alat**. Tombol ini ditujukan sebagai recovery ketika halaman alat atau ESP32 terlihat stuck sehingga perangkat tidak perlu dicabut-colok.
+Petugas maupun admin memiliki tombol **Refresh alat**:
+
+- Admin → Monitoring alat;
+- Petugas → Monitoring pemeriksaan.
+
+Tombol ini dipakai ketika alat terlihat stuck atau membawa state pengukuran lama. Tujuannya agar operator tidak perlu menjadikan cabut-colok ESP32 sebagai prosedur normal.
+
+Istilah “refresh cache” pada kebutuhan operasional di sini sebenarnya berarti **reset state sesi alat**, bukan menghapus cache browser.
 
 Endpoint dashboard:
 
@@ -331,7 +338,7 @@ Firmware wajib menyimpan `resetToken` terakhir dari `GET /api/iot/session`. Jika
     claim examination aktif lagi
     mulai sampling dari nol
 
-Dengan pola ini, tombol dashboard menggantikan efek power-cycle untuk state aplikasi dan buffer firmware. Tombol tidak menghapus browser cache umum dan tidak menghapus riwayat pemeriksaan yang sudah selesai.
+Dari sisi web/backend, tombol sudah menghapus state sesi sementara dan menerbitkan resetToken. Agar efeknya sampai ke buffer RAM ESP32 seperti power-cycle, firmware harus membaca perubahan resetToken dan menjalankan reset lokal. Tombol tidak menghapus cache browser umum dan tidak menghapus riwayat pemeriksaan yang sudah selesai.
 
 ## Session isolation dan stuck recovery
 
@@ -407,11 +414,12 @@ Web alat:
 
 Backend:
 
-- session coordination
-- validation
-- persistence
-- ACK measurement
-- menggabungkan sensor + observasi visual Gemini
-- WHO TB/U
+- koordinasi sesi
+- validasi pengukuran
+- penyimpanan hasil
+- acknowledgement measurement
+- penggabungan sensor + observasi visual Gemini
+- perhitungan PB/U atau TB/U sesuai usia
+- resetToken untuk recovery perangkat
 
 ESP32 tidak perlu menghitung WHO dan tidak perlu menjalankan AI wajah.

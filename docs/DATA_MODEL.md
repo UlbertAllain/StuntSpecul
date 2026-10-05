@@ -194,6 +194,8 @@ Status hardware ESP32 untuk monitoring admin:
 - heightSensor
 - weightSensor
 - claimedExamId
+- resetToken
+- resetRequestedAt
 - createdAt
 
 ### `parentMessages/{id}`
@@ -230,6 +232,7 @@ Enforcement utama dilakukan application layer:
 - examination hanya boleh diakses oleh role/owner yang sesuai;
 - active station hanya menunjuk satu examination;
 - measurement IoT harus terikat ke examination yang sudah di-claim perangkat; stale session ditolak;
+- reset perangkat dari dashboard menerbitkan resetToken baru agar web dan firmware dapat membuang state sementara tanpa menghapus riwayat completed;
 - child age divalidasi sesuai flow;
 - parent hanya dapat menambahkan dan memakai child miliknya sendiri;
 - hasil antropometri ekstrem diflag menggunakan batas plausibility WHO sebelum disimpan sebagai hasil final.
