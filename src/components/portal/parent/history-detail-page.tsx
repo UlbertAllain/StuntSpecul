@@ -17,7 +17,11 @@ import {
 import { api, ClientError, errorMessage } from "@/lib/api-client";
 import { growthStatusLabel } from "@/lib/growth";
 import type { Examination, ParentAccountView } from "@/lib/portal";
-import { WHO_REFERENCE_URL } from "@/lib/report";
+import {
+  KEMENKES_REFERENCE_URL,
+  KIA_REFERENCE_URL,
+  WHO_REFERENCE_URL,
+} from "@/lib/report";
 import {
   captureStatusLabel,
   facialAnalysisLabel,
@@ -360,16 +364,32 @@ export function ParentHistoryDetailPage() {
           </dl>
 
           <p>
-            Status stunting dihitung dari tinggi menurut umur (TB/U) WHO untuk
-            anak usia 24–59 bulan. BB/U digunakan sebagai validasi tambahan
-            untuk mendeteksi nilai pengukuran ekstrem atau kemungkinan salah
-            baca sensor. Analisis visual AI tidak menentukan status stunting.
+            Status stunting dihitung dari TB/U berdasarkan Standar
+            Antropometri Anak Kemenkes RI dan WHO Child Growth Standards. BB/U
+            adalah indikator tambahan dan membantu mendeteksi hasil pengukuran
+            yang perlu diverifikasi. Buku KIA Edisi 2024 digunakan sebagai
+            referensi pendamping pemantauan pertumbuhan keluarga. Analisis
+            visual AI tidak menentukan status stunting.
           </p>
 
-          <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
-            Referensi WHO: panjang/tinggi menurut umur
-            <ExternalLink size={14} />
-          </a>
+          <div className="parent-history-reference-list">
+            <a
+              href={KEMENKES_REFERENCE_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Kemenkes RI — Permenkes No. 2 Tahun 2020
+              <ExternalLink size={14} />
+            </a>
+            <a href={KIA_REFERENCE_URL} target="_blank" rel="noreferrer">
+              Kemenkes RI — Buku KIA Edisi 2024
+              <ExternalLink size={14} />
+            </a>
+            <a href={WHO_REFERENCE_URL} target="_blank" rel="noreferrer">
+              WHO Child Growth Standards
+              <ExternalLink size={14} />
+            </a>
+          </div>
         </section>
 
         {recommendations.trendDelta !== null && (
@@ -497,9 +517,9 @@ export function ParentHistoryDetailPage() {
         </section>
 
         <p className="parent-history-recommendation-source">
-          Rekomendasi ini merupakan edukasi berdasarkan status TB/U WHO dan
-          panduan gizi umum. Bukan diagnosis, resep, atau pengganti konsultasi
-          tenaga kesehatan.
+          Rekomendasi ini merupakan edukasi berdasarkan status TB/U, tren
+          pertumbuhan, serta panduan gizi Kemenkes. Bukan diagnosis, resep,
+          atau pengganti konsultasi tenaga kesehatan.
         </p>
 
         <p className="parent-history-disclaimer">

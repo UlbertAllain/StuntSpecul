@@ -75,6 +75,18 @@ Sebelum measurement diterima/finalized, backend menjalankan validation gate WHO:
 
 Stunting tetap ditentukan dari TB/U < -2 SD. BB/U tidak mengubah definisi stunting; BB/U dipakai sebagai indikator tambahan dan validasi plausibility pengukuran.
 
+### Referensi antropometri dan pemantauan
+
+Flow otomatis usia 24–59 bulan menampilkan tiga sumber resmi secara terpisah agar fungsi setiap referensi jelas:
+
+- Kemenkes RI — Permenkes No. 2 Tahun 2020 tentang Standar Antropometri Anak sebagai acuan nasional klasifikasi antropometri;
+- WHO Child Growth Standards sebagai sumber kurva/tabel panjang atau tinggi menurut umur;
+- Buku KIA Edisi 2024 sebagai referensi pendamping pemantauan pertumbuhan keluarga dan tenaga kesehatan.
+
+Buku KIA tidak menggantikan perhitungan Z-score dan tidak dipakai untuk membuat diagnosis. UI harus membedakan antara **acuan perhitungan** dan **referensi pendamping** agar sumber hasil tidak rancu.
+
+Copywriting status juga harus menyebut arti hasil secara eksplisit. Contoh: `Tidak terindikasi stunting (TB/U ≥ -2 SD)`, `Terindikasi stunting (TB/U < -2 SD)`, dan `Terindikasi stunting berat (TB/U < -3 SD)`. Hindari label samar seperti `dalam rentang pemantauan` tanpa menjelaskan status TB/U.
+
 Setelah TB/U WHO dihitung, backend membuat snapshot rekomendasi edukasi berdasarkan growthStatus dan tren TB/U dibanding examination completed sebelumnya untuk anak yang sama:
 
 - recommendations.nutrition

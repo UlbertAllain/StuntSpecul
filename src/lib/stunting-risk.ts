@@ -121,9 +121,14 @@ export function stuntingRiskFor(
 ): StuntingRiskAssessment {
   const current = context.currentHeightForAgeZ;
   if (current === null || !Number.isFinite(current)) {
-    return result(context, "insufficient_data", "Belum cukup data", {
-      reasons: ["TB/U saat ini belum tersedia atau belum valid."],
-    });
+    return result(
+      context,
+      "insufficient_data",
+      "Prediksi belum tersedia — TB/U belum valid",
+      {
+        reasons: ["TB/U saat ini belum tersedia atau belum valid."],
+      },
+    );
   }
 
   if (
@@ -134,7 +139,7 @@ export function stuntingRiskFor(
     return result(
       context,
       "current_stunting",
-      "Stunting terindikasi saat ini",
+      "Stunting terindikasi saat ini — bukan prediksi",
       {
         reasons: [
           "TB/U saat ini sudah berada di bawah -2 SD, sehingga yang ditampilkan adalah status WHO saat ini, bukan prediksi risiko baru.",
@@ -149,12 +154,17 @@ export function stuntingRiskFor(
     current,
   );
   if (points.length < 2) {
-    return result(context, "insufficient_data", "Belum cukup data tren", {
+    return result(
+      context,
+      "insufficient_data",
+      "Prediksi belum tersedia — butuh ≥2 pemeriksaan",
+      {
       pointsUsed: points.length,
-      reasons: [
-        "Minimal dua pemeriksaan TB/U diperlukan untuk membuat proyeksi tren.",
-      ],
-    });
+        reasons: [
+          "Minimal dua pemeriksaan TB/U diperlukan untuk membuat proyeksi tren.",
+        ],
+      },
+    );
   }
 
   const spanDays = (points.at(-1)!.at - points[0].at) / DAY_MS;
@@ -162,7 +172,7 @@ export function stuntingRiskFor(
     return result(
       context,
       "insufficient_data",
-      "Jarak pemeriksaan terlalu dekat",
+      "Prediksi belum tersedia — jarak data <28 hari",
       {
         pointsUsed: points.length,
         spanDays: round2(spanDays),
@@ -175,11 +185,16 @@ export function stuntingRiskFor(
 
   const slopePerDay = regressionSlopePerDay(points);
   if (slopePerDay === null || !Number.isFinite(slopePerDay)) {
-    return result(context, "insufficient_data", "Tren belum dapat dihitung", {
-      pointsUsed: points.length,
-      spanDays: round2(spanDays),
-      reasons: ["Data waktu pemeriksaan belum cukup untuk menghitung tren."],
-    });
+    return result(
+      context,
+      "insufficient_data",
+      "Prediksi belum tersedia — tren belum dapat dihitung",
+      {
+        pointsUsed: points.length,
+        spanDays: round2(spanDays),
+        reasons: ["Data waktu pemeriksaan belum cukup untuk menghitung tren."],
+      },
+    );
   }
 
   const zChangePer30Days = round2(slopePerDay * 30);
@@ -195,33 +210,48 @@ export function stuntingRiskFor(
   };
 
   if (projectedHeightForAgeZ < -2) {
-    return result(context, "high", "Risiko tren tinggi", {
+    return result(
+      context,
+      "high",
+      "Tren 90 hari diproyeksikan melewati -2 SD",
+      {
       ...common,
       reasons: [
         "Jika pola TB/U terakhir berlanjut secara linear, proyeksi 90 hari melewati batas -2 SD.",
-        "Kecepatan perubahan tren sekitar " +
-          zChangePer30Days.toFixed(2) +
-          " SD per 30 hari.",
-      ],
-    });
+          "Kecepatan perubahan tren sekitar " +
+            zChangePer30Days.toFixed(2) +
+            " SD per 30 hari.",
+        ],
+      },
+    );
   }
 
   if (zChangePer30Days < -0.1) {
-    return result(context, "watch", "Perlu pemantauan lebih dekat", {
+    return result(
+      context,
+      "watch",
+      "TB/U menurun, tetapi belum diproyeksikan stunting",
+      {
       ...common,
       reasons: [
         "TB/U menunjukkan tren menurun, tetapi proyeksi 90 hari belum melewati batas -2 SD.",
-        "Kecepatan perubahan tren sekitar " +
-          zChangePer30Days.toFixed(2) +
-          " SD per 30 hari.",
-      ],
-    });
+          "Kecepatan perubahan tren sekitar " +
+            zChangePer30Days.toFixed(2) +
+            " SD per 30 hari.",
+        ],
+      },
+    );
   }
 
-  return result(context, "low", "Risiko tren rendah", {
+  return result(
+    context,
+    "low",
+    "Tren 90 hari tidak mengarah ke stunting",
+    {
     ...common,
-    reasons: [
-      "Tren TB/U tidak memproyeksikan lintasan ke bawah -2 SD dalam 90 hari bila pola yang sama berlanjut.",
-    ],
-  });
+      reasons: [
+        "Tren TB/U tidak memproyeksikan lintasan ke bawah -2 SD dalam 90 hari bila pola yang sama berlanjut.",
+      ],
+    },
+  );
 }

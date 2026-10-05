@@ -226,7 +226,7 @@ export function ParentHome({
         {latest ? (
           <>
             <div className="parent-home-result-status">
-              <span>HASIL PERTUMBUHAN WHO</span>
+              <span>STATUS STUNTING BERDASARKAN TB/U</span>
               <strong>
                 {latest.measurementQuality === "recheck"
                   ? "Pengukuran perlu diulang"

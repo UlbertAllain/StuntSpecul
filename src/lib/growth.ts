@@ -151,13 +151,13 @@ export function assessHeightForAge(
 export function growthStatusLabel(status: GrowthStatus): string {
   switch (status) {
     case "within_range":
-      return "TB/U dalam rentang WHO";
+      return "Tidak terindikasi stunting (TB/U ≥ -2 SD)";
     case "monitor":
-      return "Belum stunting, perlu pemantauan";
+      return "Tidak terindikasi stunting; pantau tren TB/U";
     case "stunted":
-      return "Indikasi stunting";
+      return "Terindikasi stunting (TB/U < -2 SD)";
     case "severely_stunted":
-      return "Indikasi stunting berat";
+      return "Terindikasi stunting berat (TB/U < -3 SD)";
     default:
       return "Belum tersedia";
   }
@@ -166,13 +166,13 @@ export function growthStatusLabel(status: GrowthStatus): string {
 export function stuntingScreeningLabel(status: StuntingScreening): string {
   switch (status) {
     case "not_indicated":
-      return "Tidak terindikasi dari TB/U";
+      return "Tidak terindikasi stunting (TB/U ≥ -2 SD)";
     case "monitor":
-      return "Belum stunting, perlu dipantau";
+      return "Tidak terindikasi stunting; pantau tren TB/U";
     case "indicated":
-      return "Terindikasi stunting";
+      return "Terindikasi stunting (TB/U < -2 SD)";
     case "severe":
-      return "Terindikasi stunting berat";
+      return "Terindikasi stunting berat (TB/U < -3 SD)";
     default:
       return "Belum tersedia";
   }

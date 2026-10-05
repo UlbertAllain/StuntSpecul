@@ -24,13 +24,13 @@ export const STEP_PROGRESS: Record<Step, number> = {
 };
 
 export const STEP_INSTRUCTIONS: Record<Step, string> = {
-  welcome: "Halo! Aku Mimo. Yuk, berdiri bersamaku!",
-  prepare: "Lepas alas kaki, lalu naik ke alat. Aku tunggu di sini.",
-  height: "Berdiri tegak seperti aku. Kaki rapat, lihat lurus ke depan.",
-  weight: "Sekarang kita main patung-patungan. Diam sebentar, ya.",
-  camera: "Lihat ke tengah. Mata terbuka, bibir rileks. Tetap diam sebentar.",
-  analysis: "Terima kasih, kamu sudah hebat. Sekarang boleh santai.",
-  result: "Tos dulu, kamu hebat!",
+  welcome: "Pemeriksaan siap dimulai.",
+  camera: "Lihat ke kamera. Posisikan wajah di tengah dan tetap diam sebentar.",
+  prepare: "Lepas alas kaki, lalu berdiri di tengah alat.",
+  height: "Berdiri tegak, kaki rapat, dan pandang lurus ke depan.",
+  weight: "Tetap berdiri dan jangan bergerak sebentar.",
+  analysis: "Pengukuran selesai. Hasil sedang disiapkan.",
+  result: "Pemeriksaan selesai. Hasil sudah tersedia.",
 };
 
 export type Session = {
