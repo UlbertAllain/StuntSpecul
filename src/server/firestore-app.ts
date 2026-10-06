@@ -2686,7 +2686,6 @@ async function staffExams(request: Request, env: Env) {
   return ok(docs.map(asExam));
 }
 
-
 function exportGrowthLabel(status: Examination["growthStatus"]) {
   if (status === "within_range") return "Sesuai rentang";
   if (status === "monitor") return "Perlu pemantauan";
@@ -2896,9 +2895,7 @@ async function exportExaminationsExcel(request: Request, env: Env) {
     row.alignment = { vertical: "middle", wrapText: true };
 
     const photoUrl =
-      doc.data.facePhotoUrl ??
-      fallbackPhotos.get(doc.data.childId) ??
-      null;
+      doc.data.facePhotoUrl ?? fallbackPhotos.get(doc.data.childId) ?? null;
     if (photoUrl) {
       try {
         const imageResponse = await fetch(exportPhotoUrl(photoUrl));
