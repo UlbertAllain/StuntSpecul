@@ -2772,10 +2772,28 @@ async function exportExaminationsExcel(request: Request, env: Env) {
       );
     })
     .sort((a, b) => {
+      const childOrder = a.data.childName.localeCompare(
+        b.data.childName,
+        "id-ID",
+        { sensitivity: "base" },
+      );
+      if (childOrder !== 0) return childOrder;
+
       const aAt = a.data.completedAt ?? a.data.createdAt;
       const bAt = b.data.completedAt ?? b.data.createdAt;
-      return bAt - aAt;
+      return aAt - bAt;
     });
+
+  const groupedDocs = new Map<string, FirestoreDoc<ExamRecord>[]>();
+  for (const doc of docs) {
+    const group = groupedDocs.get(doc.data.childId);
+    if (group) {
+      group.push(doc);
+    } else {
+      groupedDocs.set(doc.data.childId, [doc]);
+    }
+  }
+  const childGroups = [...groupedDocs.values()];
 
   const fallbackPhotos = new Map<string, string | null>();
   for (const childIdValue of new Set(
@@ -2796,33 +2814,34 @@ async function exportExaminationsExcel(request: Request, env: Env) {
     views: [{ state: "frozen", ySplit: 5 }],
   });
 
-  sheet.mergeCells("A1:O1");
+  sheet.mergeCells("A1:P1");
   sheet.getCell("A1").value = "REKAP HASIL PEMERIKSAAN STUNTSPECULA";
   sheet.getCell("A1").font = { size: 16, bold: true };
   sheet.getCell("A1").alignment = { vertical: "middle", horizontal: "center" };
   sheet.getRow(1).height = 26;
 
-  sheet.mergeCells("A2:O2");
+  sheet.mergeCells("A2:P2");
   sheet.getCell("A2").value =
     "Sumber antropometri: WHO Child Growth Standards · Foto hanya disertakan bila tersedia.";
   sheet.getCell("A2").font = { size: 10, italic: true };
   sheet.getCell("A2").alignment = { horizontal: "center" };
 
-  sheet.mergeCells("A3:O3");
+  sheet.mergeCells("A3:P3");
   sheet.getCell("A3").value = `Dibuat: ${new Date().toLocaleString("id-ID", {
     dateStyle: "long",
     timeStyle: "short",
     timeZone: "Asia/Jakarta",
-  })} · Jumlah data: ${docs.length}`;
+  })} · Jumlah anak: ${childGroups.length} · Jumlah pemeriksaan: ${docs.length}`;
   sheet.getCell("A3").font = { size: 10 };
   sheet.getCell("A3").alignment = { horizontal: "center" };
 
   const columns = [
     { header: "No", key: "no", width: 6 },
     { header: "Foto", key: "photo", width: 14 },
-    { header: "Tanggal Pemeriksaan", key: "examDate", width: 22 },
     { header: "Nama Anak", key: "childName", width: 22 },
     { header: "Kode Anak", key: "childCode", width: 18 },
+    { header: "Pemeriksaan", key: "examSequence", width: 18 },
+    { header: "Tanggal Pemeriksaan", key: "examDate", width: 22 },
     { header: "Umur Saat Diperiksa", key: "age", width: 20 },
     { header: "Jenis Kelamin", key: "sex", width: 15 },
     { header: "PB/TB (cm)", key: "height", width: 13 },
@@ -2855,84 +2874,109 @@ async function exportExaminationsExcel(request: Request, env: Env) {
     to: { row: 5, column: columns.length },
   };
 
-  for (const [index, doc] of docs.entries()) {
-    const exam = asExam(doc);
-    const examAt = exam.completedAt ?? exam.createdAt;
-    const row = sheet.addRow({
-      no: index + 1,
-      photo: "",
-      examDate: new Date(examAt).toLocaleString("id-ID", {
-        dateStyle: "medium",
-        timeStyle: "short",
-        timeZone: "Asia/Jakarta",
-      }),
-      childName: exam.childName,
-      childCode: exam.childCode,
-      age: exportAgeLabel(exam.ageMonths),
-      sex: exam.sex === "male" ? "Laki-laki" : "Perempuan",
-      height: exam.heightCm,
-      weight: exam.weightKg,
-      haz:
-        exam.heightForAgeZ === null
-          ? "—"
-          : Number(exam.heightForAgeZ.toFixed(2)),
-      waz:
-        exam.weightForAgeZ === null
-          ? "—"
-          : Number(exam.weightForAgeZ.toFixed(2)),
-      stunting: exportStuntingLabel(exam),
-      growth: exportGrowthLabel(exam.growthStatus),
-      mode: exportMeasurementModeLabel(exam.measurementMode),
-      quality:
-        exam.measurementReason ||
-        (exam.measurementQuality === "valid"
-          ? "Pengukuran valid"
-          : exam.measurementQuality === "verified_extreme"
-            ? "Nilai ekstrem terverifikasi"
-            : "Perlu ditinjau"),
-    });
-    row.height = 72;
-    row.alignment = { vertical: "middle", wrapText: true };
+  let rowNumber = 0;
+  for (const [groupIndex, group] of childGroups.entries()) {
+    const groupStartRow = sheet.rowCount + 1;
 
-    const photoUrl =
-      doc.data.facePhotoUrl ?? fallbackPhotos.get(doc.data.childId) ?? null;
-    if (photoUrl) {
-      try {
-        const imageResponse = await fetch(exportPhotoUrl(photoUrl));
-        if (imageResponse.ok) {
-          const contentType = imageResponse.headers.get("content-type") || "";
-          if (
-            contentType.includes("jpeg") ||
-            contentType.includes("jpg") ||
-            contentType.includes("png")
-          ) {
-            const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
-            const imageId = workbook.addImage({
-              base64: `data:${contentType};base64,${imageBytes.toString("base64")}`,
-              extension: contentType.includes("png") ? "png" : "jpeg",
-            });
-            sheet.addImage(imageId, {
-              tl: { col: 1.15, row: row.number - 0.9 },
-              ext: { width: 68, height: 68 },
-            });
+    for (const [examIndex, doc] of group.entries()) {
+      rowNumber += 1;
+      const exam = asExam(doc);
+      const examAt = exam.completedAt ?? exam.createdAt;
+      const row = sheet.addRow({
+        no: rowNumber,
+        photo: "",
+        childName: exam.childName,
+        childCode: exam.childCode,
+        examSequence: `Pemeriksaan ke-${examIndex + 1}`,
+        examDate: new Date(examAt).toLocaleString("id-ID", {
+          dateStyle: "medium",
+          timeStyle: "short",
+          timeZone: "Asia/Jakarta",
+        }),
+        age: exportAgeLabel(exam.ageMonths),
+        sex: exam.sex === "male" ? "Laki-laki" : "Perempuan",
+        height: exam.heightCm,
+        weight: exam.weightKg,
+        haz:
+          exam.heightForAgeZ === null
+            ? "—"
+            : Number(exam.heightForAgeZ.toFixed(2)),
+        waz:
+          exam.weightForAgeZ === null
+            ? "—"
+            : Number(exam.weightForAgeZ.toFixed(2)),
+        stunting: exportStuntingLabel(exam),
+        growth: exportGrowthLabel(exam.growthStatus),
+        mode: exportMeasurementModeLabel(exam.measurementMode),
+        quality:
+          exam.measurementReason ||
+          (exam.measurementQuality === "valid"
+            ? "Pengukuran valid"
+            : exam.measurementQuality === "verified_extreme"
+              ? "Nilai ekstrem terverifikasi"
+              : "Perlu ditinjau"),
+      });
+      row.height = 72;
+      row.alignment = { vertical: "middle", wrapText: true };
+
+      const photoUrl =
+        doc.data.facePhotoUrl ?? fallbackPhotos.get(doc.data.childId) ?? null;
+      if (photoUrl) {
+        try {
+          const imageResponse = await fetch(exportPhotoUrl(photoUrl));
+          if (imageResponse.ok) {
+            const contentType = imageResponse.headers.get("content-type") || "";
+            if (
+              contentType.includes("jpeg") ||
+              contentType.includes("jpg") ||
+              contentType.includes("png")
+            ) {
+              const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
+              const imageId = workbook.addImage({
+                base64: `data:${contentType};base64,${imageBytes.toString("base64")}`,
+                extension: contentType.includes("png") ? "png" : "jpeg",
+              });
+              sheet.addImage(imageId, {
+                tl: { col: 1.15, row: row.number - 0.9 },
+                ext: { width: 68, height: 68 },
+              });
+            }
           }
+        } catch {}
+      }
+
+      for (let column = 1; column <= columns.length; column += 1) {
+        const cell = row.getCell(column);
+        cell.border = {
+          top: {
+            style: examIndex === 0 ? "medium" : "thin",
+            color: { argb: "FFDCE6EF" },
+          },
+          left: { style: "thin", color: { argb: "FFDCE6EF" } },
+          bottom: { style: "thin", color: { argb: "FFDCE6EF" } },
+          right: { style: "thin", color: { argb: "FFDCE6EF" } },
+        };
+        if (groupIndex % 2 === 1) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFF7FBFE" },
+          };
         }
-      } catch {}
+      }
     }
 
-    for (let column = 1; column <= columns.length; column += 1) {
-      const cell = row.getCell(column);
-      cell.border = {
-        top: { style: "thin", color: { argb: "FFDCE6EF" } },
-        left: { style: "thin", color: { argb: "FFDCE6EF" } },
-        bottom: { style: "thin", color: { argb: "FFDCE6EF" } },
-        right: { style: "thin", color: { argb: "FFDCE6EF" } },
-      };
-      if (index % 2 === 1) {
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FFF7FBFE" },
+    const groupEndRow = sheet.rowCount;
+    if (groupEndRow > groupStartRow) {
+      sheet.mergeCells(groupStartRow, 3, groupEndRow, 3);
+      sheet.mergeCells(groupStartRow, 4, groupEndRow, 4);
+      sheet.mergeCells(groupStartRow, 8, groupEndRow, 8);
+
+      for (const column of [3, 4, 8]) {
+        sheet.getCell(groupStartRow, column).alignment = {
+          vertical: "middle",
+          horizontal: "center",
+          wrapText: true,
         };
       }
     }
