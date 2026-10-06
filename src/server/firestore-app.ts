@@ -2906,9 +2906,7 @@ async function exportExaminationsExcel(request: Request, env: Env) {
             contentType.includes("jpg") ||
             contentType.includes("png")
           ) {
-            const imageBytes = Buffer.from(
-              await imageResponse.arrayBuffer(),
-            );
+            const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
             const imageId = workbook.addImage({
               base64: `data:${contentType};base64,${imageBytes.toString("base64")}`,
               extension: contentType.includes("png") ? "png" : "jpeg",
