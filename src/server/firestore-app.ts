@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import ExcelJS from "exceljs";
 import { z } from "zod";
 import type {
   BlogPost,
@@ -141,6 +142,8 @@ type ExamRecord = {
   facialReason: string | null;
   facialModelVersion: string | null;
   visualAnalysis?: VisualAnalysis | null;
+  facePhotoUrl?: string | null;
+  facePhotoCapturedAt?: number | null;
   recommendations?: Partial<GrowthRecommendations> | null;
   createdAt: number;
   completedAt: number | null;
@@ -2380,8 +2383,8 @@ async function uploadLatestFacePhoto(request: Request, env: Env) {
   }
 
   const timestamp = Math.floor(Date.now() / 1000);
-  const folder = "stuntspecula/latest-face";
-  const publicId = exam.data.childId;
+  const folder = `stuntspecula/examinations/${exam.data.childId}`;
+  const publicId = exam.id;
   const signature = createHash("sha1")
     .update(
       `folder=${folder}&overwrite=true&public_id=${publicId}&timestamp=${timestamp}${apiSecret}`,
@@ -2442,6 +2445,17 @@ async function uploadLatestFacePhoto(request: Request, env: Env) {
         "latestFacePhotoUpdatedAt",
       ],
       precondition: { updateTime: child.updateTime },
+    },
+  );
+
+  await store(env).set(
+    `examinations/${exam.id}`,
+    {
+      facePhotoUrl: payload.secure_url,
+      facePhotoCapturedAt: updatedAt,
+    },
+    {
+      mergeFields: ["facePhotoUrl", "facePhotoCapturedAt"],
     },
   );
 
@@ -2670,6 +2684,274 @@ async function staffExams(request: Request, env: Env) {
       });
 
   return ok(docs.map(asExam));
+}
+
+function exportGrowthLabel(status: Examination["growthStatus"]) {
+  if (status === "within_range") return "Sesuai rentang";
+  if (status === "monitor") return "Perlu pemantauan";
+  if (status === "stunted") return "Stunting";
+  if (status === "severely_stunted") return "Stunting berat";
+  return "Tidak tersedia";
+}
+
+function exportStuntingLabel(exam: Examination) {
+  if (exam.measurementQuality === "verified_extreme") {
+    return "Nilai ekstrem terverifikasi";
+  }
+  if (exam.heightForAgeZ === null) return "Tidak tersedia";
+  return exam.heightForAgeZ < -2 ? "Stunting" : "Tidak stunting";
+}
+
+function exportAgeLabel(ageMonths: number) {
+  const years = Math.floor(ageMonths / 12);
+  const months = ageMonths % 12;
+  if (years <= 0) return `${months} bulan`;
+  if (months === 0) return `${years} tahun`;
+  return `${years} tahun ${months} bulan`;
+}
+
+function exportMeasurementModeLabel(mode: Examination["measurementMode"]) {
+  if (mode === "device") return "Alat otomatis";
+  if (mode === "manual_infant") return "Manual PB";
+  return "Manual";
+}
+
+function exportPhotoUrl(url: string) {
+  if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
+    return url;
+  }
+  return url.replace(
+    "/upload/",
+    "/upload/f_jpg,q_auto,w_240,h_240,c_fill,g_face/",
+  );
+}
+
+async function exportExaminationsExcel(request: Request, env: Env) {
+  await requireStaff(request, env);
+  const url = new URL(request.url);
+  const fromRaw = url.searchParams.get("from");
+  const toRaw = url.searchParams.get("to");
+  const period = url.searchParams.get("period") || "all";
+  const childId = url.searchParams.get("childId") || "";
+
+  const from = fromRaw ? Number(fromRaw) : null;
+  const to = toRaw ? Number(toRaw) : null;
+  if (
+    (from !== null && (!Number.isFinite(from) || from < 0)) ||
+    (to !== null && (!Number.isFinite(to) || to < 0)) ||
+    (from !== null && to !== null && from > to)
+  ) {
+    throw new ApiError(422, "Rentang tanggal export tidak valid.");
+  }
+  if (childId && !idSchema.safeParse(childId).success) {
+    throw new ApiError(422, "Profil anak tidak valid.");
+  }
+
+  const db = store(env);
+  let docs =
+    from !== null
+      ? await db.query<ExamRecord>("examinations", {
+          where: {
+            field: "createdAt",
+            op: "GREATER_THAN_OR_EQUAL",
+            value: from,
+          },
+        })
+      : await db.query<ExamRecord>("examinations", {
+          orderBy: [{ field: "createdAt", direction: "DESCENDING" }],
+        });
+
+  docs = docs
+    .filter((item) => {
+      const at = item.data.completedAt ?? item.data.createdAt;
+      return (
+        item.data.status === "completed" &&
+        (!childId || item.data.childId === childId) &&
+        (from === null || at >= from) &&
+        (to === null || at <= to)
+      );
+    })
+    .sort((a, b) => {
+      const aAt = a.data.completedAt ?? a.data.createdAt;
+      const bAt = b.data.completedAt ?? b.data.createdAt;
+      return bAt - aAt;
+    });
+
+  const fallbackPhotos = new Map<string, string | null>();
+  for (const childIdValue of new Set(
+    docs
+      .filter((item) => !item.data.facePhotoUrl)
+      .map((item) => item.data.childId),
+  )) {
+    const child = await db.get<ChildRecord>(`children/${childIdValue}`);
+    fallbackPhotos.set(childIdValue, child?.data.latestFacePhotoUrl ?? null);
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "StuntSpecula";
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  const sheet = workbook.addWorksheet("Hasil Pemeriksaan", {
+    views: [{ state: "frozen", ySplit: 5 }],
+  });
+
+  sheet.mergeCells("A1:O1");
+  sheet.getCell("A1").value = "REKAP HASIL PEMERIKSAAN STUNTSPECULA";
+  sheet.getCell("A1").font = { size: 16, bold: true };
+  sheet.getCell("A1").alignment = { vertical: "middle", horizontal: "center" };
+  sheet.getRow(1).height = 26;
+
+  sheet.mergeCells("A2:O2");
+  sheet.getCell("A2").value =
+    "Sumber antropometri: WHO Child Growth Standards · Foto hanya disertakan bila tersedia.";
+  sheet.getCell("A2").font = { size: 10, italic: true };
+  sheet.getCell("A2").alignment = { horizontal: "center" };
+
+  sheet.mergeCells("A3:O3");
+  sheet.getCell("A3").value = `Dibuat: ${new Date().toLocaleString("id-ID", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "Asia/Jakarta",
+  })} · Jumlah data: ${docs.length}`;
+  sheet.getCell("A3").font = { size: 10 };
+  sheet.getCell("A3").alignment = { horizontal: "center" };
+
+  const columns = [
+    { header: "No", key: "no", width: 6 },
+    { header: "Foto", key: "photo", width: 14 },
+    { header: "Tanggal Pemeriksaan", key: "examDate", width: 22 },
+    { header: "Nama Anak", key: "childName", width: 22 },
+    { header: "Kode Anak", key: "childCode", width: 18 },
+    { header: "Umur Saat Diperiksa", key: "age", width: 20 },
+    { header: "Jenis Kelamin", key: "sex", width: 15 },
+    { header: "PB/TB (cm)", key: "height", width: 13 },
+    { header: "BB (kg)", key: "weight", width: 12 },
+    { header: "Z-score PB/TB-U", key: "haz", width: 17 },
+    { header: "Z-score BB/U", key: "waz", width: 15 },
+    { header: "Status Stunting", key: "stunting", width: 22 },
+    { header: "Klasifikasi Pertumbuhan", key: "growth", width: 22 },
+    { header: "Metode", key: "mode", width: 17 },
+    { header: "Catatan Kualitas", key: "quality", width: 34 },
+  ];
+  sheet.columns = columns.map(({ key, width }) => ({ key, width }));
+
+  const headerRow = sheet.getRow(5);
+  headerRow.values = columns.map((column) => column.header);
+  headerRow.height = 30;
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.alignment = {
+    vertical: "middle",
+    horizontal: "center",
+    wrapText: true,
+  };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2F75B5" },
+  };
+  sheet.autoFilter = {
+    from: { row: 5, column: 1 },
+    to: { row: 5, column: columns.length },
+  };
+
+  for (const [index, doc] of docs.entries()) {
+    const exam = asExam(doc);
+    const examAt = exam.completedAt ?? exam.createdAt;
+    const row = sheet.addRow({
+      no: index + 1,
+      photo: "",
+      examDate: new Date(examAt).toLocaleString("id-ID", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "Asia/Jakarta",
+      }),
+      childName: exam.childName,
+      childCode: exam.childCode,
+      age: exportAgeLabel(exam.ageMonths),
+      sex: exam.sex === "male" ? "Laki-laki" : "Perempuan",
+      height: exam.heightCm,
+      weight: exam.weightKg,
+      haz:
+        exam.heightForAgeZ === null
+          ? "—"
+          : Number(exam.heightForAgeZ.toFixed(2)),
+      waz:
+        exam.weightForAgeZ === null
+          ? "—"
+          : Number(exam.weightForAgeZ.toFixed(2)),
+      stunting: exportStuntingLabel(exam),
+      growth: exportGrowthLabel(exam.growthStatus),
+      mode: exportMeasurementModeLabel(exam.measurementMode),
+      quality:
+        exam.measurementReason ||
+        (exam.measurementQuality === "valid"
+          ? "Pengukuran valid"
+          : exam.measurementQuality === "verified_extreme"
+            ? "Nilai ekstrem terverifikasi"
+            : "Perlu ditinjau"),
+    });
+    row.height = 72;
+    row.alignment = { vertical: "middle", wrapText: true };
+
+    const photoUrl =
+      doc.data.facePhotoUrl ?? fallbackPhotos.get(doc.data.childId) ?? null;
+    if (photoUrl) {
+      try {
+        const imageResponse = await fetch(exportPhotoUrl(photoUrl));
+        if (imageResponse.ok) {
+          const contentType = imageResponse.headers.get("content-type") || "";
+          if (
+            contentType.includes("jpeg") ||
+            contentType.includes("jpg") ||
+            contentType.includes("png")
+          ) {
+            const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
+            const imageId = workbook.addImage({
+              base64: `data:${contentType};base64,${imageBytes.toString("base64")}`,
+              extension: contentType.includes("png") ? "png" : "jpeg",
+            });
+            sheet.addImage(imageId, {
+              tl: { col: 1.15, row: row.number - 0.9 },
+              ext: { width: 68, height: 68 },
+            });
+          }
+        }
+      } catch {}
+    }
+
+    for (let column = 1; column <= columns.length; column += 1) {
+      const cell = row.getCell(column);
+      cell.border = {
+        top: { style: "thin", color: { argb: "FFDCE6EF" } },
+        left: { style: "thin", color: { argb: "FFDCE6EF" } },
+        bottom: { style: "thin", color: { argb: "FFDCE6EF" } },
+        right: { style: "thin", color: { argb: "FFDCE6EF" } },
+      };
+      if (index % 2 === 1) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFF7FBFE" },
+        };
+      }
+    }
+  }
+
+  const output = await workbook.xlsx.writeBuffer();
+  const today = new Date().toISOString().slice(0, 10);
+  const safePeriod = period.replace(/[^a-z0-9_-]/gi, "-").slice(0, 30) || "all";
+  const filename = `stuntspecula-hasil-${safePeriod}-${today}.xlsx`;
+
+  return new Response(new Uint8Array(output), {
+    status: 200,
+    headers: {
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 async function startStaffExam(request: Request, env: Env) {
@@ -4186,6 +4468,8 @@ export async function routeFirestore(
       return monitoringOverview(request, env);
     case "GET /api/device-monitoring":
       return deviceMonitoring(request, env);
+    case "GET /api/examinations/export":
+      return exportExaminationsExcel(request, env);
     case "POST /api/device/reset-session":
       return resetDeviceSession(request, env);
     case "POST /api/device/force-stop":
