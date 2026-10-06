@@ -28,7 +28,11 @@ function localDateInput(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function exportRange(period: ExportPeriod, customStart: string, customEnd: string) {
+function exportRange(
+  period: ExportPeriod,
+  customStart: string,
+  customEnd: string,
+) {
   const now = new Date();
   if (period === "all") return { from: null, to: null };
 
@@ -36,7 +40,11 @@ function exportRange(period: ExportPeriod, customStart: string, customEnd: strin
     if (!customStart || !customEnd) return null;
     const from = new Date(`${customStart}T00:00:00`);
     const to = new Date(`${customEnd}T23:59:59.999`);
-    if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || from > to) {
+    if (
+      !Number.isFinite(from.getTime()) ||
+      !Number.isFinite(to.getTime()) ||
+      from > to
+    ) {
       return null;
     }
     return { from: from.getTime(), to: to.getTime() };
@@ -63,7 +71,9 @@ export function ExaminationHistory({ childId = "" }: { childId?: string }) {
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   const [exportPeriod, setExportPeriod] = useState<ExportPeriod>("today");
-  const [customStart, setCustomStart] = useState(() => localDateInput(new Date()));
+  const [customStart, setCustomStart] = useState(() =>
+    localDateInput(new Date()),
+  );
   const [customEnd, setCustomEnd] = useState(() => localDateInput(new Date()));
   const [exporting, setExporting] = useState(false);
 
@@ -137,7 +147,9 @@ export function ExaminationHistory({ childId = "" }: { childId?: string }) {
       link.remove();
       URL.revokeObjectURL(url);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Export Excel gagal dibuat.");
+      setError(
+        cause instanceof Error ? cause.message : "Export Excel gagal dibuat.",
+      );
     } finally {
       setExporting(false);
     }
@@ -161,7 +173,10 @@ export function ExaminationHistory({ childId = "" }: { childId?: string }) {
         </button>
       </div>
 
-      <section className="staff-history-toolbar" aria-label="Export hasil pemeriksaan">
+      <section
+        className="staff-history-toolbar"
+        aria-label="Export hasil pemeriksaan"
+      >
         <label>
           Periode export
           <select
