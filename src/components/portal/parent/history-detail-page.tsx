@@ -300,7 +300,7 @@ export function ParentHistoryDetailPage() {
                 </div>
                 <div>
                   <dt>Model</dt>
-                  <dd>{visual.modelVersion || "Gemini"}</dd>
+                  <dd>{visual.modelVersion || "CNN"}</dd>
                 </div>
               </dl>
 
