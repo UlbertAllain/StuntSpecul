@@ -298,10 +298,6 @@ export function ParentHistoryDetailPage() {
                   <dt>Pencahayaan</dt>
                   <dd>{visualLightingLabel(visual.lighting)}</dd>
                 </div>
-                <div>
-                  <dt>Model</dt>
-                  <dd>{visual.modelVersion || "CNN"}</dd>
-                </div>
               </dl>
 
               {visual.observations.length > 0 && (
