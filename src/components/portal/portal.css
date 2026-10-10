@@ -2608,6 +2608,71 @@
   display: grid;
   gap: 12px;
 }
+
+.staff-history-toolbar {
+  display: grid;
+  grid-template-columns: minmax(150px, 190px) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid #dce7ef;
+  border-radius: 14px;
+  background: #f8fcff;
+}
+
+.staff-history-toolbar label {
+  display: grid;
+  gap: 5px;
+  color: #5f7585;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.staff-history-toolbar select,
+.staff-history-toolbar input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #cfdde7;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 10px;
+  color: #18334d;
+}
+
+.staff-history-custom-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.staff-history-export-button {
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+.staff-history-export-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #718493;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .staff-history-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-history-custom-range {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-history-export-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
 .flat-child-card,
 .flat-history-card,
 .parent-flat-history-card {
@@ -6245,6 +6310,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .parent-children-heading > div {
@@ -6272,6 +6339,7 @@
 .parent-children-heading .portal-secondary {
   width: auto;
   min-height: 38px;
+  flex: 0 0 auto;
   padding: 8px 12px;
   display: inline-flex;
   align-items: center;
@@ -6286,9 +6354,23 @@
   background: #f8fcff;
 }
 
-.parent-child-profile-list {
-  display: grid;
-  gap: 9px;
+.portal-shell--parent .profile-menu-card > .parent-child-profile-list {
+  display: flex !important;
+  gap: 10px !important;
+  max-width: 100%;
+  min-width: 0;
+  padding: 14px 2px 8px !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.parent-child-profile-entry {
+  flex: 0 0 min(340px, calc(100vw - 56px));
+  min-width: 0;
+  scroll-snap-align: start;
 }
 
 .parent-child-profile-item {

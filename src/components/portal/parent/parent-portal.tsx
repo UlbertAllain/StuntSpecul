@@ -295,17 +295,46 @@ export function ParentPortal() {
     if (!activeExamId || activeExamStatus === "completed") return;
 
     const controller = new AbortController();
-    const timer = setInterval(() => {
-      api<ParentAccountView>("/parent-account/me", {
-        signal: controller.signal,
-      })
-        .then(setView)
-        .catch(() => {});
-    }, 1200);
+    let timer: ReturnType<typeof setTimeout>;
+
+    async function pollActiveExam() {
+      try {
+        const next = await api<Examination | null>(
+          "/parent-account/active-exam",
+          { signal: controller.signal },
+        );
+        if (controller.signal.aborted) return;
+
+        if (!next) {
+          const fresh = await api<ParentAccountView>("/parent-account/me", {
+            signal: controller.signal,
+          });
+          if (!controller.signal.aborted) setView(fresh);
+          return;
+        }
+
+        setView((current) => {
+          if (!current) return current;
+          return {
+            ...current,
+            examinations: [
+              next,
+              ...current.examinations.filter((exam) => exam.id !== next.id),
+            ],
+          };
+        });
+      } catch {}
+
+      if (!controller.signal.aborted) {
+        timer = setTimeout(pollActiveExam, 2500);
+      }
+    }
+
+    timer = setTimeout(pollActiveExam, 2500);
 
     return () => {
       controller.abort();
-      clearInterval(timer);
+      clearTimeout(timer);
     };
   }, [activeExamId, activeExamStatus]);
 

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import ExcelJS from "exceljs";
 import { z } from "zod";
 import type {
   BlogPost,
@@ -55,6 +56,9 @@ const STATION_NAME = "StuntSpecula Station 01";
 const SYSTEM_SCREENING_STAFF_ID = "guest-screening-system";
 const DAY = 24 * 60 * 60 * 1000;
 const ONLINE_WINDOW_MS = 8_000;
+const HEARTBEAT_PERSIST_MS = 6_000;
+let heartbeatPersistedAt = 0;
+let heartbeatStateSignature = "";
 const GOOGLE_OAUTH_STATE_COOKIE = "ss_google_oauth";
 const GOOGLE_OAUTH_INTENT_COOKIE = "ss_google_oauth_intent";
 const GOOGLE_REGISTER_COOKIE = "ss_google_register";
@@ -138,6 +142,8 @@ type ExamRecord = {
   facialReason: string | null;
   facialModelVersion: string | null;
   visualAnalysis?: VisualAnalysis | null;
+  facePhotoUrl?: string | null;
+  facePhotoCapturedAt?: number | null;
   recommendations?: Partial<GrowthRecommendations> | null;
   createdAt: number;
   completedAt: number | null;
@@ -1192,8 +1198,14 @@ type DeviceHeartbeat = {
 async function touchIotDevice(env: Env, heartbeat: DeviceHeartbeat = {}) {
   const db = store(env);
   const path = `devices/${STATION_ID}`;
-  const current = await db.get<DeviceRecord>(path);
   const now = Date.now();
+  const stateSignature = JSON.stringify(heartbeat);
+  const stateChanged = stateSignature !== heartbeatStateSignature;
+
+  if (!stateChanged && now - heartbeatPersistedAt < HEARTBEAT_PERSIST_MS) {
+    return;
+  }
+
   const patch: Omit<Partial<DeviceRecord>, "createdAt"> = {
     name: STATION_NAME,
     active: true,
@@ -1222,29 +1234,11 @@ async function touchIotDevice(env: Env, heartbeat: DeviceHeartbeat = {}) {
     patch.wifiConnected = heartbeat.wifiConnected;
   }
 
-  if (current) {
-    await db.set(path, patch, {
-      mergeFields: Object.keys(patch),
-    });
-    return;
-  }
-
-  await db.set(path, {
-    ...patch,
-    firmwareVersion: patch.firmwareVersion ?? null,
-    heightSensor: patch.heightSensor ?? "unknown",
-    weightSensor: patch.weightSensor ?? "unknown",
-    claimedExamId: null,
-    resetToken: null,
-    resetRequestedAt: null,
-    resetReason: null,
-    resetExamId: null,
-    appliedResetToken: patch.appliedResetToken ?? null,
-    currentExaminationId: patch.currentExaminationId ?? null,
-    localSessionState: patch.localSessionState ?? "unknown",
-    wifiConnected: patch.wifiConnected ?? null,
-    createdAt: now,
+  await db.set(path, patch, {
+    mergeFields: Object.keys(patch),
   });
+  heartbeatPersistedAt = now;
+  heartbeatStateSignature = stateSignature;
 }
 
 async function stationDeviceState(env: Env) {
@@ -2244,6 +2238,17 @@ async function parentView(request: Request, env: Env) {
   });
 }
 
+async function parentActiveExam(request: Request, env: Env) {
+  const parent = await requireParent(request, env);
+  const { exam } = await activeStation(env);
+
+  if (!exam || exam.data.parentId !== parent.id) {
+    return ok(null);
+  }
+
+  return ok(asExam(exam));
+}
+
 async function parentBlogs(request: Request, env: Env) {
   await requireParent(request, env);
   const posts = (await listBlogs(env))
@@ -2378,8 +2383,8 @@ async function uploadLatestFacePhoto(request: Request, env: Env) {
   }
 
   const timestamp = Math.floor(Date.now() / 1000);
-  const folder = "stuntspecula/latest-face";
-  const publicId = exam.data.childId;
+  const folder = `stuntspecula/examinations/${exam.data.childId}`;
+  const publicId = exam.id;
   const signature = createHash("sha1")
     .update(
       `folder=${folder}&overwrite=true&public_id=${publicId}&timestamp=${timestamp}${apiSecret}`,
@@ -2440,6 +2445,17 @@ async function uploadLatestFacePhoto(request: Request, env: Env) {
         "latestFacePhotoUpdatedAt",
       ],
       precondition: { updateTime: child.updateTime },
+    },
+  );
+
+  await store(env).set(
+    `examinations/${exam.id}`,
+    {
+      facePhotoUrl: payload.secure_url,
+      facePhotoCapturedAt: updatedAt,
+    },
+    {
+      mergeFields: ["facePhotoUrl", "facePhotoCapturedAt"],
     },
   );
 
@@ -2668,6 +2684,318 @@ async function staffExams(request: Request, env: Env) {
       });
 
   return ok(docs.map(asExam));
+}
+
+function exportGrowthLabel(status: Examination["growthStatus"]) {
+  if (status === "within_range") return "Sesuai rentang";
+  if (status === "monitor") return "Perlu pemantauan";
+  if (status === "stunted") return "Stunting";
+  if (status === "severely_stunted") return "Stunting berat";
+  return "Tidak tersedia";
+}
+
+function exportStuntingLabel(exam: Examination) {
+  if (exam.measurementQuality === "verified_extreme") {
+    return "Nilai ekstrem terverifikasi";
+  }
+  if (exam.heightForAgeZ === null) return "Tidak tersedia";
+  return exam.heightForAgeZ < -2 ? "Stunting" : "Tidak stunting";
+}
+
+function exportAgeLabel(ageMonths: number) {
+  const years = Math.floor(ageMonths / 12);
+  const months = ageMonths % 12;
+  if (years <= 0) return `${months} bulan`;
+  if (months === 0) return `${years} tahun`;
+  return `${years} tahun ${months} bulan`;
+}
+
+function exportMeasurementModeLabel(mode: Examination["measurementMode"]) {
+  if (mode === "device") return "Alat otomatis";
+  if (mode === "manual_infant") return "Manual PB";
+  return "Manual";
+}
+
+function exportPhotoUrl(url: string) {
+  if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
+    return url;
+  }
+  return url.replace(
+    "/upload/",
+    "/upload/f_jpg,q_auto,w_240,h_240,c_fill,g_face/",
+  );
+}
+
+async function exportExaminationsExcel(request: Request, env: Env) {
+  await requireStaff(request, env);
+  const url = new URL(request.url);
+  const fromRaw = url.searchParams.get("from");
+  const toRaw = url.searchParams.get("to");
+  const period = url.searchParams.get("period") || "all";
+  const childId = url.searchParams.get("childId") || "";
+
+  const from = fromRaw ? Number(fromRaw) : null;
+  const to = toRaw ? Number(toRaw) : null;
+  if (
+    (from !== null && (!Number.isFinite(from) || from < 0)) ||
+    (to !== null && (!Number.isFinite(to) || to < 0)) ||
+    (from !== null && to !== null && from > to)
+  ) {
+    throw new ApiError(422, "Rentang tanggal export tidak valid.");
+  }
+  if (childId && !idSchema.safeParse(childId).success) {
+    throw new ApiError(422, "Profil anak tidak valid.");
+  }
+
+  const db = store(env);
+  let docs =
+    from !== null
+      ? await db.query<ExamRecord>("examinations", {
+          where: {
+            field: "createdAt",
+            op: "GREATER_THAN_OR_EQUAL",
+            value: from,
+          },
+        })
+      : await db.query<ExamRecord>("examinations", {
+          orderBy: [{ field: "createdAt", direction: "DESCENDING" }],
+        });
+
+  docs = docs
+    .filter((item) => {
+      const at = item.data.completedAt ?? item.data.createdAt;
+      return (
+        item.data.status === "completed" &&
+        (!childId || item.data.childId === childId) &&
+        (from === null || at >= from) &&
+        (to === null || at <= to)
+      );
+    })
+    .sort((a, b) => {
+      const childOrder = a.data.childName.localeCompare(
+        b.data.childName,
+        "id-ID",
+        { sensitivity: "base" },
+      );
+      if (childOrder !== 0) return childOrder;
+
+      const aAt = a.data.completedAt ?? a.data.createdAt;
+      const bAt = b.data.completedAt ?? b.data.createdAt;
+      return aAt - bAt;
+    });
+
+  const groupedDocs = new Map<string, FirestoreDoc<ExamRecord>[]>();
+  for (const doc of docs) {
+    const group = groupedDocs.get(doc.data.childId);
+    if (group) {
+      group.push(doc);
+    } else {
+      groupedDocs.set(doc.data.childId, [doc]);
+    }
+  }
+  const childGroups = [...groupedDocs.values()];
+
+  const fallbackPhotos = new Map<string, string | null>();
+  for (const childIdValue of new Set(
+    docs
+      .filter((item) => !item.data.facePhotoUrl)
+      .map((item) => item.data.childId),
+  )) {
+    const child = await db.get<ChildRecord>(`children/${childIdValue}`);
+    fallbackPhotos.set(childIdValue, child?.data.latestFacePhotoUrl ?? null);
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "StuntSpecula";
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  const sheet = workbook.addWorksheet("Hasil Pemeriksaan", {
+    views: [{ state: "frozen", ySplit: 5 }],
+  });
+
+  sheet.mergeCells("A1:P1");
+  sheet.getCell("A1").value = "REKAP HASIL PEMERIKSAAN STUNTSPECULA";
+  sheet.getCell("A1").font = { size: 16, bold: true };
+  sheet.getCell("A1").alignment = { vertical: "middle", horizontal: "center" };
+  sheet.getRow(1).height = 26;
+
+  sheet.mergeCells("A2:P2");
+  sheet.getCell("A2").value =
+    "Sumber antropometri: WHO Child Growth Standards · Foto hanya disertakan bila tersedia.";
+  sheet.getCell("A2").font = { size: 10, italic: true };
+  sheet.getCell("A2").alignment = { horizontal: "center" };
+
+  sheet.mergeCells("A3:P3");
+  sheet.getCell("A3").value = `Dibuat: ${new Date().toLocaleString("id-ID", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "Asia/Jakarta",
+  })} · Jumlah anak: ${childGroups.length} · Jumlah pemeriksaan: ${docs.length}`;
+  sheet.getCell("A3").font = { size: 10 };
+  sheet.getCell("A3").alignment = { horizontal: "center" };
+
+  const columns = [
+    { header: "No", key: "no", width: 6 },
+    { header: "Foto", key: "photo", width: 14 },
+    { header: "Nama Anak", key: "childName", width: 22 },
+    { header: "Kode Anak", key: "childCode", width: 18 },
+    { header: "Pemeriksaan", key: "examSequence", width: 18 },
+    { header: "Tanggal Pemeriksaan", key: "examDate", width: 22 },
+    { header: "Umur Saat Diperiksa", key: "age", width: 20 },
+    { header: "Jenis Kelamin", key: "sex", width: 15 },
+    { header: "PB/TB (cm)", key: "height", width: 13 },
+    { header: "BB (kg)", key: "weight", width: 12 },
+    { header: "Z-score PB/TB-U", key: "haz", width: 17 },
+    { header: "Z-score BB/U", key: "waz", width: 15 },
+    { header: "Status Stunting", key: "stunting", width: 22 },
+    { header: "Klasifikasi Pertumbuhan", key: "growth", width: 22 },
+    { header: "Metode", key: "mode", width: 17 },
+    { header: "Catatan Kualitas", key: "quality", width: 34 },
+  ];
+  sheet.columns = columns.map(({ key, width }) => ({ key, width }));
+
+  const headerRow = sheet.getRow(5);
+  headerRow.values = columns.map((column) => column.header);
+  headerRow.height = 30;
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.alignment = {
+    vertical: "middle",
+    horizontal: "center",
+    wrapText: true,
+  };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2F75B5" },
+  };
+  sheet.autoFilter = {
+    from: { row: 5, column: 1 },
+    to: { row: 5, column: columns.length },
+  };
+
+  let rowNumber = 0;
+  for (const [groupIndex, group] of childGroups.entries()) {
+    const groupStartRow = sheet.rowCount + 1;
+
+    for (const [examIndex, doc] of group.entries()) {
+      rowNumber += 1;
+      const exam = asExam(doc);
+      const examAt = exam.completedAt ?? exam.createdAt;
+      const row = sheet.addRow({
+        no: rowNumber,
+        photo: "",
+        childName: exam.childName,
+        childCode: exam.childCode,
+        examSequence: `Pemeriksaan ke-${examIndex + 1}`,
+        examDate: new Date(examAt).toLocaleString("id-ID", {
+          dateStyle: "medium",
+          timeStyle: "short",
+          timeZone: "Asia/Jakarta",
+        }),
+        age: exportAgeLabel(exam.ageMonths),
+        sex: exam.sex === "male" ? "Laki-laki" : "Perempuan",
+        height: exam.heightCm,
+        weight: exam.weightKg,
+        haz:
+          exam.heightForAgeZ === null
+            ? "—"
+            : Number(exam.heightForAgeZ.toFixed(2)),
+        waz:
+          exam.weightForAgeZ === null
+            ? "—"
+            : Number(exam.weightForAgeZ.toFixed(2)),
+        stunting: exportStuntingLabel(exam),
+        growth: exportGrowthLabel(exam.growthStatus),
+        mode: exportMeasurementModeLabel(exam.measurementMode),
+        quality:
+          exam.measurementReason ||
+          (exam.measurementQuality === "valid"
+            ? "Pengukuran valid"
+            : exam.measurementQuality === "verified_extreme"
+              ? "Nilai ekstrem terverifikasi"
+              : "Perlu ditinjau"),
+      });
+      row.height = 72;
+      row.alignment = { vertical: "middle", wrapText: true };
+
+      const photoUrl =
+        doc.data.facePhotoUrl ?? fallbackPhotos.get(doc.data.childId) ?? null;
+      if (photoUrl) {
+        try {
+          const imageResponse = await fetch(exportPhotoUrl(photoUrl));
+          if (imageResponse.ok) {
+            const contentType = imageResponse.headers.get("content-type") || "";
+            if (
+              contentType.includes("jpeg") ||
+              contentType.includes("jpg") ||
+              contentType.includes("png")
+            ) {
+              const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
+              const imageId = workbook.addImage({
+                base64: `data:${contentType};base64,${imageBytes.toString("base64")}`,
+                extension: contentType.includes("png") ? "png" : "jpeg",
+              });
+              sheet.addImage(imageId, {
+                tl: { col: 1.15, row: row.number - 0.9 },
+                ext: { width: 68, height: 68 },
+              });
+            }
+          }
+        } catch {}
+      }
+
+      for (let column = 1; column <= columns.length; column += 1) {
+        const cell = row.getCell(column);
+        cell.border = {
+          top: {
+            style: examIndex === 0 ? "medium" : "thin",
+            color: { argb: "FFDCE6EF" },
+          },
+          left: { style: "thin", color: { argb: "FFDCE6EF" } },
+          bottom: { style: "thin", color: { argb: "FFDCE6EF" } },
+          right: { style: "thin", color: { argb: "FFDCE6EF" } },
+        };
+        if (groupIndex % 2 === 1) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFF7FBFE" },
+          };
+        }
+      }
+    }
+
+    const groupEndRow = sheet.rowCount;
+    if (groupEndRow > groupStartRow) {
+      sheet.mergeCells(groupStartRow, 3, groupEndRow, 3);
+      sheet.mergeCells(groupStartRow, 4, groupEndRow, 4);
+      sheet.mergeCells(groupStartRow, 8, groupEndRow, 8);
+
+      for (const column of [3, 4, 8]) {
+        sheet.getCell(groupStartRow, column).alignment = {
+          vertical: "middle",
+          horizontal: "center",
+          wrapText: true,
+        };
+      }
+    }
+  }
+
+  const output = await workbook.xlsx.writeBuffer();
+  const today = new Date().toISOString().slice(0, 10);
+  const safePeriod = period.replace(/[^a-z0-9_-]/gi, "-").slice(0, 30) || "all";
+  const filename = `stuntspecula-hasil-${safePeriod}-${today}.xlsx`;
+
+  return new Response(new Uint8Array(output), {
+    status: 200,
+    headers: {
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 async function startStaffExam(request: Request, env: Env) {
@@ -3944,27 +4272,16 @@ async function monitoringOverview(request: Request, env: Env) {
 
 async function deviceMonitoring(request: Request, env: Env) {
   await requireStaff(request, env, true);
-  const db = store(env);
-  const [{ exam, station }, device, recent] = await Promise.all([
+  const [{ exam, station }, device] = await Promise.all([
     activeStation(env),
     stationDeviceState(env),
-    db.query<ExamRecord>("examinations", {
-      orderBy: [{ field: "createdAt", direction: "DESCENDING" }],
-      limit: 50,
-    }),
   ]);
-  const stuckSessions = recent
-    .filter(
-      (item) =>
-        ["queued", "running"].includes(item.data.status) &&
-        item.id !== exam?.id,
-    )
-    .map((item) => ({
-      id: item.id,
-      childName: item.data.childName,
-      status: item.data.status,
-      createdAt: item.data.createdAt,
-    }));
+  const stuckSessions: Array<{
+    id: string;
+    childName: string;
+    status: "queued" | "running";
+    createdAt: number;
+  }> = [];
   const resetPending =
     !!device.resetToken && device.appliedResetToken !== device.resetToken;
   const deviceSessionKnown =
@@ -4195,6 +4512,8 @@ export async function routeFirestore(
       return monitoringOverview(request, env);
     case "GET /api/device-monitoring":
       return deviceMonitoring(request, env);
+    case "GET /api/examinations/export":
+      return exportExaminationsExcel(request, env);
     case "POST /api/device/reset-session":
       return resetDeviceSession(request, env);
     case "POST /api/device/force-stop":
@@ -4255,6 +4574,8 @@ export async function routeFirestore(
       return parentLogout(request, env);
     case "GET /api/parent-account/me":
       return parentView(request, env);
+    case "GET /api/parent-account/active-exam":
+      return parentActiveExam(request, env);
     case "POST /api/parent-account/children":
       return createParentChild(request, env);
     case "PATCH /api/parent-account/profile":
