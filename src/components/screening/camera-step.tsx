@@ -163,10 +163,6 @@ export function CameraStep({
           untuk mengambil ulang atau melanjutkan tanpa analisis wajah.
         </p>
       )}
-      <p className="parent-caption">
-        Gemini hanya menilai kualitas dan bagian wajah yang terlihat. Status
-        stunting tetap ditentukan dari TB/U WHO, bukan dari wajah.
-      </p>
     </div>
   );
 }

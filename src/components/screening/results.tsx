@@ -276,12 +276,6 @@ export function Results({
             kelamin, dan tinggi badan. Bukan prediksi dari tampilan wajah.
           </p>
         </div>
-
-        <p className="visual-disclaimer">
-          Gemini dipakai untuk membaca kualitas foto dan ciri visual yang
-          tampak. Hasil visual hanya data pendukung dan tidak menggantikan
-          skrining WHO.
-        </p>
       </div>
 
       <div className="result-recommendation-grid">
@@ -406,8 +400,7 @@ export function Results({
               Status stunting dihitung dari TB/U berdasarkan Standar
               Antropometri Anak Kemenkes RI dan WHO Child Growth Standards untuk
               anak usia 24–59 bulan. Buku KIA Edisi 2024 ditampilkan sebagai
-              referensi pendamping pemantauan pertumbuhan keluarga. Gemini hanya
-              membaca foto dan tidak menentukan status stunting.
+              referensi pendamping pemantauan pertumbuhan keluarga.
             </p>
             <div className="clinical-reference-list">
               <a href={KEMENKES_REFERENCE_URL} target="_blank" rel="noreferrer">
